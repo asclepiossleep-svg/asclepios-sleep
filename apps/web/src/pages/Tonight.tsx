@@ -6,8 +6,15 @@ import { t } from "../i18n";
 
 interface TonightStep {
   stepCode: string;
-  label: string;
   productId?: string;
+  productName?: string;
+}
+
+function stepLabel(step: TonightStep): string {
+  if (step.stepCode === "PRODUCT") return `${t("tonight.step.useProduct")} ${step.productName ?? ""}`.trim();
+  if (step.stepCode === "BREATHING") return t("tonight.step.breathing");
+  if (step.stepCode === "MUSIC") return t("tonight.step.music");
+  return step.stepCode;
 }
 
 /**
@@ -46,10 +53,10 @@ export default function Tonight() {
       <h1>{t("tonight.title")}</h1>
 
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        {steps.length === 0 && <p className="muted">Loading tonight's plan…</p>}
+        {steps.length === 0 && <p className="muted">{t("tonight.loadingPlan")}</p>}
         {steps.map((step) => (
           <div key={step.stepCode} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
-            <span>{step.label}</span>
+            <span>{stepLabel(step)}</span>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button onClick={() => mark(step, "DONE")} style={stepStatus[step.stepCode] === "DONE" ? { borderColor: "var(--color-primary)" } : {}}>
                 {t("tonight.done")}
@@ -68,12 +75,12 @@ export default function Tonight() {
 
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: "auto" }}>
         <Link to="/review" className="muted">
-          7-Day Review
+          {t("tonight.review")}
         </Link>
         <Link to="/assessment" className="muted">
-          New question
+          {t("tonight.newQuestion")}
         </Link>
-        <button onClick={logout}>Log out</button>
+        <button onClick={logout}>{t("tonight.logout")}</button>
       </div>
     </div>
   );
