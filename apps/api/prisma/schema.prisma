@@ -40,6 +40,13 @@ model User {
   role        String   @default("MEMBER") // MEMBER | ADMIN | THERAPIST
   isDemo      Boolean  @default(false)
   demoScenario String? // human label, staging only
+  // Onboarding / personalisation — Design moodboard 28 Aug 2026. Chosen once
+  // during setup (Home/Settings can change it later); wallpaperId picks a
+  // seeded Wallpaper row, themeColor is an optional hex override of that
+  // wallpaper's default themeColor (null = use the wallpaper's own colour).
+  wallpaperId String?
+  wallpaper   Wallpaper? @relation(fields: [wallpaperId], references: [id])
+  themeColor  String?
   createdAt   DateTime @default(now())
 
   authIdentities   AuthIdentity[]
@@ -234,6 +241,8 @@ model Wallpaper {
   imageUrl   String?
   themeColor String?
   active     Boolean @default(true)
+
+  users User[]
 }
 
 // ---------------------------------------------------------------------------
