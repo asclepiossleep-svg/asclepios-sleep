@@ -18,17 +18,20 @@ router.get("/", async (req: AuthedRequest, res) => {
   const currentState = await prisma.tagScore.findMany({ where: { userId, source: "CURRENT_STATE" } });
   const racingThoughts = currentState.find((t: (typeof currentState)[number]) => t.tag === "RACING_THOUGHTS");
 
-  const steps: { stepCode: string; label: string; productId?: string }[] = [];
+  // Labels are not baked in server-side — the client owns all user-facing
+  // copy via its locale resources (apps/web/src/i18n), so this route only
+  // ever returns stepCode + the raw data (e.g. product name) a label needs.
+  const steps: { stepCode: string; productId?: string; productName?: string }[] = [];
 
   if (ownerships.length > 0) {
     const primary = ownerships[0];
-    steps.push({ stepCode: "PRODUCT", label: `Use ${primary.product.name}`, productId: primary.productId });
+    steps.push({ stepCode: "PRODUCT", productId: primary.productId, productName: primary.product.name });
   }
   if (racingThoughts && racingThoughts.severity >= 3 && steps.length < 3) {
-    steps.push({ stepCode: "BREATHING", label: "1-minute breathing exercise" });
+    steps.push({ stepCode: "BREATHING" });
   }
   if (steps.length < 3) {
-    steps.push({ stepCode: "MUSIC", label: "Start tonight's sleep music" });
+    steps.push({ stepCode: "MUSIC" });
   }
 
   res.json({ steps: steps.slice(0, 3) });
