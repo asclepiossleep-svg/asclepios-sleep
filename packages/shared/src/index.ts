@@ -151,6 +151,23 @@ export const WALLPAPER_CATEGORIES = [
 export type WallpaperCategory = (typeof WALLPAPER_CATEGORIES)[number];
 
 // ---------------------------------------------------------------------------
+// Design moodboard (28 Aug 2026) — Theme Color picker presets. These are the
+// six accent colours the product design settled on; the Home/Wallpaper/
+// SleepPlayer/etc. UI applies whichever one the user picks as a CSS variable
+// override on top of the existing day/night token system (tokens.css). Do
+// not hard-code these hex values anywhere else — import from here.
+// ---------------------------------------------------------------------------
+export const THEME_COLORS = [
+  { code: "SAGE", hex: "#B7CDB8" },
+  { code: "SKY", hex: "#A7C7E7" },
+  { code: "LAVENDER", hex: "#C6B7E6" },
+  { code: "TWILIGHT", hex: "#8E7CC3" },
+  { code: "DEEP_BLUE", hex: "#3F416B" },
+  { code: "CHARCOAL", hex: "#2B2D42" },
+] as const;
+export type ThemeColorCode = (typeof THEME_COLORS)[number]["code"];
+
+// ---------------------------------------------------------------------------
 // Master Kick-off V1 — Content layers. Entitlement resolution for
 // PRODUCT_LOCKED/PAID_PROGRAMME stays centralized in entitlement.ts, never
 // re-implemented per screen (Coding Rules §21).
