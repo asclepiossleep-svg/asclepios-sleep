@@ -13,19 +13,23 @@ interface ReviewResult {
   };
 }
 
-const ACTION_LABEL: Record<string, string> = {
-  CONTINUE: "Keep going",
-  REMIND: "A gentle reminder",
-  SIMPLIFY: "Let's simplify tonight",
-  OPTIMISE: "Let's adjust how you use this",
-  ASK_MORE: "A couple of quick questions",
-  CHANGE_ROUTINE: "Let's try something different",
-  RECOMMEND_CONTENT: "A short explainer might help",
-  ADD_PRODUCT: "Worth considering an addition",
-  REPLACE_PRODUCT: "Worth considering an alternative",
-  REASSESS: "Time to re-check your profile",
-  ESCALATE: "Please speak with a professional",
-};
+const ACTION_CODES = [
+  "CONTINUE",
+  "REMIND",
+  "SIMPLIFY",
+  "OPTIMISE",
+  "ASK_MORE",
+  "CHANGE_ROUTINE",
+  "RECOMMEND_CONTENT",
+  "ADD_PRODUCT",
+  "REPLACE_PRODUCT",
+  "REASSESS",
+  "ESCALATE",
+] as const;
+
+function actionLabel(code: string): string {
+  return (ACTION_CODES as readonly string[]).includes(code) ? t(`review.action.${code}`) : code;
+}
 
 export default function Review() {
   const [result, setResult] = useState<ReviewResult | null>(null);
@@ -37,7 +41,7 @@ export default function Review() {
   if (!result) {
     return (
       <div className="screen">
-        <p className="muted">Crunching the last 7 days…</p>
+        <p className="muted">{t("review.crunching")}</p>
       </div>
     );
   }
@@ -47,14 +51,20 @@ export default function Review() {
       <h1>{t("review.title")}</h1>
 
       <div className="card">
-        <h2>{ACTION_LABEL[result.actionCode] ?? result.actionCode}</h2>
+        <h2>{actionLabel(result.actionCode)}</h2>
         <p className="muted">{result.explanation}</p>
       </div>
 
       <div className="card">
-        <p>Adherence: {(result.findings.adherence.ratio * 100).toFixed(0)}% ({result.findings.adherence.level})</p>
-        <p>Response trend: {result.findings.response.direction}</p>
-        <p>Routine completion: {(result.findings.routineCompletionRatio * 100).toFixed(0)}%</p>
+        <p>
+          {t("review.adherence")}: {(result.findings.adherence.ratio * 100).toFixed(0)}% ({result.findings.adherence.level})
+        </p>
+        <p>
+          {t("review.responseTrend")}: {result.findings.response.direction}
+        </p>
+        <p>
+          {t("review.routineCompletion")}: {(result.findings.routineCompletionRatio * 100).toFixed(0)}%
+        </p>
       </div>
     </div>
   );
