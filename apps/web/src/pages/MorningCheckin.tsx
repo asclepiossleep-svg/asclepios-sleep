@@ -65,12 +65,10 @@ export default function MorningCheckin() {
         </div>
       </div>
 
-      {!showAddDetails ? (
+      {!showAddDetails && (
         <button onClick={() => setShowAddDetails(true)} className="muted">
-          + Add details (optional)
+          {t("checkin.addDetails")}
         </button>
-      ) : (
-        <p className="muted card">Sleep onset time, nocturia, stress, mood, pain, nasal, caffeine, alcohol, digestive — wired to addDetailsJson on submit.</p>
       )}
 
       <button className="primary" onClick={submit} disabled={!canSubmit}>
