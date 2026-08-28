@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { t } from "../i18n";
 
 interface AnswerOption {
   id: string;
@@ -52,10 +53,10 @@ export default function Assessment() {
   if (done) {
     return (
       <div className="screen">
-        <h1>All set</h1>
-        <p className="muted">We've got what we need for tonight.</p>
+        <h1>{t("assessment.allSet")}</h1>
+        <p className="muted">{t("assessment.allSetSubtitle")}</p>
         <button className="primary" onClick={() => navigate("/tonight")}>
-          Continue
+          {t("assessment.continue")}
         </button>
       </div>
     );
@@ -64,7 +65,7 @@ export default function Assessment() {
   if (!question) {
     return (
       <div className="screen">
-        <p className="muted">Loading…</p>
+        <p className="muted">{t("assessment.loading")}</p>
       </div>
     );
   }
