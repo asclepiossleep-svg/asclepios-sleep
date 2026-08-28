@@ -1,0 +1,21 @@
+# Staging / production Postgres (Doc 06 §1: "Managed PostgreSQL preferred").
+# Local dev defaults to SQLite (see apps/api/.env) so `npm install && npm run
+# dev:api` works with zero setup. Switch to this + change
+# apps/api/prisma/schema.prisma datasource provider to "postgresql" when
+# you're ready to deploy to staging.
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: asclepios
+      POSTGRES_PASSWORD: asclepios_dev_only
+      POSTGRES_DB: asclepios_sleep
+    ports:
+      - "5432:5432"
+    volumes:
+      - asclepios_pg_data:/var/lib/postgresql/data
+
+volumes:
+  asclepios_pg_data:

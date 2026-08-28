@@ -1,0 +1,488 @@
+// Asclepios Sleep — data model
+//
+// Maps directly onto the handoff docs. Search comments for "Doc NN §x" to
+// trace a field back to its source requirement.
+//
+// Dev default is SQLite (zero external dependency, `npm run db:migrate`
+// just works, no account/signup needed to keep building locally).
+//
+// Staging/production target, per the Master Kick-off V1 §17 infra
+// preference (GitHub + Vercel + Supabase): use `prisma/schema.staging.prisma`
+// instead of this file — same models, `provider = "postgresql"` pointed at
+// Supabase's pooled connection string. Never hand-edit the `provider` line
+// in *this* file; that keeps local dev on SQLite permanently and staging on
+// Postgres permanently, so nobody accidentally commits a switch that breaks
+// the other. See `apps/api/package.json`'s "vercel-build" script and
+// README.md "Deployment (Vercel + Supabase)" for how the two schemas stay
+// in sync (`npm run check:schema-parity`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth / Account — Supplement 07 §2-4, §8-9
+// Account = identity. Membership / ProductOwnership / Entitlement = permission.
+// Kept as separate models on purpose — never collapse them.
+// ---------------------------------------------------------------------------
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  displayName String?
+  locale      String   @default("en") // en | zh-HK | zh-TW | zh-CN ...
+  timezone    String   @default("Europe/London")
+  role        String   @default("MEMBER") // MEMBER | ADMIN | THERAPIST
+  isDemo      Boolean  @default(false)
+  demoScenario String? // human label, staging only
+  createdAt   DateTime @default(now())
+
+  authIdentities   AuthIdentity[]
+  deviceSessions   DeviceSession[]
+  consents         ConsentRecord[]
+  memberships      Membership[]
+  productOwnership ProductOwnership[]
+  entitlements     Entitlement[]
+  assessments      Assessment[]
+  tagScores        TagScore[]
+  coreProfiles     CoreProfileSnapshot[]
+  reviewSnapshots  ReviewSnapshot[]
+  sleepSessions    SleepSession[]
+  routineStepLogs  RoutineStepLog[]
+  productUsageLogs ProductUsageLog[]
+  morningCheckins  MorningCheckin[]
+  enrollments      ProgrammeEnrollment[]
+  analyticsEvents  AnalyticsEvent[]
+  auditLogs        AuditLog[] @relation("ActorAuditLogs")
+}
+
+// Provider-independent auth (Supplement 07 §4). Never hard-code Apple/Google
+// into the User model itself — this adapter table is where providers live.
+model AuthIdentity {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  provider       String   // EMAIL_OTP | APPLE | GOOGLE | PASSWORD | WECHAT | SMS_OTP
+  providerUserId String?  // e.g. Apple/Google subject id; null for EMAIL_OTP
+  passwordHash   String?  // only set when provider = PASSWORD (optional, never primary)
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+}
+
+// One-time codes for Email OTP / Magic Link login (Supplement 07 §3).
+model OtpChallenge {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model DeviceSession {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  deviceLabel String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+}
+
+// Terms / Privacy / Marketing / Research / Health-data notice — Supplement 07 §9
+model ConsentRecord {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  type       String   // TERMS_OF_USE | PRIVACY_POLICY | MARKETING_EMAIL | RESEARCH_ANALYTICS | HEALTH_DATA_NOTICE
+  version    String
+  accepted   Boolean
+  acceptedAt DateTime @default(now())
+}
+
+model Membership {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tier      String    // FREE | PREMIUM | DEMO
+  startedAt DateTime  @default(now())
+  expiresAt DateTime?
+}
+
+model ProductOwnership {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  acquiredVia String  // ORDER | ADMIN_GRANT | DEMO_SEED | QR_ACTIVATION
+  acquiredAt DateTime @default(now())
+}
+
+// Feature/content access — resolved by the Entitlement service, never
+// inferred ad-hoc in a UI component (Doc 01 §5).
+model Entitlement {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  key        String    // e.g. programme.28day | media.premium_audio | course.calm_mind
+  grantedVia String    // ORDER | ADMIN_GRANT | DEMO_SEED | QR_ACTIVATION
+  grantedAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+}
+
+// QR / Activation Code — Supplement 07 §7. Table + service kept, feature
+// flag defaults OFF (see FeatureFlag seed). Do not delete this model when
+// the flag is off; that is the point of keeping it.
+model QrBatch {
+  id           String   @id @default(cuid())
+  label        String
+  channel      String?
+  distributor  String?
+  createdAt    DateTime @default(now())
+
+  codes ActivationCode[]
+}
+
+model ActivationCode {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id])
+  batchId         String?
+  batch           QrBatch?  @relation(fields: [batchId], references: [id])
+  status          String    @default("UNUSED") // UNUSED | REDEEMED | REVOKED
+  redeemedByUserId String?
+  redeemedAt      DateTime?
+  createdAt       DateTime  @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Product / Content / Media — Doc 01 §5, §3 (all dynamic, never hard-coded)
+// ---------------------------------------------------------------------------
+
+model Product {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  name           String
+  description    String?
+  category       String?
+  imageUrl       String?
+  priceCents     Int?
+  currency       String?  @default("GBP")
+  active         Boolean  @default(true)
+  version        Int      @default(1)
+  // Master Kick-off V1 §21 "product info must be dynamic": market and
+  // lifecycle state added so Admin can vary availability/copy per market
+  // and retire a SKU without deleting its history. Nullable/defaulted so
+  // existing rows don't need a migration data-fix.
+  market         String?  @default("UK") // ISO-ish market code: UK | RO | HK | ...
+  lifecycleState String   @default("ACTIVE") // ACTIVE | COMING_SOON | DISCONTINUED
+  createdAt      DateTime @default(now())
+
+  ownerships      ProductOwnership[]
+  activationCodes ActivationCode[]
+  usageLogs       ProductUsageLog[]
+}
+
+model ContentItem {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  type            String   // VIDEO | AUDIO_LESSON | ARTICLE
+  title           String
+  locale          String   @default("en")
+  url             String?
+  durationSeconds Int?
+  tagsJson        String?  // JSON-encoded Tag[] this content is relevant to
+  triggerJson     String?  // JSON-encoded trigger condition (Doc 03 §7)
+  // Master Kick-off V1 "3 content layers": PUBLIC (open education) |
+  // PRODUCT_LOCKED (unlocked by owning a specific product) | PAID_PROGRAMME
+  // (unlocked by the 28-day programme entitlement). Entitlement resolution
+  // for PRODUCT_LOCKED/PAID_PROGRAMME stays centralized in entitlement.ts —
+  // never checked ad hoc in a route or component.
+  layer           String   @default("PUBLIC")
+  active          Boolean  @default(true)
+}
+
+model AudioTrack {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  title           String
+  category        String   // ELECTRONIC | CLASSICAL | WATER | BOWL | NOISE | ...
+  url             String?
+  durationSeconds Int?
+  isPremium       Boolean  @default(false)
+  active          Boolean  @default(true)
+}
+
+model Wallpaper {
+  id         String  @id @default(cuid())
+  code       String  @unique
+  title      String
+  // Master Kick-off V1 Phase 3/26 added SUNRISE, MIST_MOUNTAINS and
+  // STARRY_SKY on top of the original set. Centralized in
+  // packages/shared WALLPAPER_CATEGORIES — never hard-code this list twice.
+  category   String  // NATURE | NIGHT | WATER | MINIMAL | ABSTRACT | BRITISH_COUNTRYSIDE | JAPANESE_CALM | SUNRISE | MIST_MOUNTAINS | STARRY_SKY
+  imageUrl   String?
+  themeColor String?
+  active     Boolean @default(true)
+}
+
+// ---------------------------------------------------------------------------
+// Question / Decision engine — Doc 02
+// ---------------------------------------------------------------------------
+
+model Question {
+  id               String   @id @default(cuid())
+  code             String   // question_id, e.g. Q_RACING_003
+  version          Int      @default(1)
+  locale           String   @default("en")
+  text             String
+  type             String   // SINGLE_SELECT | MULTI_SELECT | FREE_TEXT
+  triggerCondition String?  // JSON: e.g. { tag: "RACING_THOUGHTS", gte: 3 }
+  safetyFlag       Boolean  @default(false)
+  activeFrom       DateTime @default(now())
+  activeTo         DateTime?
+
+  answerOptions AnswerOption[]
+  answers       AssessmentAnswer[]
+
+  @@unique([code, version])
+}
+
+model AnswerOption {
+  id           String  @id @default(cuid())
+  questionId   String
+  question     Question @relation(fields: [questionId], references: [id])
+  code         String   // e.g. A_RACING
+  label        String
+  tagEffectsJson String // JSON: [{ tag: "RACING_THOUGHTS", delta: 3 }]
+  nextRuleCode String?  // points at DecisionRule.code
+
+  answers AssessmentAnswer[]
+}
+
+// Generic, versioned, admin-editable rule used by the Adherence / Response /
+// Strategy engines for thresholds — Doc 02 §5 ("formula/threshold must be
+// versioned and admin-editable").
+model DecisionRule {
+  id             String   @id @default(cuid())
+  code           String
+  version        Int      @default(1)
+  description    String?
+  conditionJson  String   // JSON predicate
+  actionJson     String   // JSON: { actionCode: "REMIND", ... }
+  effectiveFrom  DateTime @default(now())
+  effectiveTo    DateTime?
+
+  @@unique([code, version])
+}
+
+model Assessment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        String   // INITIAL | TWENTY_EIGHT_DAY_REASSESSMENT
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  answers AssessmentAnswer[]
+}
+
+model AssessmentAnswer {
+  id             String   @id @default(cuid())
+  assessmentId   String
+  assessment     Assessment @relation(fields: [assessmentId], references: [id])
+  questionId     String
+  question       Question @relation(fields: [questionId], references: [id])
+  answerOptionId String?
+  answerOption   AnswerOption? @relation(fields: [answerOptionId], references: [id])
+  freeText       String?  // only populated when AI Gateway is ON and question allows it
+  answeredAt     DateTime @default(now())
+}
+
+// Doc 02 §5 / Doc 03 §2 — Core Profile (7/28-day) vs Current State (daily)
+// live in the same TagScore shape, distinguished by `source`.
+model TagScore {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  tag        String
+  severity   Int      @default(0) // 0-10
+  frequency  Int      @default(0) // 0-5
+  duration   Int      @default(0) // 0-5
+  impact     Int      @default(0) // 0-5
+  confidence Float    @default(1) // 0-1
+  trend      String   @default("STABLE") // IMPROVING | STABLE | WORSENING
+  source     String   // CORE_PROFILE | CURRENT_STATE
+  decisionVersion String @default("v1")
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, tag, source])
+}
+
+model CoreProfileSnapshot {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  snapshotAt      DateTime @default(now())
+  dataJson        String   // frozen copy of TagScore[source=CORE_PROFILE] at snapshot time
+  decisionVersion String   @default("v1")
+}
+
+// 7-day and 28-day review output — Doc 03 §8-9
+model ReviewSnapshot {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  type            String   // SEVEN_DAY | TWENTY_EIGHT_DAY
+  periodStart     DateTime
+  periodEnd       DateTime
+  findingsJson    String   // adherence + response + trend detail
+  actionCode      String   // one of ACTION_CODES
+  decisionVersion String   @default("v1")
+  createdAt       DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Daily tracking — Doc 03 §1, Supplement 07 §10-16
+// ---------------------------------------------------------------------------
+
+model SleepSession {
+  id                        String   @id @default(cuid())
+  userId                    String
+  user                      User     @relation(fields: [userId], references: [id])
+  windDownStart             DateTime
+  targetSleepTime           DateTime?
+  wakeTime                  DateTime?
+  sleepAudioId              String?
+  sleepAudioDurationMode    String   @default("FIXED") // FIXED | CUSTOM | UNTIL_WAKE | ALL_NIGHT
+  sleepAudioDurationSeconds Int?
+  sleepAudioFadeOutSeconds  Int      @default(120)
+  wallpaperId               String?
+  visualDurationMode        String   @default("30_MIN") // 15_MIN | 30_MIN | 60_MIN | UNTIL_AUDIO | ALL_NIGHT
+  wakeAudioId               String?
+  wakeStyle                 String   @default("NORMAL") // GENTLE | NORMAL | STRONG
+  snoozeMinutes              Int     @default(10)
+  backupNotificationEnabled Boolean  @default(true)
+  timezone                  String   @default("Europe/London")
+  status                    String   @default("ACTIVE") // ACTIVE | WOKEN | ENDED
+  createdAt                 DateTime @default(now())
+
+  routineStepLogs  RoutineStepLog[]
+  productUsageLogs ProductUsageLog[]
+  morningCheckin   MorningCheckin?
+}
+
+model RoutineStepLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  sessionId String?
+  session   SleepSession? @relation(fields: [sessionId], references: [id])
+  stepCode  String   // PRODUCT | STRETCH | BREATHING | MUSIC | OTHER (matches RoutineStepDef.category)
+  status    String   // DONE | SKIPPED
+  loggedAt  DateTime @default(now())
+}
+
+model ProductUsageLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  sessionId String?
+  session   SleepSession? @relation(fields: [sessionId], references: [id])
+  status    String   // DONE | SKIPPED
+  loggedAt  DateTime @default(now())
+}
+
+model MorningCheckin {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  sessionId        String?  @unique
+  session          SleepSession? @relation(fields: [sessionId], references: [id])
+  sleepRating      Int      // 1-5
+  nightWakingCount String   // "0" | "1" | "2" | "3+"
+  morningEnergy    String   // POOR | AVERAGE | GOOD
+  addDetailsJson   String?  // optional: sleepOnsetMinutes, nocturia, stress, mood, pain, nasal, caffeine, alcohol, digestive
+  submittedAt      DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Programme / Routine definitions
+// ---------------------------------------------------------------------------
+
+model Programme {
+  id                 String  @id @default(cuid())
+  code               String  @unique
+  name               String
+  lengthDays         Int     @default(28)
+  reviewFrequencyDays Int    @default(7) // kept independent of programme length (Doc 03 §8)
+  active             Boolean @default(true)
+  version            Int     @default(1)
+
+  enrollments ProgrammeEnrollment[]
+}
+
+model ProgrammeEnrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  programmeId String
+  programme   Programme @relation(fields: [programmeId], references: [id])
+  startedAt   DateTime  @default(now())
+  currentDay  Int       @default(1)
+}
+
+model RoutineStepDef {
+  id           String  @id @default(cuid())
+  code         String  @unique
+  label        String
+  category     String  // PRODUCT | STRETCH | BREATHING | MUSIC | OTHER
+  defaultOrder Int     @default(0)
+  active       Boolean @default(true)
+}
+
+// ---------------------------------------------------------------------------
+// Platform — flags, audit, analytics
+// ---------------------------------------------------------------------------
+
+model FeatureFlag {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+// Append-only. Never update/delete rows here — write a new row instead.
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actor       User?    @relation("ActorAuditLogs", fields: [actorUserId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  beforeJson  String?
+  afterJson   String?
+  createdAt   DateTime @default(now())
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  eventName String
+  propsJson String?
+  createdAt DateTime @default(now())
+}
