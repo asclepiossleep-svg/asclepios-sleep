@@ -1,4 +1,10 @@
-const BASE = "/api";
+// In production there is no same-origin "/api" to proxy to — apps/web and
+// apps/api are two separate Vercel projects/domains. Local dev keeps using
+// the Vite dev-server proxy (see vite.config.ts) via the relative "/api"
+// path; VITE_API_URL can override either default if ever needed (e.g. a
+// staging API).
+const BASE =
+  import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? "https://asclepios-sleep-api.vercel.app" : "/api");
 
 function getToken(): string | null {
   return sessionState.token;
