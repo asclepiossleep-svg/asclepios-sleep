@@ -39,7 +39,7 @@ export default function SleepPlayer() {
     >
       <div style={{ textAlign: "center", marginTop: "3rem" }}>
         <p className="muted">{t("player.windDown")}</p>
-        <h1>Moon Lake</h1>
+        <h1>{t("player.trackName")}</h1>
       </div>
 
       {!woken ? (
@@ -48,16 +48,16 @@ export default function SleepPlayer() {
         </button>
       ) : (
         <div className="card">
-          <p>Snooze?</p>
+          <p>{t("player.snoozeQuestion")}</p>
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
             {SNOOZE_MINUTES.map((m) => (
               <button key={m} onClick={() => snooze(m)}>
-                {m} min
+                {m} {t("player.minutesSuffix")}
               </button>
             ))}
           </div>
           <button className="primary" onClick={goToCheckin} style={{ width: "100%" }}>
-            Continue to Morning Check-in
+            {t("player.continueToCheckin")}
           </button>
         </div>
       )}
