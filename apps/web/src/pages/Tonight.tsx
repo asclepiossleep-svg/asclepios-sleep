@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { useSession } from "../state/session";
 import { t } from "../i18n";
 import BottomNav from "../components/BottomNav";
+import { SYNTH_TRACKS, SLEEP_AUDIO_DURATION_PRESETS, type SynthTrackCode } from "@asclepios/shared";
 
 interface TonightStep {
   stepCode: string;
@@ -25,6 +26,8 @@ function stepLabel(step: TonightStep): string {
 export default function Tonight() {
   const [steps, setSteps] = useState<TonightStep[]>([]);
   const [stepStatus, setStepStatus] = useState<Record<string, "DONE" | "SKIPPED">>({});
+  const [trackCode, setTrackCode] = useState<SynthTrackCode>(SYNTH_TRACKS[0].code);
+  const [durationLabel, setDurationLabel] = useState<string>("1 hr");
   const { user, logout } = useSession();
   const navigate = useNavigate();
 
@@ -38,15 +41,15 @@ export default function Tonight() {
   }
 
   async function startSleep() {
-    const res = await api.post<{ session: { id: string } }>("/sleep-session/start", {
+    const res = await api.post<{ session: any }>("/sleep-session/start", {
       sleepAudioDurationMode: "FIXED",
-      presetLabel: "1 hr",
-      sleepAudioId: "AUD_MOON_LAKE_01",
+      presetLabel: durationLabel,
+      sleepAudioId: trackCode,
       wallpaperId: user?.wallpaperId ?? "WALL_MOON_LAKE_04",
       wakeStyle: "NORMAL",
       snoozeMinutes: 10,
     });
-    navigate(`/player/${res.session.id}`);
+    navigate(`/player/${res.session.id}`, { state: { session: res.session } });
   }
 
   return (
@@ -68,6 +71,41 @@ export default function Tonight() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+        <div>
+          <p className="muted" style={{ margin: "0 0 0.4rem" }}>
+            {t("tonight.trackLabel")}
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+            {SYNTH_TRACKS.map((track) => (
+              <button
+                key={track.code}
+                onClick={() => setTrackCode(track.code)}
+                style={trackCode === track.code ? { borderColor: "var(--color-primary)" } : {}}
+              >
+                {t(`tonight.track.${track.code}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="muted" style={{ margin: "0 0 0.4rem" }}>
+            {t("tonight.durationLabel")}
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+            {SLEEP_AUDIO_DURATION_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                onClick={() => setDurationLabel(preset.label)}
+                style={durationLabel === preset.label ? { borderColor: "var(--color-primary)" } : {}}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <button className="primary" onClick={startSleep}>
