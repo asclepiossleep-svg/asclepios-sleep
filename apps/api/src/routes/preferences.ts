@@ -21,14 +21,22 @@ router.get("/", async (req: AuthedRequest, res) => {
     themeColor: user.themeColor,
     timezone: user.timezone,
     locale: user.locale,
+    // Music Library (29 Aug 2026) — persisted default for Tonight's track
+    // picker, so "turn off / change background music" sticks across
+    // visits rather than resetting to the first SYNTH_TRACKS entry every
+    // time. null = app default (first SYNTH_TRACKS entry, not muted).
+    preferredSleepAudioId: user.preferredSleepAudioId,
+    audioMuted: user.audioMuted,
   });
 });
 
 router.patch("/", async (req: AuthedRequest, res) => {
-  const { wallpaperId, themeColor, timezone } = req.body as {
+  const { wallpaperId, themeColor, timezone, preferredSleepAudioId, audioMuted } = req.body as {
     wallpaperId?: string | null;
     themeColor?: string | null;
     timezone?: string;
+    preferredSleepAudioId?: string | null;
+    audioMuted?: boolean;
   };
 
   if (wallpaperId) {
@@ -42,6 +50,8 @@ router.patch("/", async (req: AuthedRequest, res) => {
       ...(wallpaperId !== undefined ? { wallpaperId } : {}),
       ...(themeColor !== undefined ? { themeColor } : {}),
       ...(timezone !== undefined ? { timezone } : {}),
+      ...(preferredSleepAudioId !== undefined ? { preferredSleepAudioId } : {}),
+      ...(audioMuted !== undefined ? { audioMuted } : {}),
     },
     include: { wallpaper: true },
   });
@@ -52,6 +62,8 @@ router.patch("/", async (req: AuthedRequest, res) => {
     themeColor: user.themeColor,
     timezone: user.timezone,
     locale: user.locale,
+    preferredSleepAudioId: user.preferredSleepAudioId,
+    audioMuted: user.audioMuted,
   });
 });
 
