@@ -67,9 +67,3 @@ export default function Library() {
             </div>
           );
         })}
-      </div>
-
-      <BottomNav />
-    </div>
-  );
-}
