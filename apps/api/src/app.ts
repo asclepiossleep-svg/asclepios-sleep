@@ -13,6 +13,7 @@ import adminRoutes from "./routes/admin";
 import featureFlagRoutes from "./routes/featureFlags";
 import preferencesRoutes from "./routes/preferences";
 import wallpapersRoutes from "./routes/wallpapers";
+import todayRoutes from "./routes/today";
 
 /**
  * The Express app itself, with no `listen()` call — shared by:
@@ -42,6 +43,7 @@ export function createApp() {
   app.use("/feature-flags", featureFlagRoutes);
   app.use("/preferences", preferencesRoutes);
   app.use("/wallpapers", wallpapersRoutes);
+  app.use("/today", todayRoutes);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
