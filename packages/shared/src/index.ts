@@ -195,6 +195,40 @@ export function isSynthTrack(id: string | null | undefined): id is SynthTrackCod
 }
 
 // ---------------------------------------------------------------------------
+// Requirement Recovery Matrix #11 — 4-mode teaching/intervention taxonomy
+// (Rhythm/Calm/Body/Support). Every Tonight step is tagged with exactly one
+// mode so the UI can show *why* a step is there, not just what it is.
+// RHYTHM/SUPPORT are reserved for step types not built yet (timing-consistency
+// prompts, environment/companion steps) — included now so the taxonomy is
+// complete and doesn't need a breaking change later.
+// ---------------------------------------------------------------------------
+export const INTERVENTION_MODES = [
+  { code: "RHYTHM", label: "Rhythm" },
+  { code: "CALM", label: "Calm" },
+  { code: "BODY", label: "Body" },
+  { code: "SUPPORT", label: "Support" },
+] as const;
+export type InterventionMode = (typeof INTERVENTION_MODES)[number]["code"];
+
+const STEP_MODE_MAP: Record<string, InterventionMode> = {
+  PRODUCT: "BODY",
+  BREATHING: "CALM",
+  MUSIC: "CALM",
+};
+
+export function stepModeFor(stepCode: string): InterventionMode {
+  return STEP_MODE_MAP[stepCode] ?? "SUPPORT";
+}
+
+// ---------------------------------------------------------------------------
+// Requirement Recovery Matrix #12 — Routine levels 1/2/3. System-chosen only
+// (never a user-facing picker) — see apps/api's routineLevelEngine.ts for
+// how a user's level is derived from their review history.
+// ---------------------------------------------------------------------------
+export const ROUTINE_LEVELS = [1, 2, 3] as const;
+export type RoutineLevel = (typeof ROUTINE_LEVELS)[number];
+
+// ---------------------------------------------------------------------------
 // Master Kick-off V1 — Content layers. Entitlement resolution for
 // PRODUCT_LOCKED/PAID_PROGRAMME stays centralized in entitlement.ts, never
 // re-implemented per screen (Coding Rules §21).
