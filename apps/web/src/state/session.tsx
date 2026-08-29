@@ -8,6 +8,8 @@ interface SessionUser {
   role: string;
   locale: string;
   timezone: string;
+  wallpaperId?: string | null;
+  themeColor?: string | null;
 }
 
 interface SessionContextValue {
@@ -15,6 +17,7 @@ interface SessionContextValue {
   entitlements: string[];
   loading: boolean;
   setToken: (token: string, user: SessionUser) => void;
+  updateUser: (patch: Partial<SessionUser>) => void;
   logout: () => void;
 }
 
@@ -39,13 +42,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     api.get<{ entitlements: string[] }>("/auth/session").then((s) => setEntitlements(s.entitlements));
   }
 
+  function updateUser(patch: Partial<SessionUser>) {
+    setUser((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
   function logout() {
     sessionState.token = null;
     setUser(null);
     setEntitlements([]);
   }
 
-  return <SessionContext.Provider value={{ user, entitlements, loading, setToken, logout }}>{children}</SessionContext.Provider>;
+  return <SessionContext.Provider value={{ user, entitlements, loading, setToken, updateUser, logout }}>{children}</SessionContext.Provider>;
 }
 
 export function useSession() {
