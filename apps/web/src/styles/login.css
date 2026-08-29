@@ -1,0 +1,298 @@
+/*
+ * Front-page/Login rebuild (29 Aug 2026) — see OWNER_RUNBOOK.md. Replaces
+ * the old "logo + one sentence + plain box" screen with a two-part entrance:
+ * a scenic, day-to-night hero (pure CSS — no licensed photography/artwork
+ * exists yet, same honest-build approach as the synthesized Sleep Player
+ * audio and the text-only Sleep Answer Library) and a floating login panel.
+ * Stacks vertically on narrow viewports but keeps the scenic hero visible
+ * (never drops to a bare SaaS-style box on mobile).
+ */
+
+.login-page {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .login-page {
+    grid-template-columns: 1.15fr 0.85fr;
+    align-items: stretch;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Hero — atmospheric scene + brand copy                                   */
+/* ---------------------------------------------------------------------- */
+
+.login-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 320px;
+  display: flex;
+  align-items: flex-end;
+  padding: 2rem 1.5rem 2.25rem;
+}
+
+@media (min-width: 900px) {
+  .login-hero {
+    min-height: 100vh;
+    padding: 3rem 3rem 3.5rem;
+  }
+}
+
+.login-hero-scene {
+  position: absolute;
+  inset: 0;
+  background: var(--hero-gradient);
+  transition: background 0.6s ease;
+}
+
+.login-orb {
+  position: absolute;
+  top: 14%;
+  right: 18%;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--hero-orb-color);
+  box-shadow: 0 0 70px 26px var(--hero-orb-glow);
+  transition: background-color 0.6s ease, box-shadow 0.6s ease;
+}
+
+@media (min-width: 900px) {
+  .login-orb {
+    width: 120px;
+    height: 120px;
+    top: 12%;
+    right: 22%;
+  }
+}
+
+.login-hill {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  opacity: 0.55;
+}
+
+.login-hill--back {
+  bottom: 22%;
+  height: 34%;
+  background: var(--hero-hill-back);
+  opacity: 0.35;
+}
+
+.login-hill--mid {
+  bottom: 14%;
+  height: 28%;
+  background: var(--hero-hill-mid);
+  opacity: 0.4;
+}
+
+.login-hill--front {
+  bottom: 0;
+  height: 20%;
+  background: var(--hero-hill-front);
+  opacity: 0.55;
+}
+
+.login-water {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12%;
+  background: var(--hero-water);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-orb {
+    animation: login-orb-drift 18s ease-in-out infinite;
+  }
+}
+
+@keyframes login-orb-drift {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+.login-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  color: #26241f;
+}
+
+[data-theme="night"] .login-hero-content {
+  color: #eceaf5;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.login-brand-mark {
+  flex: none;
+  color: var(--color-primary);
+}
+
+.login-brand-name {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+@media (min-width: 900px) {
+  .login-brand-name {
+    font-size: 2.1rem;
+  }
+}
+
+.login-tagline {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: 0 0 0.6rem;
+  opacity: 0.85;
+}
+
+.login-lead {
+  font-size: 1rem;
+  line-height: 1.55;
+  margin: 0 0 1.5rem;
+  max-width: 40ch;
+}
+
+.login-values {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+@media (min-width: 640px) {
+  .login-values {
+    flex-direction: row;
+    gap: 1.25rem;
+  }
+}
+
+.login-value {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  max-width: 22ch;
+}
+
+.login-value-icon {
+  flex: none;
+  color: var(--color-primary);
+  margin-top: 0.1rem;
+}
+
+.login-value strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.login-value p {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Panel — floating login card + demo access                               */
+/* ---------------------------------------------------------------------- */
+
+.login-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.75rem 1.5rem 2.5rem;
+  background: var(--color-bg);
+}
+
+@media (min-width: 900px) {
+  .login-panel {
+    padding: 3rem;
+  }
+}
+
+.login-card {
+  border-radius: calc(var(--radius) + 6px);
+  padding: 1.5rem 1.35rem;
+  box-shadow: 0 18px 48px -24px rgba(38, 36, 31, 0.28);
+}
+
+[data-theme="night"] .login-card {
+  box-shadow: 0 18px 48px -24px rgba(0, 0, 0, 0.55);
+}
+
+.login-field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: var(--color-text-muted);
+}
+
+.login-input {
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: 0.7rem 0.9rem;
+  font-size: 1rem;
+  border-radius: calc(var(--radius) - 4px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.login-input:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.login-dev-code {
+  margin-top: 0.5rem;
+}
+
+.login-error {
+  color: var(--color-danger);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.login-demo-toggle {
+  align-self: flex-start;
+  width: 100%;
+}
+
+.login-demo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.login-demo-header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.login-demo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
