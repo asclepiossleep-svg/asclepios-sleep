@@ -10,6 +10,15 @@ interface DemoAccount {
   scenario: string;
 }
 
+// Design moodboard 28 Aug 2026 — first-time users go through Setup
+// (Wallpaper -> Theme Colour) before ever reaching Home/Tonight; returning
+// users (wallpaperId already chosen) land straight on Home. Admin accounts
+// bypass both and go to the back office, same as before.
+function landingRoute(user: { role: string; wallpaperId?: string | null }): string {
+  if (user.role === "ADMIN") return "/admin";
+  return user.wallpaperId ? "/home" : "/setup/wallpaper";
+}
+
 /**
  * Supplement 07 §3, §6, §19 — Welcome -> Create account / Sign in. Email
  * OTP is the V1 primary path (no password). QR / Enter Activation Code are
@@ -54,7 +63,7 @@ export default function Login() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
       setToken(res.token, res.user);
-      navigate("/tonight");
+      navigate(landingRoute(res.user));
     } catch (e: any) {
       setError(e.message);
     }
@@ -65,7 +74,7 @@ export default function Login() {
     try {
       const res = await api.post<{ token: string; user: any }>("/demo/login", { email: demoEmail, password: demoPassword });
       setToken(res.token, res.user);
-      navigate(res.user.role === "ADMIN" ? "/admin" : "/tonight");
+      navigate(landingRoute(res.user));
     } catch (e: any) {
       setError(e.message);
     }
