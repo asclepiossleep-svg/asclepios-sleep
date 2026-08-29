@@ -132,7 +132,9 @@ export type VisualDurationMode = "15_MIN" | "30_MIN" | "60_MIN" | "UNTIL_AUDIO" 
 
 // ---------------------------------------------------------------------------
 // Master Kick-off V1 Phase 3/§26 — Wallpaper categories. The original 7
-// (NATURE...JAPANESE_CALM) plus 3 added by the Master Kick-off doc.
+// (NATURE...JAPANESE_CALM) plus 3 added by the Master Kick-off doc, plus
+// WARM_COZY added 29 Aug 2026 for the real-photo wallpaper library's
+// candle/bedroom/reading-nook cluster (no prior category fit that mood).
 // Centralized here so Admin UI, seed data and the Prisma schema comment
 // never list these independently and drift.
 // ---------------------------------------------------------------------------
@@ -147,6 +149,7 @@ export const WALLPAPER_CATEGORIES = [
   "SUNRISE",
   "MIST_MOUNTAINS",
   "STARRY_SKY",
+  "WARM_COZY",
 ] as const;
 export type WallpaperCategory = (typeof WALLPAPER_CATEGORIES)[number];
 
