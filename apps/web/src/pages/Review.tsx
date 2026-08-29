@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import { t } from "../i18n";
 import { ActionCode } from "@asclepios/shared";
 import BottomNav from "../components/BottomNav";
+import PageHeader from "../components/PageHeader";
 
 interface ReviewResult {
   actionCode: ActionCode;
@@ -61,7 +62,7 @@ export default function Review() {
 
   return (
     <div className="screen">
-      <h1>{t("review.title")}</h1>
+      <PageHeader title={t("review.title")} />
 
       <div className="card">
         <h2>{actionLabel(result.actionCode)}</h2>
