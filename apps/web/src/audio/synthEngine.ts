@@ -94,6 +94,77 @@ export class SleepAudioEngine {
     this.activeNodes.push(osc);
   }
 
+  /**
+   * Music Library (29 Aug 2026) — filtered, slowly-modulated noise. One
+   * shared building block for Ocean Waves (slow LFO, low cutoff swelling
+   * up/down like a wave rolling in) and Gentle Rain (fast steady hiss,
+   * higher fixed cutoff, no LFO — set lfoRate to 0). Genuinely synthesized,
+   * not a sample loop.
+   */
+  private startModulatedFilteredNoise(
+    ctx: AudioContext,
+    dest: AudioNode,
+    opts: { color: "white" | "pink" | "brown"; baseFreq: number; lfoRate: number; lfoDepth: number; gain: number; type?: BiquadFilterType }
+  ) {
+    const source = ctx.createBufferSource();
+    source.buffer = this.makeNoiseBuffer(ctx, opts.color);
+    source.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = opts.type ?? "lowpass";
+    filter.frequency.value = opts.baseFreq;
+    filter.Q.value = 0.7;
+
+    const g = ctx.createGain();
+    g.gain.value = opts.gain;
+
+    source.connect(filter).connect(g).connect(dest);
+    source.start();
+    this.activeNodes.push(source);
+
+    if (opts.lfoRate > 0) {
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = opts.lfoRate;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = opts.lfoDepth;
+      lfo.connect(lfoGain).connect(filter.frequency);
+      lfo.start();
+      this.activeNodes.push(lfo);
+    }
+  }
+
+  /**
+   * Music Library (29 Aug 2026) — a struck singing-bowl-like tone: a
+   * fundamental plus two soft harmonics, all under a slow tremolo (bowl
+   * resonance "breathing" rather than a flat held tone), blended with a
+   * touch of pink noise for warmth/air.
+   */
+  private startSingingBowl(ctx: AudioContext, dest: AudioNode, fundamental: number, gain: number) {
+    const tremolo = ctx.createOscillator();
+    tremolo.frequency.value = 0.15;
+    const tremoloDepth = ctx.createGain();
+    tremoloDepth.gain.value = gain * 0.35;
+    const toneBus = ctx.createGain();
+    toneBus.gain.value = gain * 0.65;
+    tremolo.connect(tremoloDepth).connect(toneBus.gain);
+    tremolo.start();
+    this.activeNodes.push(tremolo);
+
+    toneBus.connect(dest);
+    [1, 2.4, 3.9].forEach((mult, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = fundamental * mult;
+      const g = ctx.createGain();
+      g.gain.value = i === 0 ? 1 : 0.32 / mult;
+      osc.connect(g).connect(toneBus);
+      osc.start();
+      this.activeNodes.push(osc);
+    });
+
+    this.startNoise(ctx, dest, "pink", gain * 0.06);
+  }
+
   play(engine: SynthEngineType, volume = 0.5) {
     this.stop(); // clear anything already playing before layering a new track
     const ctx = this.ensureContext();
@@ -119,6 +190,20 @@ export class SleepAudioEngine {
       case "BLEND_528":
         this.startTone(ctx, dest, 528, 0.15);
         this.startNoise(ctx, dest, "brown", 0.5);
+        break;
+      case "OCEAN_WAVES":
+        this.startModulatedFilteredNoise(ctx, dest, { color: "brown", baseFreq: 500, lfoRate: 0.09, lfoDepth: 350, gain: 1.1 });
+        break;
+      case "GENTLE_RAIN":
+        this.startModulatedFilteredNoise(ctx, dest, { color: "white", baseFreq: 3200, lfoRate: 0, lfoDepth: 0, gain: 0.5, type: "bandpass" });
+        this.startNoise(ctx, dest, "pink", 0.15);
+        break;
+      case "SINGING_BOWL":
+        this.startSingingBowl(ctx, dest, 220, 0.55);
+        break;
+      case "FOREST_WIND":
+        this.startModulatedFilteredNoise(ctx, dest, { color: "pink", baseFreq: 700, lfoRate: 0.05, lfoDepth: 280, gain: 0.9 });
+        this.startTone(ctx, dest, 528, 0.03);
         break;
     }
   }
