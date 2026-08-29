@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { t } from "../i18n";
+import PageHeader from "../components/PageHeader";
 
 /**
  * Doc 05 §5 / Doc 06 §8 — Morning Check-in: <=3 primary actions. "Add
@@ -26,7 +27,7 @@ export default function MorningCheckin() {
 
   return (
     <div className="screen">
-      <h1>{t("checkin.title")}</h1>
+      <PageHeader title={t("checkin.title")} />
 
       <div className="card">
         <p>{t("checkin.sleepRating")}</p>
