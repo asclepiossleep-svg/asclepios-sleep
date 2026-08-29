@@ -61,6 +61,15 @@ router.post("/start", async (req: AuthedRequest, res) => {
   res.json({ session, timeline, wakeCurve: WAKE_STYLE_CURVES[session.wakeStyle as keyof typeof WAKE_STYLE_CURVES] });
 });
 
+// Requirement Recovery Matrix #29 — lets the Sleep Player recover session
+// details (track/duration/fade-out) after a page refresh, not just via the
+// navigate() state passed at Start Sleep time.
+router.get("/:id", async (req: AuthedRequest, res) => {
+  const session = await prisma.sleepSession.findFirst({ where: { id: req.params.id, userId: req.userId! } });
+  if (!session) return res.status(404).json({ error: "not_found" });
+  res.json({ session });
+});
+
 router.patch("/:id", async (req: AuthedRequest, res) => {
   const session = await prisma.sleepSession.findFirst({ where: { id: req.params.id, userId: req.userId! } });
   if (!session) return res.status(404).json({ error: "not_found" });
