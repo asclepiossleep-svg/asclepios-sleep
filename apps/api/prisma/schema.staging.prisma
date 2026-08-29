@@ -48,6 +48,15 @@ model User {
   wallpaperId String?
   wallpaper   Wallpaper? @relation(fields: [wallpaperId], references: [id])
   themeColor  String?
+  // Music library (29 Aug 2026) — Edmund's brief: "APP have original
+  // musics and if use want to turn off or Change background music by
+  // options". preferredSleepAudioId is one of packages/shared's
+  // SYNTH_TRACKS codes (synthesized/original, no licensed asset needed —
+  // same pattern as Wallpaper); null = app default (first SYNTH_TRACKS
+  // entry). audioMuted lets a user turn the whole Sleep Player track off
+  // without losing their chosen track for next time.
+  preferredSleepAudioId String?
+  audioMuted            Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   authIdentities   AuthIdentity[]
