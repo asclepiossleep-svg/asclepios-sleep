@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { useSession } from "../state/session";
 import { t } from "../i18n";
 import BottomNav from "../components/BottomNav";
+import PageHeader from "../components/PageHeader";
 
 // A short curated list rather than the full IANA database — enough to cover
 // this project's current markets (UK, Romania, Hong Kong) plus a few common
@@ -33,7 +34,7 @@ export default function Settings() {
 
   return (
     <div className="screen">
-      <h1>{t("settings.title")}</h1>
+      <PageHeader title={t("settings.title")} />
 
       <div className="card">
         <label htmlFor="timezone">{t("settings.timezone")}</label>
