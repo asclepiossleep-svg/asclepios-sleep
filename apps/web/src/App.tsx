@@ -12,7 +12,9 @@ import SleepPlayer from "./pages/SleepPlayer";
 import MorningCheckin from "./pages/MorningCheckin";
 import Review from "./pages/Review";
 import Library from "./pages/Library";
+import Programmes from "./pages/Programmes";
 import Admin from "./pages/Admin";
+import AppBackground from "./components/AppBackground";
 
 // Doc 05 §7 — day/night theme follows local time by default; a real build
 // lets the user override this from Settings (not wired in this scaffold).
@@ -61,8 +63,14 @@ export default function App() {
   useUserThemeColor(user?.themeColor);
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
+    <>
+      {/* App-wide wallpaper (29 Aug 2026) — rendered once, behind every
+          route. Login isn't affected (it renders its own hero and this
+          layer is a no-op — null — until user.wallpaper.imageUrl exists,
+          which only happens after login; see AppBackground.tsx). */}
+      <AppBackground />
+      <Routes>
+        <Route path="/login" element={<Login />} />
       <Route
         path="/home"
         element={
@@ -120,6 +128,14 @@ export default function App() {
         }
       />
       <Route
+        path="/programmes"
+        element={
+          <RequireAuth>
+            <Programmes />
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/assessment"
         element={
           <RequireAuth>
@@ -169,6 +185,7 @@ export default function App() {
       />
       <Route path="/" element={<RootRedirect />} />
       <Route path="*" element={<RootRedirect />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
