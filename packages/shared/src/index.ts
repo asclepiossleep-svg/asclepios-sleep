@@ -207,6 +207,53 @@ export function isSynthTrack(id: string | null | undefined): id is SynthTrackCod
 }
 
 // ---------------------------------------------------------------------------
+// Music Library V1 (29 Aug 2026) — Edmund's spec. Phase 1 (database/schema)
+// of his own stated build order — see apps/api/prisma/schema.prisma's
+// MusicTrack model for the full field list and how SYNTHESIZED tracks
+// (today's 9 SYNTH_TRACKS above) fit alongside real uploaded/licensed
+// audio. Nothing reads these yet (Tonight/SleepPlayer still run off
+// SYNTH_TRACKS directly) — they exist now so the schema, seed data and the
+// eventual admin/picker UI never invent three different spellings of the
+// same category list.
+//
+// MUSIC_SOURCE_TYPES mirrors MusicTrack.sourceType exactly.
+// ---------------------------------------------------------------------------
+export const MUSIC_SOURCE_TYPES = ["ASCLEPIOS_ORIGINAL", "ASCLEPIOS_LICENSED", "THIRD_PARTY_API", "SYNTHESIZED"] as const;
+export type MusicSourceType = (typeof MUSIC_SOURCE_TYPES)[number];
+
+// Edmund's own simplified 2-level taxonomy (his final refinement: "咁客人
+// 一入去就容易好多，唔會一次過見幾十個category") — 4 top-level groups a user
+// picks from, each with several subcategories underneath. Subcategory
+// values are free text on MusicTrack for V1 (see schema comment), so this
+// list is the controlled vocabulary admins/seed data should stick to until
+// a real tag table exists — not a hard DB constraint.
+export const MUSIC_PRIMARY_CATEGORIES = ["SLEEP_SOUNDS", "MUSIC", "SOUND_HEALING", "MEDITATION"] as const;
+export type MusicPrimaryCategory = (typeof MUSIC_PRIMARY_CATEGORIES)[number];
+
+export const MUSIC_SUBCATEGORIES: Record<MusicPrimaryCategory, readonly string[]> = {
+  SLEEP_SOUNDS: [
+    "WATER_FLOW", "STREAM", "WATERFALL", "OCEAN_WAVES", "GENTLE_WAVES",
+    "RAIN", "HEAVY_RAIN", "RAIN_ON_WINDOW", "RAIN_ON_ROOF", "RAINDROPS",
+    "FOREST", "NIGHT_FOREST", "BIRDS_DAWN",
+    "BROWN_NOISE", "PINK_NOISE", "WHITE_NOISE", "SOFT_FAN",
+  ],
+  MUSIC: [
+    "SLEEP_PIANO", "MINIMAL_PIANO", "SLOW_PIANO", "AMBIENT_PIANO",
+    "CLASSICAL_RELAXATION", "SLOW_CLASSICAL", "CHAMBER_MUSIC", "SOFT_STRINGS",
+    "VIOLIN", "CELLO", "PIANO_AND_VIOLIN",
+    "DEEP_SLEEP_AMBIENT", "DREAMSCAPE", "FLOATING", "SOFT_SPACE", "NIGHT_ATMOSPHERE",
+  ],
+  SOUND_HEALING: [
+    "SINGING_BOWL", "TIBETAN_BOWL", "CRYSTAL_BOWL", "GONG", "SOUND_BATH", "HARMONIC_DRONE",
+    "FREQ_432", "FREQ_528", "FREQ_639", "FREQ_741", "FREQ_852", "FREQ_963", "BINAURAL",
+  ],
+  MEDITATION: [
+    "BREATH_MEDITATION", "DEEP_RELAXATION", "MINDFULNESS", "ZEN", "YOGA_NIDRA",
+    "REIKI_RELAXATION", "ENERGY_FLOW", "AURA_CALM", "CHAKRA_MEDITATION", "CHAKRA_BALANCE",
+  ],
+} as const;
+
+// ---------------------------------------------------------------------------
 // Requirement Recovery Matrix #11 — 4-mode teaching/intervention taxonomy
 // (Rhythm/Calm/Body/Support). Every Tonight step is tagged with exactly one
 // mode so the UI can show *why* a step is there, not just what it is.
