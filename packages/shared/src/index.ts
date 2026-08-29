@@ -168,6 +168,33 @@ export const THEME_COLORS = [
 export type ThemeColorCode = (typeof THEME_COLORS)[number]["code"];
 
 // ---------------------------------------------------------------------------
+// Requirement Recovery Matrix #24/#25/#29 (29 Aug 2026) — the Sleep Player
+// had no actual audio playback at all. Real recorded tracks (nature/water/
+// piano/singing-bowl per the Requirement doc's music-category list) need
+// licensed audio assets that don't exist yet — but several of the doc's own
+// listed categories (Brown Noise, Pink Noise, White Noise, frequency-labelled
+// tracks like 432/528/852 Hz) can be genuinely synthesized in the browser
+// with the Web Audio API, no asset files required. This catalog is real,
+// playable audio today; `packages/shared` is the single source so the API
+// and the player never diverge on what "sleepAudioId" values are valid.
+// AudioTrack (recorded, licensed) rows stay a separate, DB-driven catalog
+// for when real assets exist — this list is deliberately not stored there.
+// ---------------------------------------------------------------------------
+export const SYNTH_TRACKS = [
+  { code: "SYNTH_PINK_NOISE", engine: "PINK_NOISE", category: "NOISE" },
+  { code: "SYNTH_BROWN_NOISE", engine: "BROWN_NOISE", category: "NOISE" },
+  { code: "SYNTH_WHITE_NOISE", engine: "WHITE_NOISE", category: "NOISE" },
+  { code: "SYNTH_CALM_MIND", engine: "BLEND_432", category: "AMBIENT" },
+  { code: "SYNTH_DEEP_RELAX", engine: "BLEND_528", category: "AMBIENT" },
+] as const;
+export type SynthTrackCode = (typeof SYNTH_TRACKS)[number]["code"];
+export type SynthEngineType = (typeof SYNTH_TRACKS)[number]["engine"];
+
+export function isSynthTrack(id: string | null | undefined): id is SynthTrackCode {
+  return !!id && SYNTH_TRACKS.some((t) => t.code === id);
+}
+
+// ---------------------------------------------------------------------------
 // Master Kick-off V1 — Content layers. Entitlement resolution for
 // PRODUCT_LOCKED/PAID_PROGRAMME stays centralized in entitlement.ts, never
 // re-implemented per screen (Coding Rules §21).
