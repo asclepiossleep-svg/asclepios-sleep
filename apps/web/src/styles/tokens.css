@@ -21,6 +21,21 @@
   --color-accent: #8f7bb0;
   --color-border: #e4ddce;
   --color-danger: #b3452f;
+
+  /* Front-page rebuild (29 Aug 2026) — reusable brand tokens, not just for
+     Login. font-display is a system-only serif stack (no external font
+     fetch) for a handful of major brand headings; the atmospheric hero
+     gradient/orb tokens key off the SAME [data-theme] attribute the rest
+     of the app already uses for day/night, so "Daylight -> Nightfall" is
+     one shared concept, not a Login-only effect. */
+  --font-display: Georgia, "Noto Serif TC", "Songti TC", "PingFang HK", serif;
+  --hero-gradient: linear-gradient(180deg, #fdf3e2 0%, #f3e6d3 30%, #dce4d2 62%, #b7cdb8 100%);
+  --hero-orb-color: #e8a15c;
+  --hero-orb-glow: rgba(232, 161, 92, 0.38);
+  --hero-hill-back: #c6b7e6;
+  --hero-hill-mid: #a7c7e7;
+  --hero-hill-front: #8e9f8c;
+  --hero-water: rgba(183, 205, 184, 0.55);
 }
 
 [data-theme="night"] {
@@ -35,6 +50,14 @@
   --color-accent: #a08fd0;
   --color-border: #2c3044;
   --color-danger: #e07a63;
+
+  --hero-gradient: linear-gradient(180deg, #12141f 0%, #191d30 32%, #212a46 64%, #3f416b 100%);
+  --hero-orb-color: #d8dcf7;
+  --hero-orb-glow: rgba(216, 220, 247, 0.28);
+  --hero-hill-back: #2c3044;
+  --hero-hill-mid: #363b58;
+  --hero-hill-front: #232741;
+  --hero-water: rgba(63, 65, 107, 0.5);
 }
 
 * {
