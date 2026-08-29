@@ -2,8 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { api } from "../api/client";
 import { t } from "../i18n";
+import { useSession } from "../state/session";
 import { SNOOZE_MINUTES, SYNTH_TRACKS, isSynthTrack } from "@asclepios/shared";
 import { SleepAudioEngine } from "../audio/synthEngine";
+
+// App-wide wallpaper (29 Aug 2026) — Tonight.tsx sends
+// `wallpaperId: user?.wallpaperId ?? "WALL_MOON_LAKE_04"` when starting a
+// session, so this mirrors that same fallback (WALL_MOON_LAKE_04's imageUrl
+// is now /wallpapers/moonlit-lake.webp, see demoSeed.ts) rather than doing a
+// second round trip to resolve wallpaperId -> imageUrl for a value the
+// session already has via useSession().
+const DEFAULT_PLAYER_WALLPAPER = "/wallpapers/moonlit-lake.webp";
 
 interface SleepSessionData {
   id: string;
@@ -13,9 +22,15 @@ interface SleepSessionData {
   wakeStyle: "GENTLE" | "NORMAL" | "STRONG";
 }
 
+// Music Library (29 Aug 2026) — Edmund's brief: let the user turn
+// background music off entirely. Tonight.tsx now only ever sends either a
+// real SYNTH_TRACKS code or an explicit `null` (the user's "🔇 Off" pick),
+// so null here means "play nothing" rather than the old "default to the
+// first track" fallback. An unrecognised *non-null* value (a stale/legacy
+// id) still falls back to the first track rather than going silent.
 function trackEngineFor(sleepAudioId: string | null) {
+  if (sleepAudioId === null) return null;
   const match = SYNTH_TRACKS.find((tr) => tr.code === sleepAudioId);
-  // Legacy/unknown session data still gets real sound rather than silence.
   return (match ?? SYNTH_TRACKS[0]).engine;
 }
 
@@ -45,6 +60,8 @@ export default function SleepPlayer() {
   const [volume, setVolume] = useState(0.5);
   const [remaining, setRemaining] = useState<number | null>(null);
   const navigate = useNavigate();
+  const { user } = useSession();
+  const heroUrl = user?.wallpaper?.imageUrl ?? DEFAULT_PLAYER_WALLPAPER;
   const engineRef = useRef<SleepAudioEngine>(new SleepAudioEngine());
   const fadedRef = useRef(false);
 
@@ -54,11 +71,15 @@ export default function SleepPlayer() {
     api.get<{ session: SleepSessionData }>(`/sleep-session/${sessionId}`).then((r) => setSession(r.session));
   }, [session, sessionId]);
 
-  // Start real audio the moment we know what to play.
+  // Start real audio the moment we know what to play — unless the user
+  // chose "🔇 Off" on Tonight, in which case there's nothing to start.
   useEffect(() => {
     if (!session) return;
-    engineRef.current.play(trackEngineFor(session.sleepAudioId), volume);
-    setPlaying(true);
+    const engine = trackEngineFor(session.sleepAudioId);
+    if (engine) {
+      engineRef.current.play(engine, volume);
+      setPlaying(true);
+    }
     setRemaining(session.sleepAudioDurationSeconds ?? 3600);
     return () => {
       engineRef.current.stop();
@@ -90,12 +111,14 @@ export default function SleepPlayer() {
 
   function toggleTrack() {
     if (!session) return;
+    const engine = trackEngineFor(session.sleepAudioId);
+    if (!engine) return; // "🔇 Off" was chosen — nothing to toggle
     if (playing) {
       engineRef.current.stop();
       setPlaying(false);
     } else {
       fadedRef.current = false;
-      engineRef.current.play(trackEngineFor(session.sleepAudioId), volume);
+      engineRef.current.play(engine, volume);
       setPlaying(true);
     }
   }
@@ -124,64 +147,106 @@ export default function SleepPlayer() {
   }
 
   return (
-    <div
-      className="screen"
-      style={{
-        justifyContent: "space-between",
-        background: "radial-gradient(circle at top, var(--color-accent) 0%, var(--color-bg) 70%)",
-        minHeight: "100vh",
-      }}
-    >
-      <div style={{ textAlign: "center", marginTop: "3rem" }}>
-        <p className="muted">{t("player.windDown")}</p>
-        <h1>{session && isSynthTrack(session.sleepAudioId) ? t(`tonight.track.${session.sleepAudioId}`) : t("player.trackName")}</h1>
-        {!woken && remaining !== null && (
-          <>
-            <p className="muted" style={{ marginBottom: "0.25rem" }}>
-              {t("player.timeLeftLabel")}
-            </p>
-            <p style={{ fontSize: "1.5rem", fontVariantNumeric: "tabular-nums" }}>{formatClock(remaining)}</p>
-          </>
+    <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
+      {/* Full-screen wallpaper (29 Aug 2026) — replaces the old flat
+          radial-gradient placeholder. Reuses the .app-wallpaper-bg/-scrim
+          layers from tokens.css (AppBackground's own classes) rather than
+          Login's hero classes — Login's day/night crossfade would hide
+          this single photo entirely at night (its --day variant fades to
+          opacity:0 under [data-theme="night"]), which is wrong here: one
+          wallpaper, shown as-is regardless of theme. Fixed light text
+          throughout this screen, same reasoning as Login: a photo can't
+          guarantee --color-text's usual contrast either way. */}
+      <div className="app-wallpaper-bg" style={{ position: "fixed", backgroundImage: `url(${heroUrl})` }} aria-hidden="true" />
+      <div className="app-wallpaper-scrim" style={{ position: "fixed" }} aria-hidden="true" />
+
+      <div
+        className="screen"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          justifyContent: "space-between",
+          minHeight: "100vh",
+          color: "#f6f5fa",
+        }}
+      >
+        <div style={{ textAlign: "center", marginTop: "3rem" }}>
+          <p style={{ color: "#f6f5fa", opacity: 0.85 }}>{t("player.windDown")}</p>
+          <h1>
+            {session && isSynthTrack(session.sleepAudioId)
+              ? t(`tonight.track.${session.sleepAudioId}`)
+              : session && session.sleepAudioId === null
+                ? t("tonight.track.OFF")
+                : t("player.trackName")}
+          </h1>
+          {!woken && remaining !== null && (
+            <>
+              <p style={{ color: "#f6f5fa", opacity: 0.85, marginBottom: "0.25rem" }}>{t("player.timeLeftLabel")}</p>
+              <p style={{ fontSize: "1.5rem", fontVariantNumeric: "tabular-nums" }}>{formatClock(remaining)}</p>
+            </>
+          )}
+        </div>
+
+        {/* Music Library (29 Aug 2026) — no play/pause/volume card at all
+            when the user chose "🔇 Off" on Tonight; nothing to control. */}
+        {!woken && session?.sleepAudioId !== null && (
+          <div
+            className="card"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              background: "rgba(18, 20, 34, 0.42)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              color: "#f6f5fa",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+              <button onClick={toggleTrack}>{playing ? t("player.pause") : t("player.play")}</button>
+              <span style={{ color: "#f6f5fa", opacity: 0.85 }}>{t("player.volume")}</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={volume}
+                onChange={(e) => changeVolume(Number(e.target.value))}
+                style={{ flex: 1, marginLeft: "0.75rem" }}
+              />
+            </div>
+          </div>
+        )}
+
+        {!woken ? (
+          <button className="primary" onClick={imAwake} style={{ width: "100%" }}>
+            {t("player.imAwake")}
+          </button>
+        ) : (
+          <div
+            className="card"
+            style={{
+              background: "rgba(18, 20, 34, 0.42)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              color: "#f6f5fa",
+            }}
+          >
+            <p>{t("player.snoozeQuestion")}</p>
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
+              {SNOOZE_MINUTES.map((m) => (
+                <button key={m} onClick={() => snooze(m)}>
+                  {m} {t("player.minutesSuffix")}
+                </button>
+              ))}
+            </div>
+            <button className="primary" onClick={goToCheckin} style={{ width: "100%" }}>
+              {t("player.continueToCheckin")}
+            </button>
+          </div>
         )}
       </div>
-
-      {!woken && (
-        <div className="card" style={{ width: "100%", boxSizing: "border-box" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-            <button onClick={toggleTrack}>{playing ? t("player.pause") : t("player.play")}</button>
-            <span className="muted">{t("player.volume")}</span>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={volume}
-              onChange={(e) => changeVolume(Number(e.target.value))}
-              style={{ flex: 1, marginLeft: "0.75rem" }}
-            />
-          </div>
-        </div>
-      )}
-
-      {!woken ? (
-        <button className="primary" onClick={imAwake} style={{ width: "100%" }}>
-          {t("player.imAwake")}
-        </button>
-      ) : (
-        <div className="card">
-          <p>{t("player.snoozeQuestion")}</p>
-          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
-            {SNOOZE_MINUTES.map((m) => (
-              <button key={m} onClick={() => snooze(m)}>
-                {m} {t("player.minutesSuffix")}
-              </button>
-            ))}
-          </div>
-          <button className="primary" onClick={goToCheckin} style={{ width: "100%" }}>
-            {t("player.continueToCheckin")}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
