@@ -38,6 +38,16 @@ export function blankTagScore(tag: Tag): TagScore {
 }
 
 /**
+ * Doc 02 §6 — the composite "how much does this tag matter right now" score.
+ * Exported (not just inlined in classifySeverityBucket) so anything that
+ * needs to *rank* tags — e.g. Addendum item #2's "top 3 focus areas"
+ * summary — uses the exact same weighting instead of re-deriving its own.
+ */
+export function compositeScore(score: TagScore): number {
+  return score.severity * 0.5 + score.frequency * 1.2 + score.impact * 1.0;
+}
+
+/**
  * Doc 02 §6 — Severity Buckets. The exact weighting formula is intentionally
  * simple and lives in one place so an admin/config change (not a redeploy)
  * can retune it later — see DecisionRule for the versioned override path.
@@ -45,7 +55,7 @@ export function blankTagScore(tag: Tag): TagScore {
  */
 export function classifySeverityBucket(score: TagScore, safetyTriggered = false): SeverityBucket {
   if (safetyTriggered) return "VERY_HIGH_SAFETY";
-  const composite = score.severity * 0.5 + score.frequency * 1.2 + score.impact * 1.0;
+  const composite = compositeScore(score);
   if (composite < 3) return "MINIMAL";
   if (composite < 7) return "MILD";
   if (composite < 12) return "MODERATE";
