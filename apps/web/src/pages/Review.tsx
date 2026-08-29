@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { t } from "../i18n";
 import { ActionCode } from "@asclepios/shared";
+import BottomNav from "../components/BottomNav";
 
 interface ReviewResult {
   actionCode: ActionCode;
@@ -42,6 +43,7 @@ export default function Review() {
     return (
       <div className="screen">
         <p className="muted">{t("review.crunching")}</p>
+        <BottomNav />
       </div>
     );
   }
@@ -66,6 +68,8 @@ export default function Review() {
           {t("review.routineCompletion")}: {(result.findings.routineCompletionRatio * 100).toFixed(0)}%
         </p>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
