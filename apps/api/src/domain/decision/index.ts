@@ -11,6 +11,7 @@ export * from "./responseEngine";
 export * from "./strategyEngine";
 export * from "./stateEngine";
 export * from "./sleepScoreEngine";
+export * from "./routineLevelEngine";
 
 const nightWakingScore = (v: string) => (v === "3+" ? 3 : Number(v));
 const energyScore = (v: string) => (v === "GOOD" ? 2 : v === "AVERAGE" ? 1 : 0);
