@@ -189,6 +189,15 @@ export const SYNTH_TRACKS = [
   { code: "SYNTH_WHITE_NOISE", engine: "WHITE_NOISE", category: "NOISE" },
   { code: "SYNTH_CALM_MIND", engine: "BLEND_432", category: "AMBIENT" },
   { code: "SYNTH_DEEP_RELAX", engine: "BLEND_528", category: "AMBIENT" },
+  // Music Library (29 Aug 2026) — Edmund's brief: "APP have original
+  // musics", expanding this from 5 noise/tone presets to a real browsable
+  // library (see Library music picker). Still genuinely synthesized live
+  // via Web Audio — no licensed audio files anywhere — just more distinct-
+  // sounding engines (see synthEngine.ts for how each is built).
+  { code: "SYNTH_OCEAN_WAVES", engine: "OCEAN_WAVES", category: "WATER" },
+  { code: "SYNTH_GENTLE_RAIN", engine: "GENTLE_RAIN", category: "WATER" },
+  { code: "SYNTH_SINGING_BOWL", engine: "SINGING_BOWL", category: "BOWL" },
+  { code: "SYNTH_FOREST_WIND", engine: "FOREST_WIND", category: "NATURE" },
 ] as const;
 export type SynthTrackCode = (typeof SYNTH_TRACKS)[number]["code"];
 export type SynthEngineType = (typeof SYNTH_TRACKS)[number]["engine"];
