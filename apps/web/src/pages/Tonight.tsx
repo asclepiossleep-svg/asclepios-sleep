@@ -1,10 +1,11 @@
 // redeploy trigger 29 Aug 2026 (b)
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../state/session";
 import { t, getLocale } from "../i18n";
 import BottomNav from "../components/BottomNav";
+import PageHeader from "../components/PageHeader";
 import { SYNTH_TRACKS, SLEEP_AUDIO_DURATION_PRESETS, type SynthTrackCode } from "@asclepios/shared";
 
 interface ProtocolStep {
@@ -35,10 +36,15 @@ export default function Tonight() {
   const [steps, setSteps] = useState<TonightStep[]>([]);
   const [routineLevel, setRoutineLevel] = useState<number | null>(null);
   const [stepStatus, setStepStatus] = useState<Record<string, "DONE" | "SKIPPED">>({});
-  const [trackCode, setTrackCode] = useState<SynthTrackCode>(SYNTH_TRACKS[0].code);
+  // Music Library (29 Aug 2026) — "OFF" is a client-only sentinel (not a
+  // SYNTH_TRACKS code) for "no background music tonight". Initialized from
+  // the user's persisted choice once /preferences has loaded (see the
+  // effect below); defaults to the first SYNTH_TRACKS entry only if the
+  // user has never chosen one before.
+  const [trackCode, setTrackCode] = useState<SynthTrackCode | "OFF">(SYNTH_TRACKS[0].code);
   const [durationLabel, setDurationLabel] = useState<string>("1 hr");
   const [openProtocol, setOpenProtocol] = useState(false);
-  const { user, logout } = useSession();
+  const { user, logout, updateUser } = useSession();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,6 +53,33 @@ export default function Tonight() {
       setRoutineLevel(r.routineLevel);
     });
   }, []);
+
+  // Music Library (29 Aug 2026) — apply the persisted choice once (not on
+  // every user change) so picking a different track this session doesn't
+  // get overwritten by a stale /preferences response landing late.
+  const appliedSavedTrack = useRef(false);
+  useEffect(() => {
+    if (appliedSavedTrack.current || !user) return;
+    if (user.audioMuted) {
+      setTrackCode("OFF");
+    } else if (user.preferredSleepAudioId && SYNTH_TRACKS.some((tr) => tr.code === user.preferredSleepAudioId)) {
+      setTrackCode(user.preferredSleepAudioId as SynthTrackCode);
+    }
+    appliedSavedTrack.current = true;
+  }, [user]);
+
+  function chooseTrack(next: SynthTrackCode | "OFF") {
+    setTrackCode(next);
+    // Persist immediately — same "tap = saved" pattern as Wallpaper/Theme
+    // Colour, so "turn off / change background music" sticks for next time.
+    api
+      .patch<{ preferredSleepAudioId: string | null; audioMuted: boolean }>("/preferences", {
+        preferredSleepAudioId: next === "OFF" ? null : next,
+        audioMuted: next === "OFF",
+      })
+      .then((res) => updateUser({ preferredSleepAudioId: res.preferredSleepAudioId, audioMuted: res.audioMuted }))
+      .catch(() => {});
+  }
 
   async function mark(step: TonightStep, status: "DONE" | "SKIPPED") {
     setStepStatus((s) => ({ ...s, [step.stepCode]: status }));
@@ -57,7 +90,7 @@ export default function Tonight() {
     const res = await api.post<{ session: any }>("/sleep-session/start", {
       sleepAudioDurationMode: "FIXED",
       presetLabel: durationLabel,
-      sleepAudioId: trackCode,
+      sleepAudioId: trackCode === "OFF" ? null : trackCode,
       wallpaperId: user?.wallpaperId ?? "WALL_MOON_LAKE_04",
       wakeStyle: "NORMAL",
       snoozeMinutes: 10,
@@ -67,12 +100,16 @@ export default function Tonight() {
 
   return (
     <div className="screen">
-      <h1>{t("tonight.title")}</h1>
-      {routineLevel !== null && (
-        <p className="muted" style={{ margin: "-0.5rem 0 0" }}>
-          {t("tonight.routineLevel")} {routineLevel}
-        </p>
-      )}
+      <PageHeader
+        title={t("tonight.title")}
+        subtitle={
+          routineLevel !== null ? (
+            <>
+              {t("tonight.routineLevel")} {routineLevel}
+            </>
+          ) : undefined
+        }
+      />
 
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {steps.length === 0 && <p className="muted">{t("tonight.loadingPlan")}</p>}
@@ -129,12 +166,17 @@ export default function Tonight() {
             {SYNTH_TRACKS.map((track) => (
               <button
                 key={track.code}
-                onClick={() => setTrackCode(track.code)}
+                onClick={() => chooseTrack(track.code)}
                 style={trackCode === track.code ? { borderColor: "var(--color-primary)" } : {}}
               >
                 {t(`tonight.track.${track.code}`)}
               </button>
             ))}
+            {/* Music Library (29 Aug 2026) — Edmund's brief: let the user turn
+                background music off entirely, not just switch tracks. */}
+            <button onClick={() => chooseTrack("OFF")} style={trackCode === "OFF" ? { borderColor: "var(--color-primary)" } : {}}>
+              🔇 {t("tonight.track.OFF")}
+            </button>
           </div>
         </div>
         <div>
