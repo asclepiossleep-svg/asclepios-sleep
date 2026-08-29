@@ -199,6 +199,26 @@ model Product {
   ownerships      ProductOwnership[]
   activationCodes ActivationCode[]
   usageLogs       ProductUsageLog[]
+  protocolSteps   ProductProtocolStep[]
+}
+
+// Requirement Recovery Matrix #14 — Product micro-protocols. Replaces the
+// flat "use tonight's product" instruction with the real Apply→Breathe→Sleep
+// (or Apply→Drink, per product) sequence from the printed catalog's usage
+// panels. Admin-configurable: rows here are the whole protocol — no code
+// change needed to add/reorder/retranslate a step (same "content changes
+// need no deploy" rule as ContentItem). One row per (product, locale, order).
+model ProductProtocolStep {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  locale      String   @default("en")
+  stepOrder   Int
+  title       String
+  instruction String
+  createdAt   DateTime @default(now())
+
+  @@unique([productId, locale, stepOrder])
 }
 
 model ContentItem {
