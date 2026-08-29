@@ -29,6 +29,8 @@
   "tonight.track.SYNTH_WHITE_NOISE": "White Noise",
   "tonight.track.SYNTH_CALM_MIND": "Calm Mind (432Hz)",
   "tonight.track.SYNTH_DEEP_RELAX": "Deep Relax (528Hz)",
+  "tonight.protocol.show": "View steps",
+  "tonight.protocol.hide": "Hide steps",
   "player.windDown": "Wind-down",
   "player.imAwake": "I'M AWAKE",
   "player.snooze": "Snooze",
