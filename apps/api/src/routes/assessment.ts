@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
-import { getNextQuestion, submitAnswer, routeIntent } from "../domain/questionEngine";
+import { getNextQuestion, submitAnswer, routeIntent, getTopFocusAreas } from "../domain/questionEngine";
 
 const router = Router();
 router.use(requireAuth);
@@ -29,7 +29,8 @@ router.get("/:id/next", async (req: AuthedRequest, res) => {
     if (!assessment.completedAt) {
       await prisma.assessment.update({ where: { id: assessment.id }, data: { completedAt: new Date() } });
     }
-    return res.json({ done: true });
+    const topFocusAreas = await getTopFocusAreas(req.userId!);
+    return res.json({ done: true, topFocusAreas });
   }
   res.json({ done: false, question });
 });
