@@ -33,7 +33,7 @@ export async function hasEntitlement(userId: string, key: string): Promise<boole
 export async function grantEntitlement(
   userId: string,
   key: string,
-  grantedVia: "ORDER" | "ADMIN_GRANT" | "DEMO_SEED" | "QR_ACTIVATION",
+  grantedVia: "ORDER" | "ADMIN_GRANT" | "DEMO_SEED" | "QR_ACTIVATION" | "SELF_ENROLL",
   actorUserId?: string,
   expiresAt?: Date
 ) {
