@@ -3,6 +3,7 @@ import { CONTENT_CATEGORIES, type ContentCategory } from "@asclepios/shared";
 import { api } from "../api/client";
 import { t, getLocale } from "../i18n";
 import BottomNav from "../components/BottomNav";
+import PageHeader from "../components/PageHeader";
 
 interface LibraryItem {
   id: string;
@@ -32,8 +33,7 @@ export default function Library() {
 
   return (
     <div className="screen">
-      <h1>{t("library.title")}</h1>
-      <p className="muted">{t("library.subtitle")}</p>
+      <PageHeader title={t("library.title")} subtitle={t("library.subtitle")} />
 
       <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
         {CONTENT_CATEGORIES.map((c) => (
