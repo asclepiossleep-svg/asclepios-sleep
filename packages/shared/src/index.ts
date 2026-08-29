@@ -319,3 +319,14 @@ export const DEFINITION_OF_DONE = [
   "Safety rules always outrank product recommendation",
   "Admin can add products, questions, audio, wallpaper, courses, promotions unaided",
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Requirement Recovery Matrix #22 — Sleep Answer Library's 4-category
+// taxonomy. Per the Master Kick-off doc: UNDERSTAND (what/why, conceptual),
+// LEARN (a technique/skill to practise), USE (how to use a product or app
+// feature), EXPLORE (broader related topics). Every ContentItem in the
+// library belongs to exactly one of these — never re-typed as a raw string
+// in a route or component.
+// ---------------------------------------------------------------------------
+export const CONTENT_CATEGORIES = ["UNDERSTAND", "LEARN", "USE", "EXPLORE"] as const;
+export type ContentCategory = (typeof CONTENT_CATEGORIES)[number];
