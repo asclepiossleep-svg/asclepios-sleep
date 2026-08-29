@@ -16,7 +16,10 @@ router.post("/start", async (req: AuthedRequest, res) => {
   const body = req.body as {
     targetSleepTime?: string;
     wakeTime?: string;
-    sleepAudioId?: string;
+    // Music Library (29 Aug 2026) — Tonight.tsx now sends an explicit
+    // `null` for the user's "🔇 Off" pick (see SleepPlayer.tsx's
+    // trackEngineFor), not just a real SYNTH_TRACKS code.
+    sleepAudioId?: string | null;
     sleepAudioDurationMode: "FIXED" | "CUSTOM" | "UNTIL_WAKE" | "ALL_NIGHT";
     presetLabel?: string;
     customSeconds?: number;
