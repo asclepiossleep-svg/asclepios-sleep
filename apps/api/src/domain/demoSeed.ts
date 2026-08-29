@@ -81,6 +81,8 @@ export async function seedBaseConfig() {
   const p02 = await prisma.product.upsert({ where: { code: "P02" }, update: dayModeData, create: { code: "P02", ...dayModeData } });
   const p03 = await prisma.product.upsert({ where: { code: "P03" }, update: restSleepModeData, create: { code: "P03", ...restSleepModeData } });
 
+  await seedProductProtocols(p01.id, p02.id, p03.id);
+
   await prisma.contentItem.upsert({
     where: { code: "CONTENT_SAFETY_DISCLAIMER" },
     update: {},
@@ -97,6 +99,8 @@ export async function seedBaseConfig() {
       tagsJson: JSON.stringify(["PRODUCT_SAFETY_NOTICE"]),
     },
   });
+
+  await seedContentLibrary();
 
   await prisma.routineStepDef.upsert({ where: { code: "STEP_PRODUCT" }, update: {}, create: { code: "STEP_PRODUCT", label: "Use tonight's product", category: "PRODUCT", defaultOrder: 1 } });
   await prisma.routineStepDef.upsert({ where: { code: "STEP_BREATHING" }, update: {}, create: { code: "STEP_BREATHING", label: "1-minute breathing", category: "BREATHING", defaultOrder: 2 } });
@@ -158,6 +162,215 @@ export async function seedBaseConfig() {
   });
 
   return { p01, p02, p03 };
+}
+
+/**
+ * Requirement Recovery Matrix #22 — Sleep Answer Library seed content.
+ * Genuine, self-authored general sleep-hygiene education (no clinical
+ * claims, no fabricated citations) across the doc's 4 categories, in both
+ * shipped locales — same "no real asset yet, so build the honest thing"
+ * approach as the synthesized audio and colour-card wallpapers this
+ * session. All PUBLIC layer for V1 (product/programme-locked library items
+ * are a Milestone-2-later addition, once #14/#20/#21 give it something real
+ * to gate).
+ */
+/**
+ * Requirement Recovery Matrix #14 — Product micro-protocols. Real usage
+ * instructions taken directly from the printed catalog's own panels (page 3
+ * for SLEEPTAPE™, page 4 for DAY MODE™ / REST & SLEEP MODE™) — nothing
+ * invented, nothing clinical. Each product gets its own short numbered
+ * sequence instead of the old flat "use tonight's product" line.
+ */
+async function seedProductProtocols(sleeptapeId: string, dayModeId: string, restSleepModeId: string) {
+  const rows: { productId: string; locale: "en" | "zh-HK"; stepOrder: number; title: string; instruction: string }[] = [
+    // P01 — SLEEPTAPE™ Nasal Strips
+    { productId: sleeptapeId, locale: "en", stepOrder: 1, title: "Clean & dry", instruction: "Clean and dry the skin across your nose bridge." },
+    { productId: sleeptapeId, locale: "en", stepOrder: 2, title: "Apply", instruction: "Peel the strip and centre it on the bridge of your nose. Press lightly to secure." },
+    { productId: sleeptapeId, locale: "en", stepOrder: 3, title: "Breathe & sleep", instruction: "Breathe calmly through your nose and settle in to sleep. Pairs well with REST & SLEEP MODE™." },
+    { productId: sleeptapeId, locale: "zh-HK", stepOrder: 1, title: "清潔同抹乾", instruction: "將鼻樑位置嘅皮膚清潔同抹乾。" },
+    { productId: sleeptapeId, locale: "zh-HK", stepOrder: 2, title: "貼上", instruction: "撕開鼻貼，貼喺鼻樑中間位置，輕輕按實。" },
+    { productId: sleeptapeId, locale: "zh-HK", stepOrder: 3, title: "呼吸同瞓覺", instruction: "平靜咁用鼻呼吸，然後安心瞓覺。同REST & SLEEP MODE™一齊用效果更好。" },
+    // P02 — DAY MODE™ (before/with a main meal)
+    { productId: dayModeId, locale: "en", stepOrder: 1, title: "Open", instruction: "Tear open one 10g pack." },
+    { productId: dayModeId, locale: "en", stepOrder: 2, title: "Mix", instruction: "Stir the powder into 200-250ml of water." },
+    { productId: dayModeId, locale: "en", stepOrder: 3, title: "Drink", instruction: "Drink before or with your main meal." },
+    { productId: dayModeId, locale: "zh-HK", stepOrder: 1, title: "撕開", instruction: "撕開一包10g裝。" },
+    { productId: dayModeId, locale: "zh-HK", stepOrder: 2, title: "沖調", instruction: "將粉末加入200-250ml水度攪勻。" },
+    { productId: dayModeId, locale: "zh-HK", stepOrder: 3, title: "飲用", instruction: "餐前或者隨主要一餐一齊飲用。" },
+    // P03 — REST & SLEEP MODE™ (30-60 min before bed)
+    { productId: restSleepModeId, locale: "en", stepOrder: 1, title: "Open", instruction: "Tear open one 10g pack, 30-60 minutes before bed." },
+    { productId: restSleepModeId, locale: "en", stepOrder: 2, title: "Mix", instruction: "Stir the powder into 200-250ml of water." },
+    { productId: restSleepModeId, locale: "en", stepOrder: 3, title: "Drink & wind down", instruction: "Drink, then begin winding down for the night." },
+    { productId: restSleepModeId, locale: "zh-HK", stepOrder: 1, title: "撕開", instruction: "瞓覺前30-60分鐘，撕開一包10g裝。" },
+    { productId: restSleepModeId, locale: "zh-HK", stepOrder: 2, title: "沖調", instruction: "將粉末加入200-250ml水度攪勻。" },
+    { productId: restSleepModeId, locale: "zh-HK", stepOrder: 3, title: "飲用同放鬆", instruction: "飲用之後，開始放鬆準備瞓覺。" },
+  ];
+
+  for (const row of rows) {
+    await prisma.productProtocolStep.upsert({
+      where: { productId_locale_stepOrder: { productId: row.productId, locale: row.locale, stepOrder: row.stepOrder } },
+      update: { title: row.title, instruction: row.instruction },
+      create: row,
+    });
+  }
+}
+
+async function seedContentLibrary() {
+  const items: {
+    code: string;
+    category: "UNDERSTAND" | "LEARN" | "USE" | "EXPLORE";
+    locale: "en" | "zh-HK";
+    title: string;
+    bodyMarkdown: string;
+  }[] = [
+    {
+      code: "CONTENT_UNDERSTAND_SLEEP_QUALITY",
+      category: "UNDERSTAND",
+      locale: "en",
+      title: "Sleep quality vs. sleep quantity",
+      bodyMarkdown:
+        "8 hours in bed isn't the same as 8 hours of good sleep. Quality is about how much of that time is spent in deep, uninterrupted sleep — frequent waking, even brief ones you don't remember, can leave you tired even after a full night. That's why Asclepios Sleep tracks how you feel and how often you wake, not just how long you slept.",
+    },
+    {
+      code: "CONTENT_UNDERSTAND_SLEEP_QUALITY",
+      category: "UNDERSTAND",
+      locale: "zh-HK",
+      title: "瞓覺質素 vs. 瞓覺時間",
+      bodyMarkdown:
+        "瞓咗8個鐘唔代表瞓得好。瞓覺質素講嘅係呢8個鐘入面,有幾多時間係深層、冇被打斷嘅瞓眠——就算係好短、你自己都唔記得嘅夜醒,都可以令你第二朝仍然覺得攰。所以Asclepios Sleep除咗記錄瞓覺時間,仲會追蹤你嘅感覺同夜醒次數。",
+    },
+    {
+      code: "CONTENT_UNDERSTAND_SLEEP_PRESSURE",
+      category: "UNDERSTAND",
+      locale: "en",
+      title: "How your body 'saves up' the urge to sleep",
+      bodyMarkdown:
+        "The longer you're awake, the stronger your body's drive to sleep gets — this builds up through the day and is one reason naps late in the day can make it harder to fall asleep at night. A steady wind-down routine and a consistent bedtime help this natural pressure work with you instead of against you.",
+    },
+    {
+      code: "CONTENT_UNDERSTAND_SLEEP_PRESSURE",
+      category: "UNDERSTAND",
+      locale: "zh-HK",
+      title: "身體點樣『儲』瞓意",
+      bodyMarkdown:
+        "你醒得越耐,身體想瞓嘅『壓力』就越大——呢個係成日累積落嚟嘅,亦都係點解夜晚遲小睡會令你夜晚更難瞓著嘅其中一個原因。穩定嘅放鬆程序同固定嘅瞓覺時間,可以幫呢種自然嘅『瞓意』幫返自己,而唔係阻住自己。",
+    },
+    {
+      code: "CONTENT_LEARN_478_BREATHING",
+      category: "LEARN",
+      locale: "en",
+      title: "The 4-7-8 breathing technique",
+      bodyMarkdown:
+        "Breathe in quietly through your nose for 4 seconds, hold for 7 seconds, then exhale slowly through your mouth for 8 seconds. Repeat 3-4 times. This longer exhale is thought to help activate your body's relaxation response — try it as part of your wind-down before you start tonight's sleep track.",
+    },
+    {
+      code: "CONTENT_LEARN_478_BREATHING",
+      category: "LEARN",
+      locale: "zh-HK",
+      title: "4-7-8 呼吸法",
+      bodyMarkdown:
+        "用鼻慢慢吸氣4秒,閂住氣7秒,再用口慢慢呼氣8秒,重複3-4次。呼氣時間拉長,有助啟動身體嘅放鬆反應——可以喺開始今晚嘅瞓覺聲音之前,做呢個做為放鬆程序嘅一部分。",
+    },
+    {
+      code: "CONTENT_LEARN_WINDDOWN_ROUTINE",
+      category: "LEARN",
+      locale: "en",
+      title: "Building a wind-down routine",
+      bodyMarkdown:
+        "A wind-down routine is a short, repeatable sequence — dim the lights, put the phone away, breathe, then start your sleep sound — that signals to your body it's time to slow down. Keep it under 15 minutes and do it in the same order most nights; the repetition itself is what makes it effective, more than any single step.",
+    },
+    {
+      code: "CONTENT_LEARN_WINDDOWN_ROUTINE",
+      category: "LEARN",
+      locale: "zh-HK",
+      title: "點樣建立瞓覺前嘅『落閘』程序",
+      bodyMarkdown:
+        "『落閘』程序係一個短、可以重複做嘅步驟——調暗燈光、放低手機、深呼吸、再開始瞓覺聲音——用嚟提示身體係時候慢落嚟。盡量控制喺15分鐘之內,而且大部分晚上都用返同一個次序;呢個重複本身,先係令佢有效嘅關鍵,多過任何單一個步驟。",
+    },
+    {
+      code: "CONTENT_USE_SOUND_TRACKS",
+      category: "USE",
+      locale: "en",
+      title: "Getting the most out of tonight's sound",
+      bodyMarkdown:
+        "On the Tonight screen, pick a sound and a duration before you tap Start Sleep — Pink and Brown Noise are steadier and better for masking background noise, while the 432Hz/528Hz tracks blend a soft tone with noise. In the Sleep Player you can adjust volume or pause anytime, and the sound fades out automatically near the end rather than cutting off abruptly.",
+    },
+    {
+      code: "CONTENT_USE_SOUND_TRACKS",
+      category: "USE",
+      locale: "zh-HK",
+      title: "點樣用好今晚嘅瞓覺聲音",
+      bodyMarkdown:
+        "喺「今晚計劃」page,撳「開始瞓覺」之前可以揀聲音同時長——粉紅噪音同棕色噪音比較穩定,適合遮蓋背景聲音;432Hz/528Hz就係音調加噪音嘅組合。喺Sleep Player入面隨時都可以調音量或者暫停,聲音去到尾段會自動淡出,唔會突然停晒。",
+    },
+    {
+      code: "CONTENT_USE_WALLPAPER_THEME",
+      category: "USE",
+      locale: "en",
+      title: "Choosing your wallpaper and theme colour",
+      bodyMarkdown:
+        "Your wallpaper and accent colour are personal, not functional — pick whatever feels calming to look at last thing at night. You can change either anytime from Settings, and the app remembers your choice across every screen, day and night mode alike.",
+    },
+    {
+      code: "CONTENT_USE_WALLPAPER_THEME",
+      category: "USE",
+      locale: "zh-HK",
+      title: "點樣揀啱自己嘅Wallpaper同主題色",
+      bodyMarkdown:
+        "Wallpaper同主題色純粹係個人喜好,唔會影響功能——揀一個瞓覺前睇落舒服嘅就得。隨時都可以喺「設定」度改,App會記住你嘅揀選,喺日間夜晚模式同所有畫面都一致。",
+    },
+    {
+      code: "CONTENT_EXPLORE_CAFFEINE",
+      category: "EXPLORE",
+      locale: "en",
+      title: "How long caffeine stays in your system",
+      bodyMarkdown:
+        "Caffeine has a half-life of roughly 5-6 hours in most adults — meaning half of what you drank is still in your system that long after. An afternoon coffee can still be affecting your ability to fall asleep well into the evening. If you're having trouble winding down, an earlier cut-off time is often the easiest thing to try first.",
+    },
+    {
+      code: "CONTENT_EXPLORE_CAFFEINE",
+      category: "EXPLORE",
+      locale: "zh-HK",
+      title: "咖啡因喺體內可以停留幾耐",
+      bodyMarkdown:
+        "大部分成年人嘅咖啡因半衰期大約係5-6個鐘——即係話你飲落嘅咖啡因,過咗咁耐都仲有一半留喺體內。下午飲嘅咖啡,好可能夜晚都仲影響緊你入睡。如果你發覺自己好難靜落嚟,提早戒咖啡因嘅時間,通常係最容易試嘅第一步。",
+    },
+    {
+      code: "CONTENT_EXPLORE_BLUE_LIGHT",
+      category: "EXPLORE",
+      locale: "en",
+      title: "Blue light and your sleep",
+      bodyMarkdown:
+        "Screens emit more blue-wavelength light than warm room lighting, and that wavelength is especially good at telling your brain it's still daytime. Dimming your phone, switching to a night mode, or just putting screens away 30-60 minutes before your wind-down routine can make it easier to feel sleepy on schedule.",
+    },
+    {
+      code: "CONTENT_EXPLORE_BLUE_LIGHT",
+      category: "EXPLORE",
+      locale: "zh-HK",
+      title: "藍光同瞓覺嘅關係",
+      bodyMarkdown:
+        "螢幕發出嘅藍光波長,比暖色燈光多,而呢種波長特別容易令大腦以為仲係日頭。喺開始『落閘』程序前30-60分鐘,調暗手機、開夜間模式,或者索性放低螢幕,都可以幫你更加準時感覺到瞓意。",
+    },
+  ];
+
+  for (const item of items) {
+    const uniqueCode = `${item.code}_${item.locale}`;
+    await prisma.contentItem.upsert({
+      where: { code: uniqueCode },
+      update: {},
+      create: {
+        code: uniqueCode,
+        type: "ARTICLE",
+        title: item.title,
+        locale: item.locale,
+        url: null,
+        active: true,
+        layer: "PUBLIC",
+        category: item.category,
+        bodyMarkdown: item.bodyMarkdown,
+      },
+    });
+  }
 }
 
 async function wipeUserTransactionalData(userId: string) {
