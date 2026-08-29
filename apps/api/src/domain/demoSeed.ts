@@ -111,15 +111,69 @@ export async function seedBaseConfig() {
   await prisma.audioTrack.upsert({ where: { code: "AUD_SOFT_PIANO" }, update: {}, create: { code: "AUD_SOFT_PIANO", title: "Soft Piano Morning", category: "CLASSICAL", durationSeconds: 600, isPremium: true } });
   await prisma.audioTrack.upsert({ where: { code: "WAKE_COUNTRYSIDE_02" }, update: {}, create: { code: "WAKE_COUNTRYSIDE_02", title: "Birds & Countryside", category: "NATURE", durationSeconds: 600 } });
 
-  await prisma.wallpaper.upsert({ where: { code: "WALL_MOON_LAKE_04" }, update: {}, create: { code: "WALL_MOON_LAKE_04", title: "Moon Lake", category: "WATER", themeColor: "#2b3a55" } });
-  await prisma.wallpaper.upsert({ where: { code: "WALL_JAPANESE_CALM_01" }, update: {}, create: { code: "WALL_JAPANESE_CALM_01", title: "Japanese Calm", category: "JAPANESE_CALM", themeColor: "#3c4a3e" } });
+  // Real-photo wallpaper library (Edmund-commissioned, photorealistic
+  // direction — 29 Aug 2026, "B start compose into the APP"). imageUrl
+  // points at static files under apps/web/public/wallpapers/, served
+  // as-is by Vite/Vercel (not a Vite import — Wallpaper.imageUrl is a
+  // runtime DB value, so these can't be bundled the way the Login hero
+  // images were). themeColor is kept on every row as a fallback tint for
+  // the brief window before the image loads, and in case a row's image
+  // is ever pulled. The 5 original placeholder rows below now point at
+  // the closest-matching real photo instead of getting duplicate rows.
+  await prisma.wallpaper.upsert({ where: { code: "WALL_MOON_LAKE_04" }, update: { imageUrl: "/wallpapers/moonlit-lake.webp" }, create: { code: "WALL_MOON_LAKE_04", title: "Moon Lake", category: "WATER", imageUrl: "/wallpapers/moonlit-lake.webp", themeColor: "#2b3a55" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_JAPANESE_CALM_01" }, update: { imageUrl: "/wallpapers/stone-lantern-pond.webp" }, create: { code: "WALL_JAPANESE_CALM_01", title: "Japanese Calm", category: "JAPANESE_CALM", imageUrl: "/wallpapers/stone-lantern-pond.webp", themeColor: "#3c4a3e" } });
   // Master Kick-off V1 Phase 3/§26 — 3 categories added on top of the
   // original 7. See packages/shared WALLPAPER_CATEGORIES for the full list.
-  await prisma.wallpaper.upsert({ where: { code: "WALL_SUNRISE_01" }, update: {}, create: { code: "WALL_SUNRISE_01", title: "Slow Sunrise", category: "SUNRISE", themeColor: "#e8a15c" } });
-  await prisma.wallpaper.upsert({ where: { code: "WALL_MIST_MOUNTAINS_01" }, update: {}, create: { code: "WALL_MIST_MOUNTAINS_01", title: "Misty Peaks", category: "MIST_MOUNTAINS", themeColor: "#7c8a94" } });
-  await prisma.wallpaper.upsert({ where: { code: "WALL_STARRY_SKY_01" }, update: {}, create: { code: "WALL_STARRY_SKY_01", title: "Starry Sky", category: "STARRY_SKY", themeColor: "#141a33" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_SUNRISE_01" }, update: { imageUrl: "/wallpapers/ocean-dawn.webp" }, create: { code: "WALL_SUNRISE_01", title: "Slow Sunrise", category: "SUNRISE", imageUrl: "/wallpapers/ocean-dawn.webp", themeColor: "#e8a15c" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_MIST_MOUNTAINS_01" }, update: { imageUrl: "/wallpapers/mountain-dawn.webp" }, create: { code: "WALL_MIST_MOUNTAINS_01", title: "Misty Peaks", category: "MIST_MOUNTAINS", imageUrl: "/wallpapers/mountain-dawn.webp", themeColor: "#7c8a94" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_STARRY_SKY_01" }, update: { imageUrl: "/wallpapers/nebula-calm.webp" }, create: { code: "WALL_STARRY_SKY_01", title: "Starry Sky", category: "STARRY_SKY", imageUrl: "/wallpapers/nebula-calm.webp", themeColor: "#141a33" } });
 
+  // 21 further real-photo wallpapers (29 Aug 2026 build) — curated/deduped
+  // from Edmund's 10 photoreal concept sheets. WARM_COZY is the one new
+  // category (packages/shared WALLPAPER_CATEGORIES) for the candle/
+  // bedroom/reading-nook cluster that didn't fit any existing category.
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_QUIET_PIER" }, update: {}, create: { code: "WALL_PHOTO_QUIET_PIER", title: "Quiet Pier", category: "WATER", imageUrl: "/wallpapers/quiet-pier.webp", themeColor: "#4a6470" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_WATERFALL_COVE" }, update: {}, create: { code: "WALL_PHOTO_WATERFALL_COVE", title: "Waterfall Cove", category: "WATER", imageUrl: "/wallpapers/waterfall-cove.webp", themeColor: "#3d5a52" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_LOTUS_REFLECTION" }, update: {}, create: { code: "WALL_PHOTO_LOTUS_REFLECTION", title: "Lotus Reflection", category: "WATER", imageUrl: "/wallpapers/lotus-reflection.webp", themeColor: "#385147" } });
+
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_COURTYARD_FOUNTAIN" }, update: {}, create: { code: "WALL_PHOTO_COURTYARD_FOUNTAIN", title: "Courtyard Fountain", category: "JAPANESE_CALM", imageUrl: "/wallpapers/courtyard-fountain.webp", themeColor: "#39443a" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_BAMBOO_WATER_BASIN" }, update: {}, create: { code: "WALL_PHOTO_BAMBOO_WATER_BASIN", title: "Bamboo Water Basin", category: "JAPANESE_CALM", imageUrl: "/wallpapers/bamboo-water-basin.webp", themeColor: "#414f3c" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_LOTUS_POOL_EVENING" }, update: {}, create: { code: "WALL_PHOTO_LOTUS_POOL_EVENING", title: "Lotus Pool at Dusk", category: "JAPANESE_CALM", imageUrl: "/wallpapers/lotus-pool-evening.webp", themeColor: "#33403d" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_MOSS_GARDEN_STREAM" }, update: {}, create: { code: "WALL_PHOTO_MOSS_GARDEN_STREAM", title: "Moss Garden Stream", category: "JAPANESE_CALM", imageUrl: "/wallpapers/moss-garden-stream.webp", themeColor: "#3a4a3a" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_BUDDHA_SERENITY" }, update: {}, create: { code: "WALL_PHOTO_BUDDHA_SERENITY", title: "Buddha Serenity", category: "JAPANESE_CALM", imageUrl: "/wallpapers/buddha-serenity.webp", themeColor: "#37423f" } });
+
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_SLEEP_SANCTUARY" }, update: {}, create: { code: "WALL_PHOTO_SLEEP_SANCTUARY", title: "Sleep Sanctuary", category: "WARM_COZY", imageUrl: "/wallpapers/sleep-sanctuary.webp", themeColor: "#6b4f36" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_RAINY_READING_NOOK" }, update: {}, create: { code: "WALL_PHOTO_RAINY_READING_NOOK", title: "Rainy Reading Nook", category: "WARM_COZY", imageUrl: "/wallpapers/rainy-reading-nook.webp", themeColor: "#5c5548" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_TEA_BY_WINDOW" }, update: {}, create: { code: "WALL_PHOTO_TEA_BY_WINDOW", title: "Tea by the Window", category: "WARM_COZY", imageUrl: "/wallpapers/tea-by-window.webp", themeColor: "#5e5644" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_CANDLE_BATH" }, update: {}, create: { code: "WALL_PHOTO_CANDLE_BATH", title: "Candlelit Bath", category: "WARM_COZY", imageUrl: "/wallpapers/candle-bath.webp", themeColor: "#6e5638" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_SINGING_BOWL_GLOW" }, update: {}, create: { code: "WALL_PHOTO_SINGING_BOWL_GLOW", title: "Singing Bowl Glow", category: "WARM_COZY", imageUrl: "/wallpapers/singing-bowl-glow.webp", themeColor: "#75552c" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_CANDLE_ZEN" }, update: {}, create: { code: "WALL_PHOTO_CANDLE_ZEN", title: "Candle Zen", category: "WARM_COZY", imageUrl: "/wallpapers/candle-zen.webp", themeColor: "#4f4534" } });
+
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_TWILIGHT_HORIZON" }, update: {}, create: { code: "WALL_PHOTO_TWILIGHT_HORIZON", title: "Twilight Horizon", category: "NIGHT", imageUrl: "/wallpapers/twilight-horizon.webp", themeColor: "#2e3550" } });
+
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_AURORA_REFLECTION" }, update: {}, create: { code: "WALL_PHOTO_AURORA_REFLECTION", title: "Aurora Reflection", category: "STARRY_SKY", imageUrl: "/wallpapers/aurora-reflection.webp", themeColor: "#2c3a4a" } });
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_STARRY_FOREST_PATH" }, update: {}, create: { code: "WALL_PHOTO_STARRY_FOREST_PATH", title: "Starry Forest Path", category: "STARRY_SKY", imageUrl: "/wallpapers/starry-forest-path.webp", themeColor: "#1f2438" } });
+
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_FOREST_MIST" }, update: {}, create: { code: "WALL_PHOTO_FOREST_MIST", title: "Forest Mist", category: "MIST_MOUNTAINS", imageUrl: "/wallpapers/forest-mist.webp", themeColor: "#4a5548" } });
+
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_CHAKRA_LIGHT" }, update: {}, create: { code: "WALL_PHOTO_CHAKRA_LIGHT", title: "Chakra Light", category: "ABSTRACT", imageUrl: "/wallpapers/chakra-light.webp", themeColor: "#4a3a5c" } });
+
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_RAIN_WINDOW" }, update: {}, create: { code: "WALL_PHOTO_RAIN_WINDOW", title: "Rain on the Window", category: "MINIMAL", imageUrl: "/wallpapers/rain-window.webp", themeColor: "#5a6068" } });
+
+  await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_MEADOW_LIGHT" }, update: {}, create: { code: "WALL_PHOTO_MEADOW_LIGHT", title: "Meadow Light", category: "BRITISH_COUNTRYSIDE", imageUrl: "/wallpapers/meadow-light.webp", themeColor: "#7c8452" } });
+
+  // Pre-existing generic programme (kept as-is — not one of the two named
+  // programmes below; flagged in OWNER_RUNBOOK.md as worth a naming check
+  // with Edmund since "28-Day" is close to but not the same as "30-Day
+  // Sleep Reset").
   await prisma.programme.upsert({ where: { code: "PRG_28DAY_CORE" }, update: {}, create: { code: "PRG_28DAY_CORE", name: "28-Day Sleep Reset", lengthDays: 28, reviewFrequencyDays: 7 } });
+
+  // Requirement Recovery Matrix #20/#21 — the two named programmes.
+  // Display copy (name/description) lives client-side in i18n keyed by
+  // `code` (same pattern as tonight.track.* / library.category.*) — these
+  // DB rows only carry the structural facts (length, review cadence).
+  await prisma.programme.upsert({ where: { code: "PRG_7NIGHT_QUICKSTART" }, update: {}, create: { code: "PRG_7NIGHT_QUICKSTART", name: "7-Night Quick Start", lengthDays: 7, reviewFrequencyDays: 7 } });
+  await prisma.programme.upsert({ where: { code: "PRG_30DAY_RESET" }, update: {}, create: { code: "PRG_30DAY_RESET", name: "30-Day Sleep Reset", lengthDays: 30, reviewFrequencyDays: 7 } });
 
   const q100 = await prisma.question.upsert({
     where: { code_version: { code: "Q100", version: 1 } },
