@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../state/session";
 import { t } from "../i18n";
+import BottomNav from "../components/BottomNav";
 
 interface TonightStep {
   stepCode: string;
@@ -24,7 +25,7 @@ function stepLabel(step: TonightStep): string {
 export default function Tonight() {
   const [steps, setSteps] = useState<TonightStep[]>([]);
   const [stepStatus, setStepStatus] = useState<Record<string, "DONE" | "SKIPPED">>({});
-  const { logout } = useSession();
+  const { user, logout } = useSession();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function Tonight() {
       sleepAudioDurationMode: "FIXED",
       presetLabel: "1 hr",
       sleepAudioId: "AUD_MOON_LAKE_01",
-      wallpaperId: "WALL_MOON_LAKE_04",
+      wallpaperId: user?.wallpaperId ?? "WALL_MOON_LAKE_04",
       wakeStyle: "NORMAL",
       snoozeMinutes: 10,
     });
@@ -82,6 +83,8 @@ export default function Tonight() {
         </Link>
         <button onClick={logout}>{t("tonight.logout")}</button>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
