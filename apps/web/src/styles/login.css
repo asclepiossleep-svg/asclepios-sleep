@@ -1,160 +1,149 @@
 /*
- * Front-page/Login rebuild (29 Aug 2026) — see OWNER_RUNBOOK.md. Replaces
- * the old "logo + one sentence + plain box" screen with a two-part entrance:
- * a scenic, day-to-night hero (pure CSS — no licensed photography/artwork
- * exists yet, same honest-build approach as the synthesized Sleep Player
- * audio and the text-only Sleep Answer Library) and a floating login panel.
- * Stacks vertically on narrow viewports but keeps the scenic hero visible
- * (never drops to a bare SaaS-style box on mobile).
+ * Front-page/Login rebuild #2 (29 Aug 2026) — Edmund's approved reference:
+ * real lifestyle photography full-bleed on one side, a plain (no photo
+ * behind it) content column on the other carrying brand, language
+ * selector, headline, tagline, lead copy, the login card and the value
+ * props. This supersedes the 28 Aug rebuild, which overlaid the login
+ * text directly on a scenic hero.
+ *
+ * Layout mechanics: three named grid areas —
+ *   topcontent    brand + language selector + headline/tagline/lead
+ *   photo         the full-bleed hero photograph
+ *   bottomcontent login card + secure note + demo access + value props
+ * Mobile stacks them vertically in that order (so the photo sits between
+ * the lead copy and the login card, never hidden — Edmund's brief §9).
+ * From 900px up, topcontent+bottomcontent share the left column and photo
+ * fills the right column, full height.
  */
 
 .login-page {
   min-height: 100%;
   display: grid;
   grid-template-columns: 1fr;
+  grid-template-areas:
+    "topcontent"
+    "photo"
+    "bottomcontent";
 }
 
 @media (min-width: 900px) {
   .login-page {
-    grid-template-columns: 1.15fr 0.85fr;
-    align-items: stretch;
+    grid-template-columns: 1.05fr 0.95fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "topcontent photo"
+      "bottomcontent photo";
+    align-items: start;
   }
 }
 
 /* ---------------------------------------------------------------------- */
-/* Hero — atmospheric scene + brand copy                                   */
+/* Top content — brand, language selector, headline/tagline/lead           */
 /* ---------------------------------------------------------------------- */
 
-.login-hero {
-  position: relative;
-  overflow: hidden;
-  min-height: 320px;
+.login-topcontent {
+  grid-area: topcontent;
+  padding: 1.75rem 1.5rem 1rem;
+  color: var(--color-text);
+}
+
+@media (min-width: 900px) {
+  .login-topcontent {
+    padding: 3rem 2.5rem 1rem 3rem;
+  }
+}
+
+.login-topbar {
   display: flex;
-  align-items: flex-end;
-  padding: 2rem 1.5rem 2.25rem;
-}
-
-@media (min-width: 900px) {
-  .login-hero {
-    min-height: 100vh;
-    padding: 3rem 3rem 3.5rem;
-  }
-}
-
-.login-hero-scene {
-  position: absolute;
-  inset: 0;
-  background: var(--hero-gradient);
-  transition: background 0.6s ease;
-}
-
-.login-orb {
-  position: absolute;
-  top: 14%;
-  right: 18%;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: var(--hero-orb-color);
-  box-shadow: 0 0 70px 26px var(--hero-orb-glow);
-  transition: background-color 0.6s ease, box-shadow 0.6s ease;
-}
-
-@media (min-width: 900px) {
-  .login-orb {
-    width: 120px;
-    height: 120px;
-    top: 12%;
-    right: 22%;
-  }
-}
-
-.login-hill {
-  position: absolute;
-  left: -10%;
-  width: 120%;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-  opacity: 0.55;
-}
-
-.login-hill--back {
-  bottom: 22%;
-  height: 34%;
-  background: var(--hero-hill-back);
-  opacity: 0.35;
-}
-
-.login-hill--mid {
-  bottom: 14%;
-  height: 28%;
-  background: var(--hero-hill-mid);
-  opacity: 0.4;
-}
-
-.login-hill--front {
-  bottom: 0;
-  height: 20%;
-  background: var(--hero-hill-front);
-  opacity: 0.55;
-}
-
-.login-water {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 12%;
-  background: var(--hero-water);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .login-orb {
-    animation: login-orb-drift 18s ease-in-out infinite;
-  }
-}
-
-@keyframes login-orb-drift {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(8px);
-  }
-}
-
-.login-hero-content {
-  position: relative;
-  z-index: 1;
-  max-width: 520px;
-  color: #26241f;
-}
-
-[data-theme="night"] .login-hero-content {
-  color: #eceaf5;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
 }
 
 .login-brand {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 0.75rem;
+  color: var(--color-text);
 }
 
 .login-brand-mark {
   flex: none;
-  color: var(--color-primary);
+  width: 34px;
+  height: auto;
+  display: block;
+}
+
+.login-brand-lockup {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
 }
 
 .login-brand-name {
   font-family: var(--font-display);
-  font-size: 1.7rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 700;
   letter-spacing: 0.01em;
 }
 
+.login-brand-name-zh {
+  font-weight: 600;
+}
+
+.login-brand-sub {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  color: var(--color-accent);
+  margin-top: 0.1rem;
+}
+
+.login-lang-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 0.85rem;
+}
+
+.login-lang-icon {
+  font-size: 0.9rem;
+}
+
+.login-lang-select select {
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  padding-right: 0.1rem;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.login-lang-select select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.login-hero-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1.15;
+  margin: 0 0 0.6rem;
+  max-width: 14ch;
+  color: var(--color-text);
+}
+
 @media (min-width: 900px) {
-  .login-brand-name {
-    font-size: 2.1rem;
+  .login-hero-title {
+    font-size: 2.6rem;
   }
 }
 
@@ -162,70 +151,58 @@
   font-family: var(--font-display);
   font-size: 1.05rem;
   margin: 0 0 0.6rem;
-  opacity: 0.85;
+  color: var(--color-accent);
 }
 
 .login-lead {
   font-size: 1rem;
   line-height: 1.55;
-  margin: 0 0 1.5rem;
-  max-width: 40ch;
-}
-
-.login-values {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-@media (min-width: 640px) {
-  .login-values {
-    flex-direction: row;
-    gap: 1.25rem;
-  }
-}
-
-.login-value {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  max-width: 22ch;
-}
-
-.login-value-icon {
-  flex: none;
-  color: var(--color-primary);
-  margin-top: 0.1rem;
-}
-
-.login-value strong {
-  display: block;
-  font-size: 0.95rem;
-}
-
-.login-value p {
-  margin: 0.15rem 0 0;
-  font-size: 0.85rem;
-  opacity: 0.85;
-  line-height: 1.4;
+  margin: 0;
+  max-width: 46ch;
+  color: var(--color-text-muted);
 }
 
 /* ---------------------------------------------------------------------- */
-/* Panel — floating login card + demo access                               */
+/* Photo — full-bleed hero photograph, no text overlay                     */
 /* ---------------------------------------------------------------------- */
 
-.login-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1.75rem 1.5rem 2.5rem;
-  background: var(--color-bg);
+.login-photo {
+  grid-area: photo;
+  position: relative;
+  min-height: 260px;
+  overflow: hidden;
 }
 
 @media (min-width: 900px) {
-  .login-panel {
-    padding: 3rem;
+  .login-photo {
+    min-height: 100%;
+  }
+}
+
+.login-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Bottom content — login card, secure note, demo access, value props      */
+/* ---------------------------------------------------------------------- */
+
+.login-bottomcontent {
+  grid-area: bottomcontent;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 2.5rem;
+}
+
+@media (min-width: 900px) {
+  .login-bottomcontent {
+    padding: 1.5rem 2.5rem 3rem 3rem;
   }
 }
 
@@ -273,6 +250,16 @@
   margin-top: 0.5rem;
 }
 
+.login-secure-note {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0.75rem 0 0;
+}
+
 .login-demo-toggle {
   align-self: flex-start;
   width: 100%;
@@ -295,4 +282,53 @@
   flex-direction: column;
   gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+.login-values {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .login-values {
+    flex-direction: row;
+    gap: 1.25rem;
+  }
+}
+
+.login-value {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  max-width: 22ch;
+}
+
+.login-value-icon-wrap {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  margin-top: 0.05rem;
+}
+
+.login-value-icon {
+  color: var(--color-accent);
+}
+
+.login-value strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.login-value p {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
