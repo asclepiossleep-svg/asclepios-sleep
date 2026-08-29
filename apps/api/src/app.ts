@@ -15,6 +15,7 @@ import preferencesRoutes from "./routes/preferences";
 import wallpapersRoutes from "./routes/wallpapers";
 import todayRoutes from "./routes/today";
 import contentRoutes from "./routes/content";
+import programmesRoutes from "./routes/programmes";
 
 /**
  * The Express app itself, with no `listen()` call — shared by:
@@ -46,6 +47,7 @@ export function createApp() {
   app.use("/wallpapers", wallpapersRoutes);
   app.use("/today", todayRoutes);
   app.use("/content", contentRoutes);
+  app.use("/programmes", programmesRoutes);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
