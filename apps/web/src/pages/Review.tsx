@@ -14,6 +14,15 @@ interface ReviewResult {
   };
 }
 
+interface ProgressTrend {
+  hasEnoughData: boolean;
+  days: { date: string; score: number }[];
+  currentScore: number | null;
+  trendDirection: "IMPROVED" | "WORSENED" | "STEADY" | null;
+  focusArea: "SLEEP_RATING" | "NIGHT_WAKING" | "MORNING_ENERGY" | null;
+  checkinCount: number;
+}
+
 const ACTION_CODES = [
   "CONTINUE",
   "REMIND",
@@ -34,9 +43,11 @@ function actionLabel(code: string): string {
 
 export default function Review() {
   const [result, setResult] = useState<ReviewResult | null>(null);
+  const [trend, setTrend] = useState<ProgressTrend | null>(null);
 
   useEffect(() => {
     api.post<ReviewResult>("/review/7-day").then(setResult);
+    api.get<ProgressTrend>("/review/trend").then(setTrend);
   }, []);
 
   if (!result) {
@@ -68,6 +79,43 @@ export default function Review() {
           {t("review.routineCompletion")}: {(result.findings.routineCompletionRatio * 100).toFixed(0)}%
         </p>
       </div>
+
+      {trend && (
+        <div className="card">
+          <h2>{t("review.sleepScoreTitle")}</h2>
+          {trend.hasEnoughData ? (
+            <>
+              <p style={{ fontSize: "2.5rem", fontWeight: 700, margin: "0.25rem 0" }}>{trend.currentScore}</p>
+              {trend.trendDirection && <p className="muted">{t(`review.trend.${trend.trendDirection.toLowerCase()}`)}</p>}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "48px", margin: "0.75rem 0" }}>
+                {trend.days.map((d) => (
+                  <div
+                    key={d.date}
+                    title={`${d.date}: ${d.score}`}
+                    style={{
+                      flex: 1,
+                      height: `${Math.max(6, d.score)}%`,
+                      background: "var(--color-primary)",
+                      borderRadius: "2px",
+                      opacity: 0.85,
+                    }}
+                  />
+                ))}
+              </div>
+              {trend.focusArea && (
+                <p className="muted">
+                  {t("review.trend.focusTitle")}: {t(`review.trend.focus.${trend.focusArea}`)}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="muted">{t("review.trend.notEnoughData")}</p>
+          )}
+          <p className="muted" style={{ fontSize: "0.75rem" }}>
+            {t("review.sleepScoreNote")}
+          </p>
+        </div>
+      )}
 
       <BottomNav />
     </div>
