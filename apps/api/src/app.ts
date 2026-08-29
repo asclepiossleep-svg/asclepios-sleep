@@ -55,3 +55,5 @@ export function createApp() {
 }
 
 export const app = createApp();
+
+// redeploy trigger 29 Aug 2026
