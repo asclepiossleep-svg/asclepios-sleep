@@ -2,15 +2,21 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../state/session";
-import { t } from "../i18n";
+import { t, getLocale } from "../i18n";
 import BottomNav from "../components/BottomNav";
 import { SYNTH_TRACKS, SLEEP_AUDIO_DURATION_PRESETS, type SynthTrackCode } from "@asclepios/shared";
+
+interface ProtocolStep {
+  title: string;
+  instruction: string;
+}
 
 interface TonightStep {
   stepCode: string;
   productId?: string;
   productName?: string;
   mode?: "RHYTHM" | "CALM" | "BODY" | "SUPPORT";
+  protocolSteps?: ProtocolStep[];
 }
 
 function stepLabel(step: TonightStep): string {
@@ -30,11 +36,12 @@ export default function Tonight() {
   const [stepStatus, setStepStatus] = useState<Record<string, "DONE" | "SKIPPED">>({});
   const [trackCode, setTrackCode] = useState<SynthTrackCode>(SYNTH_TRACKS[0].code);
   const [durationLabel, setDurationLabel] = useState<string>("1 hr");
+  const [openProtocol, setOpenProtocol] = useState(false);
   const { user, logout } = useSession();
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get<{ steps: TonightStep[]; routineLevel: number }>("/tonight").then((r) => {
+    api.get<{ steps: TonightStep[]; routineLevel: number }>(`/tonight?locale=${encodeURIComponent(getLocale())}`).then((r) => {
       setSteps(r.steps);
       setRoutineLevel(r.routineLevel);
     });
@@ -69,26 +76,45 @@ export default function Tonight() {
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {steps.length === 0 && <p className="muted">{t("tonight.loadingPlan")}</p>}
         {steps.map((step) => (
-          <div key={step.stepCode} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
-            <span>
-              {stepLabel(step)}
-              {step.mode && (
-                <span
-                  className="muted"
-                  style={{ marginLeft: "0.5rem", fontSize: "0.7rem", border: "1px solid var(--color-border)", borderRadius: "999px", padding: "0.05rem 0.5rem" }}
-                >
-                  {t(`mode.${step.mode}`)}
-                </span>
-              )}
-            </span>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button onClick={() => mark(step, "DONE")} style={stepStatus[step.stepCode] === "DONE" ? { borderColor: "var(--color-primary)" } : {}}>
-                {t("tonight.done")}
-              </button>
-              <button onClick={() => mark(step, "SKIPPED")} style={stepStatus[step.stepCode] === "SKIPPED" ? { borderColor: "var(--color-danger)" } : {}}>
-                {t("tonight.skip")}
-              </button>
+          <div key={step.stepCode} style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+              <span>
+                {stepLabel(step)}
+                {step.mode && (
+                  <span
+                    className="muted"
+                    style={{ marginLeft: "0.5rem", fontSize: "0.7rem", border: "1px solid var(--color-border)", borderRadius: "999px", padding: "0.05rem 0.5rem" }}
+                  >
+                    {t(`mode.${step.mode}`)}
+                  </span>
+                )}
+                {step.stepCode === "PRODUCT" && !!step.protocolSteps?.length && (
+                  <button
+                    onClick={() => setOpenProtocol((v) => !v)}
+                    style={{ marginLeft: "0.5rem", background: "none", border: "none", padding: 0, textDecoration: "underline", fontSize: "0.8rem", color: "var(--color-primary)" }}
+                  >
+                    {openProtocol ? t("tonight.protocol.hide") : t("tonight.protocol.show")}
+                  </button>
+                )}
+              </span>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button onClick={() => mark(step, "DONE")} style={stepStatus[step.stepCode] === "DONE" ? { borderColor: "var(--color-primary)" } : {}}>
+                  {t("tonight.done")}
+                </button>
+                <button onClick={() => mark(step, "SKIPPED")} style={stepStatus[step.stepCode] === "SKIPPED" ? { borderColor: "var(--color-danger)" } : {}}>
+                  {t("tonight.skip")}
+                </button>
+              </div>
             </div>
+            {step.stepCode === "PRODUCT" && openProtocol && !!step.protocolSteps?.length && (
+              <ol style={{ margin: 0, paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                {step.protocolSteps.map((p, i) => (
+                  <li key={i} style={{ fontSize: "0.85rem" }}>
+                    <strong>{p.title}</strong> — <span className="muted">{p.instruction}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         ))}
       </div>
