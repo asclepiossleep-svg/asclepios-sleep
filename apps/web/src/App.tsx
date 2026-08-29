@@ -11,6 +11,7 @@ import Tonight from "./pages/Tonight";
 import SleepPlayer from "./pages/SleepPlayer";
 import MorningCheckin from "./pages/MorningCheckin";
 import Review from "./pages/Review";
+import Library from "./pages/Library";
 import Admin from "./pages/Admin";
 
 // Doc 05 §7 — day/night theme follows local time by default; a real build
@@ -107,6 +108,14 @@ export default function App() {
         element={
           <RequireAuth>
             <Settings />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/learn"
+        element={
+          <RequireAuth>
+            <Library />
           </RequireAuth>
         }
       />
