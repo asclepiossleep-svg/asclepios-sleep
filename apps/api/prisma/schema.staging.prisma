@@ -74,6 +74,8 @@ model User {
   productUsageLogs ProductUsageLog[]
   morningCheckins  MorningCheckin[]
   enrollments      ProgrammeEnrollment[]
+  musicFavourites  MusicFavourite[]
+  musicPlayHistory MusicPlayHistory[]
   analyticsEvents  AnalyticsEvent[]
   auditLogs        AuditLog[] @relation("ActorAuditLogs")
 }
@@ -257,6 +259,10 @@ model ContentItem {
   bodyMarkdown    String?
 }
 
+// Pre-Recovery-Matrix placeholder (never wired to any picker UI or the
+// player — see MusicTrack below, superseded 29 Aug 2026). Left as-is
+// rather than deleted: still seeded, harmless, and deleting a model is a
+// bigger risk than an unused table.
 model AudioTrack {
   id              String   @id @default(cuid())
   code            String   @unique
@@ -266,6 +272,94 @@ model AudioTrack {
   durationSeconds Int?
   isPremium       Boolean  @default(false)
   active          Boolean  @default(true)
+}
+
+// ---------------------------------------------------------------------------
+// Music Library V1 (29 Aug 2026) — Edmund's brief: a real DB-backed music
+// catalog, independent of Wallpaper (never hard-link one wallpaper to one
+// track), with room to grow from today's 9 synthesized tracks to 50-100
+// Asclepios-owned/licensed tracks, plus a future third-party provider
+// layer. This is Phase 1 (database/schema) of Edmund's own stated build
+// order — storage integration, admin/import tooling, the real player and
+// Music Library UI, and the third-party provider adapter are deliberately
+// NOT part of this pass; Tonight/SleepPlayer keep using SYNTH_TRACKS
+// unchanged for now, so nothing live breaks. MusicTrack below is the
+// target shape those later phases build against.
+//
+// sourceType:
+//   ASCLEPIOS_ORIGINAL — commissioned/owned real audio file (audioUrl set)
+//   ASCLEPIOS_LICENSED — properly licensed real audio file (audioUrl set)
+//   THIRD_PARTY_API     — resolved live via a provider adapter (providerCode
+//                         + providerId set; audioUrl may be a short-lived
+//                         signed URL rather than a permanent one)
+//   SYNTHESIZED         — no audio file at all; synthEngine names one of
+//                         apps/web/src/audio/synthEngine.ts's engines,
+//                         rendered live with Web Audio (today's 9 tracks —
+//                         see the demo seed below). Kept as its own type
+//                         rather than folded into ASCLEPIOS_ORIGINAL: it's
+//                         algorithmically generated ambience, not a real
+//                         recorded/commissioned asset, and Edmund was
+//                         explicit that demo/placeholder audio must never
+//                         be presented as a finished original track.
+//
+// primaryCategory / subcategory: Edmund's own simplified 2-level taxonomy
+// (see packages/shared MUSIC_PRIMARY_CATEGORIES/MUSIC_SUBCATEGORIES) — 4
+// primary groups (Sleep Sounds, Music, Sound Healing, Meditation) with
+// several subcategories each, rather than surfacing ~20 flat categories to
+// the user at once. moodTags/instrumentTags/sleepUseTags are comma-
+// separated free text for V1 (simplest thing that works while the content
+// library is still tiny) — upgradeable to real tag tables later without
+// touching any other model.
+model MusicTrack {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  artist          String?
+  sourceType      String   // ASCLEPIOS_ORIGINAL | ASCLEPIOS_LICENSED | THIRD_PARTY_API | SYNTHESIZED
+  audioUrl        String?  // null only for SYNTHESIZED
+  synthEngine     String?  // one of synthEngine.ts's SynthEngineType values — SYNTHESIZED only
+  artworkUrl      String?
+  durationSeconds Int?     // null = open-ended (SYNTHESIZED loops until timer/manual stop)
+  primaryCategory String   // SLEEP_SOUNDS | MUSIC | SOUND_HEALING | MEDITATION
+  subcategory     String?  // see packages/shared MUSIC_SUBCATEGORIES for the controlled list per primaryCategory
+  moodTags        String?  // comma-separated, V1 simplification — see comment above
+  instrumentTags  String?  // comma-separated
+  frequencyHz     Int?     // Frequency Collection tracks only (432/528/639/741/852/963)
+  sleepUseTags    String?  // comma-separated
+  premium         Boolean  @default(false)
+  published       Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  locale          String?  // null = locale-agnostic (most instrumental/ambient tracks)
+  providerCode    String?  // THIRD_PARTY_API only — which MusicProvider adapter
+  providerId      String?  // THIRD_PARTY_API only — the provider's own track id
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  favourites  MusicFavourite[]
+  playHistory MusicPlayHistory[]
+}
+
+model MusicFavourite {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  trackId   String
+  track     MusicTrack @relation(fields: [trackId], references: [id])
+  createdAt DateTime   @default(now())
+
+  @@unique([userId, trackId])
+}
+
+// One row per play (not just a "last played" pointer) so "Recently Played"
+// can show a real recency-ordered list per Edmund's §3 UI brief, not just
+// a single most-recent track.
+model MusicPlayHistory {
+  id       String     @id @default(cuid())
+  userId   String
+  user     User       @relation(fields: [userId], references: [id])
+  trackId  String
+  track    MusicTrack @relation(fields: [trackId], references: [id])
+  playedAt DateTime   @default(now())
 }
 
 model Wallpaper {
