@@ -218,6 +218,14 @@ model ContentItem {
   // never checked ad hoc in a route or component.
   layer           String   @default("PUBLIC")
   active          Boolean  @default(true)
+  // Requirement Recovery Matrix #22 — Sleep Answer Library's 4-category
+  // taxonomy (UNDERSTAND/LEARN/USE/EXPLORE). Nullable: non-library items
+  // (e.g. CONTENT_SAFETY_DISCLAIMER) don't belong to any category.
+  category        String?
+  // Inline article body for type=ARTICLE items with no real external `url`
+  // yet (same "no licensed asset, so build the honest thing" pattern as
+  // the Wallpaper/Sleep-Audio work) — rendered as plain text in the app.
+  bodyMarkdown    String?
 }
 
 model AudioTrack {
