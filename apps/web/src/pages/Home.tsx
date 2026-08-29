@@ -90,6 +90,9 @@ export default function Home() {
         <Link to="/theme" className="card" style={{ textDecoration: "none", color: "var(--color-text)", textAlign: "center" }}>
           {t("home.cta.theme")}
         </Link>
+        <Link to="/learn" className="card" style={{ textDecoration: "none", color: "var(--color-text)", textAlign: "center" }}>
+          {t("home.cta.learn")}
+        </Link>
       </div>
 
       <BottomNav />
