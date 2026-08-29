@@ -14,6 +14,7 @@ import featureFlagRoutes from "./routes/featureFlags";
 import preferencesRoutes from "./routes/preferences";
 import wallpapersRoutes from "./routes/wallpapers";
 import todayRoutes from "./routes/today";
+import contentRoutes from "./routes/content";
 
 /**
  * The Express app itself, with no `listen()` call — shared by:
@@ -44,6 +45,7 @@ export function createApp() {
   app.use("/preferences", preferencesRoutes);
   app.use("/wallpapers", wallpapersRoutes);
   app.use("/today", todayRoutes);
+  app.use("/content", contentRoutes);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -55,5 +57,3 @@ export function createApp() {
 }
 
 export const app = createApp();
-
-// redeploy trigger 29 Aug 2026
