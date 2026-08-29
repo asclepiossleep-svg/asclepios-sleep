@@ -10,6 +10,7 @@ interface TonightStep {
   stepCode: string;
   productId?: string;
   productName?: string;
+  mode?: "RHYTHM" | "CALM" | "BODY" | "SUPPORT";
 }
 
 function stepLabel(step: TonightStep): string {
@@ -25,6 +26,7 @@ function stepLabel(step: TonightStep): string {
  */
 export default function Tonight() {
   const [steps, setSteps] = useState<TonightStep[]>([]);
+  const [routineLevel, setRoutineLevel] = useState<number | null>(null);
   const [stepStatus, setStepStatus] = useState<Record<string, "DONE" | "SKIPPED">>({});
   const [trackCode, setTrackCode] = useState<SynthTrackCode>(SYNTH_TRACKS[0].code);
   const [durationLabel, setDurationLabel] = useState<string>("1 hr");
@@ -32,7 +34,10 @@ export default function Tonight() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get<{ steps: TonightStep[] }>("/tonight").then((r) => setSteps(r.steps));
+    api.get<{ steps: TonightStep[]; routineLevel: number }>("/tonight").then((r) => {
+      setSteps(r.steps);
+      setRoutineLevel(r.routineLevel);
+    });
   }, []);
 
   async function mark(step: TonightStep, status: "DONE" | "SKIPPED") {
@@ -55,12 +60,27 @@ export default function Tonight() {
   return (
     <div className="screen">
       <h1>{t("tonight.title")}</h1>
+      {routineLevel !== null && (
+        <p className="muted" style={{ margin: "-0.5rem 0 0" }}>
+          {t("tonight.routineLevel")} {routineLevel}
+        </p>
+      )}
 
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {steps.length === 0 && <p className="muted">{t("tonight.loadingPlan")}</p>}
         {steps.map((step) => (
           <div key={step.stepCode} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
-            <span>{stepLabel(step)}</span>
+            <span>
+              {stepLabel(step)}
+              {step.mode && (
+                <span
+                  className="muted"
+                  style={{ marginLeft: "0.5rem", fontSize: "0.7rem", border: "1px solid var(--color-border)", borderRadius: "999px", padding: "0.05rem 0.5rem" }}
+                >
+                  {t(`mode.${step.mode}`)}
+                </span>
+              )}
+            </span>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button onClick={() => mark(step, "DONE")} style={stepStatus[step.stepCode] === "DONE" ? { borderColor: "var(--color-primary)" } : {}}>
                 {t("tonight.done")}
