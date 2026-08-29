@@ -1,7 +1,20 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSession } from "../state/session";
 import { t } from "../i18n";
+import { api } from "../api/client";
 import BottomNav from "../components/BottomNav";
+
+interface TodayNudge {
+  code: "MISSING_CHECKIN" | "FOCUS_TAG" | "ON_TRACK";
+  tag?: string;
+}
+
+const NUDGE_DISMISS_KEY_PREFIX = "asclepios.nudgeDismissed.";
+
+function todayKey(): string {
+  return NUDGE_DISMISS_KEY_PREFIX + new Date().toISOString().slice(0, 10);
+}
 
 /**
  * Design moodboard 28 Aug 2026 — Home/Welcome dashboard. New default landing
@@ -14,6 +27,27 @@ export default function Home() {
   const { user } = useSession();
   const navigate = useNavigate();
   const setupIncomplete = !user?.wallpaperId;
+  const [nudge, setNudge] = useState<TodayNudge | null>(null);
+
+  useEffect(() => {
+    let dismissedToday = false;
+    try {
+      dismissedToday = localStorage.getItem(todayKey()) === "1";
+    } catch {
+      /* localStorage unavailable — just show the nudge every visit, harmless */
+    }
+    if (dismissedToday) return;
+    api.get<TodayNudge>("/today/nudge").then(setNudge).catch(() => {});
+  }, []);
+
+  function dismissNudge() {
+    setNudge(null);
+    try {
+      localStorage.setItem(todayKey(), "1");
+    } catch {
+      /* best-effort only */
+    }
+  }
 
   return (
     <div className="screen">
@@ -22,6 +56,13 @@ export default function Home() {
         {user?.email ? `, ${user.email.split("@")[0]}` : ""}
       </h1>
       <p className="muted">{t("home.subtitle")}</p>
+
+      {nudge && nudge.code !== "ON_TRACK" && (
+        <div className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+          <p style={{ margin: 0 }}>{nudge.code === "FOCUS_TAG" ? `${t("home.nudge.focusTag")} ${t(`tag.${nudge.tag}`)}` : t(`home.nudge.${nudge.code}`)}</p>
+          <button onClick={dismissNudge}>{t("home.nudge.dismiss")}</button>
+        </div>
+      )}
 
       {setupIncomplete && (
         <div className="card" style={{ borderColor: "var(--color-accent)" }}>
