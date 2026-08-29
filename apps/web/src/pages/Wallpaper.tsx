@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../state/session";
 import { t } from "../i18n";
+import PageHeader from "../components/PageHeader";
 
 interface WallpaperOption {
   id: string;
@@ -39,8 +40,15 @@ export default function Wallpaper() {
     if (!selected) return next();
     setSaving(true);
     try {
-      const res = await api.patch<{ wallpaperId: string | null }>("/preferences", { wallpaperId: selected });
-      updateUser({ wallpaperId: res.wallpaperId });
+      // App-wide wallpaper (29 Aug 2026) — the API already returns the full
+      // Wallpaper row (see apps/api/src/routes/preferences.ts), so grab
+      // `wallpaper` here too and push it into session — AppBackground picks
+      // it up immediately, no extra round trip.
+      const res = await api.patch<{ wallpaperId: string | null; wallpaper: { imageUrl: string | null; themeColor: string | null } | null }>(
+        "/preferences",
+        { wallpaperId: selected }
+      );
+      updateUser({ wallpaperId: res.wallpaperId, wallpaper: res.wallpaper });
     } finally {
       setSaving(false);
       next();
@@ -57,8 +65,7 @@ export default function Wallpaper() {
 
   return (
     <div className="screen">
-      <h1>{t(isSetup ? "setup.wallpaper.title" : "wallpaper.title")}</h1>
-      {isSetup && <p className="muted">{t("setup.wallpaper.subtitle")}</p>}
+      <PageHeader title={t(isSetup ? "setup.wallpaper.title" : "wallpaper.title")} subtitle={isSetup ? t("setup.wallpaper.subtitle") : undefined} />
 
       {options.length === 0 && <p className="muted">{t("setup.loading")}</p>}
 
