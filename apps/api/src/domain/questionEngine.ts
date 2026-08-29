@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import { applyTagEffect, blankTagScore } from "./decision/scoringEngine";
+import { applyTagEffect, blankTagScore, compositeScore } from "./decision/scoringEngine";
 import { upsertCurrentStateTag } from "./decision/stateEngine";
 import { Intent, Tag } from "@asclepios/shared";
 
@@ -86,4 +86,24 @@ export async function submitAnswer(userId: string, assessmentId: string, questio
   return prisma.assessmentAnswer.create({
     data: { assessmentId, questionId, answerOptionId },
   });
+}
+
+/**
+ * Mid-Build Integration Addendum #2 — "8-15 Q → top 3 focus areas". Ranks
+ * the user's Current State tags (the ones this assessment just wrote to —
+ * Core Profile isn't promoted until the first 7/28-day review, so Current
+ * State is the only populated source right after an initial assessment) by
+ * the same composite weighting the Severity Bucket classifier uses, and
+ * returns the top 3 with a non-zero score. A brand-new user who answered
+ * nothing severity-raising yet gets an empty list — the client shows a
+ * neutral "all clear" state rather than 3 empty tags.
+ */
+export async function getTopFocusAreas(userId: string, limit = 3) {
+  const currentState = await prisma.tagScore.findMany({ where: { userId, source: "CURRENT_STATE" } });
+  type Scored = (typeof currentState)[number];
+  return currentState
+    .map((t: Scored) => ({ tag: t.tag, severity: t.severity, frequency: t.frequency, impact: t.impact, composite: compositeScore(t as any) }))
+    .filter((t: { composite: number }) => t.composite > 0)
+    .sort((a: { composite: number }, b: { composite: number }) => b.composite - a.composite)
+    .slice(0, limit);
 }
