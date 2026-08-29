@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { useSession } from "../state/session";
 import { t } from "../i18n";
 import { THEME_COLORS } from "@asclepios/shared";
+import PageHeader from "../components/PageHeader";
 
 /**
  * Design moodboard 28 Aug 2026 — Theme Colour picker. Six presets, centrally
@@ -45,8 +46,7 @@ export default function ThemeColor() {
 
   return (
     <div className="screen">
-      <h1>{t(isSetup ? "setup.theme.title" : "theme.title")}</h1>
-      {isSetup && <p className="muted">{t("setup.theme.subtitle")}</p>}
+      <PageHeader title={t(isSetup ? "setup.theme.title" : "theme.title")} subtitle={isSetup ? t("setup.theme.subtitle") : undefined} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
         {THEME_COLORS.map((c) => (
