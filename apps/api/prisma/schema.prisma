@@ -140,7 +140,7 @@ model Entitlement {
   userId     String
   user       User      @relation(fields: [userId], references: [id])
   key        String    // e.g. programme.28day | media.premium_audio | course.calm_mind
-  grantedVia String    // ORDER | ADMIN_GRANT | DEMO_SEED | QR_ACTIVATION
+  grantedVia String    // ORDER | ADMIN_GRANT | DEMO_SEED | QR_ACTIVATION | SELF_ENROLL
   grantedAt  DateTime  @default(now())
   expiresAt  DateTime?
   revokedAt  DateTime?
@@ -265,7 +265,7 @@ model Wallpaper {
   // Master Kick-off V1 Phase 3/26 added SUNRISE, MIST_MOUNTAINS and
   // STARRY_SKY on top of the original set. Centralized in
   // packages/shared WALLPAPER_CATEGORIES — never hard-code this list twice.
-  category   String  // NATURE | NIGHT | WATER | MINIMAL | ABSTRACT | BRITISH_COUNTRYSIDE | JAPANESE_CALM | SUNRISE | MIST_MOUNTAINS | STARRY_SKY
+  category   String  // NATURE | NIGHT | WATER | MINIMAL | ABSTRACT | BRITISH_COUNTRYSIDE | JAPANESE_CALM | SUNRISE | MIST_MOUNTAINS | STARRY_SKY | WARM_COZY
   imageUrl   String?
   themeColor String?
   active     Boolean @default(true)
