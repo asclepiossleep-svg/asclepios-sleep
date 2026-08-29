@@ -13,6 +13,13 @@ interface Question {
   text: string;
   answerOptions: AnswerOption[];
 }
+interface FocusArea {
+  tag: string;
+  severity: number;
+  frequency: number;
+  impact: number;
+  composite: number;
+}
 
 /**
  * Doc 02 §8 — Scripted Conversation. Every message is a Question/Template/
@@ -25,6 +32,7 @@ export default function Assessment() {
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
   const [done, setDone] = useState(false);
+  const [topFocusAreas, setTopFocusAreas] = useState<FocusArea[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,8 +44,9 @@ export default function Assessment() {
   }, [assessmentId]);
 
   async function loadNext(id: string) {
-    const res = await api.get<{ done: boolean; question?: Question }>(`/assessment/${id}/next`);
+    const res = await api.get<{ done: boolean; question?: Question; topFocusAreas?: FocusArea[] }>(`/assessment/${id}/next`);
     if (res.done) {
+      setTopFocusAreas(res.topFocusAreas ?? []);
       setDone(true);
     } else {
       setQuestion(res.question ?? null);
@@ -55,6 +64,20 @@ export default function Assessment() {
       <div className="screen">
         <h1>{t("assessment.allSet")}</h1>
         <p className="muted">{t("assessment.allSetSubtitle")}</p>
+
+        {topFocusAreas.length > 0 && (
+          <div className="card">
+            <p>
+              <strong>{t("assessment.topFocusAreas.title")}</strong>
+            </p>
+            <ol style={{ margin: "0.5rem 0 0", paddingLeft: "1.25rem" }}>
+              {topFocusAreas.map((f) => (
+                <li key={f.tag}>{t(`tag.${f.tag}`)}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+
         <button className="primary" onClick={() => navigate("/tonight")}>
           {t("assessment.continue")}
         </button>
