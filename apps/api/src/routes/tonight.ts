@@ -17,9 +17,15 @@ router.use(requireAuth);
  *
  * Each step also carries its `mode` (Matrix #11's Rhythm/Calm/Body/Support
  * taxonomy) so the client can show why a step is there, not just what it is.
+ *
+ * Matrix #14 — the PRODUCT step also carries `protocolSteps`: the real
+ * Apply→Breathe→Sleep (or Apply→Drink) micro-protocol for that specific
+ * product, read from `ProductProtocolStep` (admin-configurable, no deploy
+ * needed to edit). Falls back to `en` if the requested locale has no rows.
  */
 router.get("/", async (req: AuthedRequest, res) => {
   const userId = req.userId!;
+  const locale = (req.query.locale as string) || "en";
   const ownerships = await prisma.productOwnership.findMany({ where: { userId }, include: { product: true } });
   const currentState = await prisma.tagScore.findMany({ where: { userId, source: "CURRENT_STATE" } });
   const racingThoughts = currentState.find((t: (typeof currentState)[number]) => t.tag === "RACING_THOUGHTS");
@@ -31,11 +37,23 @@ router.get("/", async (req: AuthedRequest, res) => {
   // Labels are not baked in server-side — the client owns all user-facing
   // copy via its locale resources (apps/web/src/i18n), so this route only
   // ever returns stepCode + the raw data (e.g. product name) a label needs.
-  const steps: { stepCode: string; productId?: string; productName?: string }[] = [];
+  const steps: { stepCode: string; productId?: string; productName?: string; protocolSteps?: { title: string; instruction: string }[] }[] = [];
 
   if (ownerships.length > 0) {
     const primary = ownerships[0];
-    steps.push({ stepCode: "PRODUCT", productId: primary.productId, productName: primary.product.name });
+    let protocolRows = await prisma.productProtocolStep.findMany({
+      where: { productId: primary.productId, locale },
+      orderBy: { stepOrder: "asc" },
+    });
+    if (protocolRows.length === 0 && locale !== "en") {
+      protocolRows = await prisma.productProtocolStep.findMany({ where: { productId: primary.productId, locale: "en" }, orderBy: { stepOrder: "asc" } });
+    }
+    steps.push({
+      stepCode: "PRODUCT",
+      productId: primary.productId,
+      productName: primary.product.name,
+      protocolSteps: protocolRows.map((r: (typeof protocolRows)[number]) => ({ title: r.title, instruction: r.instruction })),
+    });
   }
   if (racingThoughts && racingThoughts.severity >= 3 && steps.length < maxSteps) {
     steps.push({ stepCode: "BREATHING" });
