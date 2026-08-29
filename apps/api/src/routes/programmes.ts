@@ -55,3 +55,11 @@ router.post("/:code/enroll", async (req: AuthedRequest, res) => {
   if (!programme) return res.status(404).json({ error: "not_found" });
 
   const existing = await prisma.programmeEnrollment.findFirst({ where: { userId, programmeId: programme.id } });
+  if (existing) return res.json({ enrolled: true, startedAt: existing.startedAt });
+
+  const enrollment = await prisma.programmeEnrollment.create({ data: { userId, programmeId: programme.id } });
+  await grantEntitlement(userId, `PROGRAMME_${code.replace("PRG_", "")}`, "SELF_ENROLL");
+  res.json({ enrolled: true, startedAt: enrollment.startedAt });
+});
+
+export default router;
