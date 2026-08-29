@@ -111,6 +111,61 @@ export async function seedBaseConfig() {
   await prisma.audioTrack.upsert({ where: { code: "AUD_SOFT_PIANO" }, update: {}, create: { code: "AUD_SOFT_PIANO", title: "Soft Piano Morning", category: "CLASSICAL", durationSeconds: 600, isPremium: true } });
   await prisma.audioTrack.upsert({ where: { code: "WAKE_COUNTRYSIDE_02" }, update: {}, create: { code: "WAKE_COUNTRYSIDE_02", title: "Birds & Countryside", category: "NATURE", durationSeconds: 600 } });
 
+  // Music Library V1 (29 Aug 2026) — Phase 1 seed: today's 9 SYNTH_TRACKS
+  // as real MusicTrack catalog rows (sourceType SYNTHESIZED, audioUrl
+  // null — synthEngine tells the not-yet-built player which
+  // synthEngine.ts engine to run instead). Nothing reads MusicTrack yet
+  // (Tonight/SleepPlayer still run off SYNTH_TRACKS directly), so this is
+  // purely catalog data ahead of the Phase 3/5/6 player+UI work — gives
+  // the schema something real to query/test against immediately, per
+  // Edmund's own §14 ("create seed/demo records now"), without inventing
+  // placeholder tracks that don't actually exist.
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-pink-noise" },
+    update: {},
+    create: { slug: "synth-pink-noise", title: "Pink Noise", sourceType: "SYNTHESIZED", synthEngine: "PINK_NOISE", primaryCategory: "SLEEP_SOUNDS", subcategory: "PINK_NOISE", sortOrder: 1 },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-brown-noise" },
+    update: {},
+    create: { slug: "synth-brown-noise", title: "Brown Noise", sourceType: "SYNTHESIZED", synthEngine: "BROWN_NOISE", primaryCategory: "SLEEP_SOUNDS", subcategory: "BROWN_NOISE", sortOrder: 2 },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-white-noise" },
+    update: {},
+    create: { slug: "synth-white-noise", title: "White Noise", sourceType: "SYNTHESIZED", synthEngine: "WHITE_NOISE", primaryCategory: "SLEEP_SOUNDS", subcategory: "WHITE_NOISE", sortOrder: 3 },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-calm-mind-432" },
+    update: {},
+    create: { slug: "synth-calm-mind-432", title: "Calm Mind (432Hz)", sourceType: "SYNTHESIZED", synthEngine: "BLEND_432", primaryCategory: "SOUND_HEALING", subcategory: "FREQ_432", frequencyHz: 432, sortOrder: 4 },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-deep-relax-528" },
+    update: {},
+    create: { slug: "synth-deep-relax-528", title: "Deep Relax (528Hz)", sourceType: "SYNTHESIZED", synthEngine: "BLEND_528", primaryCategory: "SOUND_HEALING", subcategory: "FREQ_528", frequencyHz: 528, sortOrder: 5 },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-ocean-waves" },
+    update: {},
+    create: { slug: "synth-ocean-waves", title: "Ocean Waves", sourceType: "SYNTHESIZED", synthEngine: "OCEAN_WAVES", primaryCategory: "SLEEP_SOUNDS", subcategory: "OCEAN_WAVES", sortOrder: 6 },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-gentle-rain" },
+    update: {},
+    create: { slug: "synth-gentle-rain", title: "Gentle Rain", sourceType: "SYNTHESIZED", synthEngine: "GENTLE_RAIN", primaryCategory: "SLEEP_SOUNDS", subcategory: "RAIN", sortOrder: 7 },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-singing-bowl" },
+    update: {},
+    create: { slug: "synth-singing-bowl", title: "Singing Bowl", sourceType: "SYNTHESIZED", synthEngine: "SINGING_BOWL", primaryCategory: "SOUND_HEALING", subcategory: "SINGING_BOWL", sortOrder: 8 },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "synth-forest-wind" },
+    update: {},
+    create: { slug: "synth-forest-wind", title: "Forest Wind", sourceType: "SYNTHESIZED", synthEngine: "FOREST_WIND", primaryCategory: "SLEEP_SOUNDS", subcategory: "FOREST", sortOrder: 9 },
+  });
+
   // Real-photo wallpaper library (Edmund-commissioned, photorealistic
   // direction — 29 Aug 2026, "B start compose into the APP"). imageUrl
   // points at static files under apps/web/public/wallpapers/, served
