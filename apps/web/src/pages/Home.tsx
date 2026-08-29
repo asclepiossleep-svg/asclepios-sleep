@@ -4,6 +4,7 @@ import { useSession } from "../state/session";
 import { t } from "../i18n";
 import { api } from "../api/client";
 import BottomNav from "../components/BottomNav";
+import PageHeader from "../components/PageHeader";
 
 interface TodayNudge {
   code: "MISSING_CHECKIN" | "FOCUS_TAG" | "ON_TRACK";
@@ -51,11 +52,15 @@ export default function Home() {
 
   return (
     <div className="screen">
-      <h1>
-        {t("home.greeting")}
-        {user?.email ? `, ${user.email.split("@")[0]}` : ""}
-      </h1>
-      <p className="muted">{t("home.subtitle")}</p>
+      <PageHeader
+        title={
+          <>
+            {t("home.greeting")}
+            {user?.email ? `, ${user.email.split("@")[0]}` : ""}
+          </>
+        }
+        subtitle={t("home.subtitle")}
+      />
 
       {nudge && nudge.code !== "ON_TRACK" && (
         <div className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
@@ -92,6 +97,9 @@ export default function Home() {
         </Link>
         <Link to="/learn" className="card" style={{ textDecoration: "none", color: "var(--color-text)", textAlign: "center" }}>
           {t("home.cta.learn")}
+        </Link>
+        <Link to="/programmes" className="card" style={{ textDecoration: "none", color: "var(--color-text)", textAlign: "center" }}>
+          {t("home.cta.programmes")}
         </Link>
       </div>
 
