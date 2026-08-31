@@ -108,6 +108,11 @@ export type ResponseDirection = "IMPROVED" | "UNCHANGED" | "WORSENED";
 // Supplement 07 §11 — Sleep audio duration presets (display / underlying value)
 // ---------------------------------------------------------------------------
 export const SLEEP_AUDIO_DURATION_PRESETS = [
+  // 31 Aug 2026 — Edmund's correction: duration should range "from 5 mins to
+  // whole night", not start at 10. UNTIL_WAKE ("whole night") is a separate
+  // SleepAudioDurationMode value below, not a preset — it has no fixed
+  // seconds by definition.
+  { label: "5 min", seconds: 300 },
   { label: "10 min", seconds: 600 },
   { label: "20 min", seconds: 1200 },
   { label: "30 min", seconds: 1800 },
