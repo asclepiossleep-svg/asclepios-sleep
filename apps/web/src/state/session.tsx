@@ -13,6 +13,10 @@ interface SessionUser {
   role: string;
   locale: string;
   timezone: string;
+  // 31 Aug 2026 — Edmund's feedback: greet people by their actual name, not
+  // their email prefix. Set on Register (Login.tsx) or later from Settings;
+  // null/undefined for anyone who hasn't set one yet.
+  displayName?: string | null;
   wallpaperId?: string | null;
   themeColor?: string | null;
   // App-wide wallpaper (29 Aug 2026) — the full Wallpaper row (imageUrl in
@@ -45,9 +49,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   function loadPreferences() {
     api
-      .get<{ wallpaper: SessionWallpaper | null; preferredSleepAudioId: string | null; audioMuted: boolean }>("/preferences")
+      .get<{ displayName: string | null; wallpaper: SessionWallpaper | null; preferredSleepAudioId: string | null; audioMuted: boolean }>("/preferences")
       .then((p) =>
-        setUser((prev) => (prev ? { ...prev, wallpaper: p.wallpaper, preferredSleepAudioId: p.preferredSleepAudioId, audioMuted: p.audioMuted } : prev))
+        setUser((prev) =>
+          prev ? { ...prev, displayName: p.displayName, wallpaper: p.wallpaper, preferredSleepAudioId: p.preferredSleepAudioId, audioMuted: p.audioMuted } : prev
+        )
       )
       .catch(() => {});
   }
