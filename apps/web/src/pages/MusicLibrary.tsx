@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { t } from "../i18n";
 import { playTrack, PlayableTrack } from "../audio/musicPlayer";
@@ -29,6 +30,7 @@ export default function MusicLibrary() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const { track: nowPlaying, playing } = useMusicPlayer();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setStatus("loading");
@@ -45,6 +47,10 @@ export default function MusicLibrary() {
     if (!track.audioUrl) return;
     const playable: PlayableTrack = { id: track.id, title: track.title, artist: track.artist, audioUrl: track.audioUrl, artworkUrl: track.artworkUrl };
     playTrack(playable);
+    // 31 Aug 2026 — Edmund's brief: picking a track should open the
+    // full-screen immersive player (design moodboard's Sleep Player
+    // screen), not just start the small bottom bar quietly.
+    navigate("/music/now-playing");
   }
 
   const grouped = CATEGORY_ORDER.map((cat) => ({ category: cat, items: tracks.filter((tr) => tr.primaryCategory === cat) })).filter(
