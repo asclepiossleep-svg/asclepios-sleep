@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { api, sessionState } from "../api/client";
+import { api, sessionState, setSessionToken } from "../api/client";
 import { setLocale } from "../i18n";
 
 interface SessionWallpaper {
@@ -15,14 +15,7 @@ interface SessionUser {
   timezone: string;
   wallpaperId?: string | null;
   themeColor?: string | null;
-  // App-wide wallpaper (29 Aug 2026) — the full Wallpaper row (imageUrl in
-  // particular), not just its id, so AppBackground can render the photo
-  // without every page re-fetching /preferences. Populated on login and
-  // refreshed whenever Wallpaper.tsx saves a new pick.
   wallpaper?: SessionWallpaper | null;
-  // Music Library (29 Aug 2026) — persisted "change/turn off background
-  // music" choice, same populate-on-login + refresh-on-save pattern as
-  // wallpaper above.
   preferredSleepAudioId?: string | null;
   audioMuted?: boolean;
 }
@@ -43,23 +36,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [entitlements, setEntitlements] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // No persisted-storage auto-login in this scaffold — every reload
-    // re-enters Welcome. Wiring a refresh-token flow is a Doc 06 build-order
-    // item, not required for the vertical slice.
-    setLoading(false);
-  }, []);
-
-  function setToken(token: string, nextUser: SessionUser) {
-    sessionState.token = token;
-    setUser(nextUser);
-    setLocale(nextUser.locale);
-    api.get<{ entitlements: string[] }>("/auth/session").then((s) => setEntitlements(s.entitlements));
-    // App-wide wallpaper (29 Aug 2026) — /auth/otp/verify and /demo/login
-    // don't return the full Wallpaper row (just wallpaperId), so fetch it
-    // once here; AppBackground reads user.wallpaper.imageUrl from then on.
-    // Music Library (29 Aug 2026) — same round trip also carries the
-    // persisted background-music choice.
+  function loadPreferences() {
     api
       .get<{ wallpaper: SessionWallpaper | null; preferredSleepAudioId: string | null; audioMuted: boolean }>("/preferences")
       .then((p) =>
@@ -68,12 +45,40 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
   }
 
+  useEffect(() => {
+    if (!sessionState.token) {
+      setLoading(false);
+      return;
+    }
+    api
+      .get<{ user: SessionUser; entitlements: string[] }>("/auth/session")
+      .then((s) => {
+        setUser(s.user);
+        setEntitlements(s.entitlements);
+        setLocale(s.user.locale);
+        loadPreferences();
+      })
+      .catch(() => {
+        setSessionToken(null);
+      })
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function setToken(token: string, nextUser: SessionUser) {
+    setSessionToken(token);
+    setUser(nextUser);
+    setLocale(nextUser.locale);
+    api.get<{ entitlements: string[] }>("/auth/session").then((s) => setEntitlements(s.entitlements));
+    loadPreferences();
+  }
+
   function updateUser(patch: Partial<SessionUser>) {
     setUser((prev) => (prev ? { ...prev, ...patch } : prev));
   }
 
   function logout() {
-    sessionState.token = null;
+    setSessionToken(null);
     setUser(null);
     setEntitlements([]);
   }
