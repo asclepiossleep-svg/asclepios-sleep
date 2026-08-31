@@ -56,7 +56,11 @@ export default function Home() {
         title={
           <>
             {t("home.greeting")}
-            {user?.email ? `, ${user.email.split("@")[0]}` : ""}
+            {/* 31 Aug 2026 — Edmund's feedback: don't invent a "name" out of
+                the email address. Prefer the name they actually gave us
+                (Register, or added later in Settings); only fall back to
+                the email prefix for accounts that never set one. */}
+            {user?.displayName ? `, ${user.displayName}` : user?.email ? `, ${user.email.split("@")[0]}` : ""}
           </>
         }
         subtitle={t("home.subtitle")}
