@@ -22,6 +22,12 @@
   --color-border: #e4ddce;
   --color-danger: #b3452f;
 
+  /* Front-page rebuild (29 Aug 2026) — reusable brand tokens, not just for
+     Login. font-display is a system-only serif stack (no external font
+     fetch) for a handful of major brand headings; the atmospheric hero
+     gradient/orb tokens key off the SAME [data-theme] attribute the rest
+     of the app already uses for day/night, so "Daylight -> Nightfall" is
+     one shared concept, not a Login-only effect. */
   --font-display: Georgia, "Noto Serif TC", "Songti TC", "PingFang HK", serif;
   --hero-gradient: linear-gradient(180deg, #fdf3e2 0%, #f3e6d3 30%, #dce4d2 62%, #b7cdb8 100%);
   --hero-orb-color: #e8a15c;
@@ -31,11 +37,27 @@
   --hero-hill-front: #8e9f8c;
   --hero-water: rgba(183, 205, 184, 0.55);
 
-  --color-surface-veil: rgba(255, 255, 255, 0.7);
-  --scrim-wallpaper: linear-gradient(180deg, rgba(20, 18, 12, 0.15) 0%, rgba(20, 18, 12, 0.55) 100%);
+  /* App-wide wallpaper (31 Aug 2026) — the frosted-glass surface every
+     .card/.page-header/BottomNav switches to when a photo is behind them
+     (body.has-wallpaper), plus a top-to-bottom darkening scrim so light
+     text stays readable over any photo. These were referenced by
+     AppBackground.tsx/PageHeader.tsx/BottomNav.tsx/SleepPlayer.tsx from
+     29 Aug 2026 but the rules themselves were never added here — that gap
+     is why wallpapers never visibly appeared anywhere in the app.
+     31 Aug 2026 fix — Edmund's report: applied, this looked like a heavy
+     colour wash, not the wallpaper photo itself, next to nothing like the
+     crisp, vivid reference design. The veil was 70% opaque white — nearly
+     opaque — and the blur was heavy on top of it; between the two, the
+     photo underneath was barely visible. Cut the veil to 38% and the scrim
+     to a much lighter top-to-bottom fade so the photo reads clearly, with
+     just enough of both left for text contrast. */
+  --color-surface-veil: rgba(255, 255, 255, 0.38);
+  --scrim-wallpaper: linear-gradient(180deg, rgba(20, 18, 12, 0.04) 0%, rgba(20, 18, 12, 0.28) 100%);
 }
 
 [data-theme="night"] {
+  /* Night mode: soft indigo, grey-green, misty violet, near-black — never a
+     large flat pure-black area (Doc 05 §7). */
   --color-bg: #12141f;
   --color-surface: #1b1f2e;
   --color-text: #eceaf5;
@@ -54,8 +76,8 @@
   --hero-hill-front: #232741;
   --hero-water: rgba(63, 65, 107, 0.5);
 
-  --color-surface-veil: rgba(27, 31, 46, 0.7);
-  --scrim-wallpaper: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.6) 100%);
+  --color-surface-veil: rgba(27, 31, 46, 0.4);
+  --scrim-wallpaper: linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.32) 100%);
 }
 
 * {
@@ -108,6 +130,9 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* App-wide wallpaper (31 Aug 2026) — see AppBackground.tsx. Fixed full-bleed
+   photo + scrim sit behind everything (negative z-index); .screen sits in
+   front at z-index:1 so page content is always readable over any photo. */
 .app-wallpaper-bg {
   position: fixed;
   inset: 0;
@@ -142,8 +167,8 @@ button:disabled {
 
 body.has-wallpaper .page-header {
   background: var(--color-surface-veil);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
   padding: 0.75rem 1rem;
 }
 
@@ -157,8 +182,8 @@ body.has-wallpaper .page-header {
 body.has-wallpaper .card {
   background: var(--color-surface-veil);
   border-color: transparent;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
 }
 
 .muted {
