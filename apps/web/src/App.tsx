@@ -14,7 +14,9 @@ import Review from "./pages/Review";
 import Library from "./pages/Library";
 import Programmes from "./pages/Programmes";
 import Admin from "./pages/Admin";
+import MusicLibrary from "./pages/MusicLibrary";
 import AppBackground from "./components/AppBackground";
+import MusicPlayerBar from "./components/MusicPlayerBar";
 
 // Doc 05 §7 — day/night theme follows local time by default; a real build
 // lets the user override this from Settings (not wired in this scaffold).
@@ -183,9 +185,23 @@ export default function App() {
           </RequireAuth>
         }
       />
+      <Route
+        path="/music"
+        element={
+          <RequireAuth>
+            <MusicLibrary />
+          </RequireAuth>
+        }
+      />
       <Route path="/" element={<RootRedirect />} />
       <Route path="*" element={<RootRedirect />} />
       </Routes>
+      {/* Music Library V1 (31 Aug 2026) — persistent mini-player, rendered
+          once outside <Routes> (same reasoning as AppBackground above) so
+          "play only, repeat until stop" actually survives navigating to a
+          different page instead of stopping the moment MusicLibrary
+          unmounts. No-ops (renders null) until a track is playing. */}
+      <MusicPlayerBar />
     </>
   );
 }
