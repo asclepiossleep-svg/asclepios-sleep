@@ -22,12 +22,6 @@
   --color-border: #e4ddce;
   --color-danger: #b3452f;
 
-  /* Front-page rebuild (29 Aug 2026) — reusable brand tokens, not just for
-     Login. font-display is a system-only serif stack (no external font
-     fetch) for a handful of major brand headings; the atmospheric hero
-     gradient/orb tokens key off the SAME [data-theme] attribute the rest
-     of the app already uses for day/night, so "Daylight -> Nightfall" is
-     one shared concept, not a Login-only effect. */
   --font-display: Georgia, "Noto Serif TC", "Songti TC", "PingFang HK", serif;
   --hero-gradient: linear-gradient(180deg, #fdf3e2 0%, #f3e6d3 30%, #dce4d2 62%, #b7cdb8 100%);
   --hero-orb-color: #e8a15c;
@@ -36,11 +30,12 @@
   --hero-hill-mid: #a7c7e7;
   --hero-hill-front: #8e9f8c;
   --hero-water: rgba(183, 205, 184, 0.55);
+
+  --color-surface-veil: rgba(255, 255, 255, 0.7);
+  --scrim-wallpaper: linear-gradient(180deg, rgba(20, 18, 12, 0.15) 0%, rgba(20, 18, 12, 0.55) 100%);
 }
 
 [data-theme="night"] {
-  /* Night mode: soft indigo, grey-green, misty violet, near-black — never a
-     large flat pure-black area (Doc 05 §7). */
   --color-bg: #12141f;
   --color-surface: #1b1f2e;
   --color-text: #eceaf5;
@@ -58,6 +53,9 @@
   --hero-hill-mid: #363b58;
   --hero-hill-front: #232741;
   --hero-water: rgba(63, 65, 107, 0.5);
+
+  --color-surface-veil: rgba(27, 31, 46, 0.7);
+  --scrim-wallpaper: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.6) 100%);
 }
 
 * {
@@ -105,7 +103,30 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.app-wallpaper-bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: -2;
+}
+
+.app-wallpaper-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--scrim-wallpaper);
+  pointer-events: none;
+}
+
 .screen {
+  position: relative;
+  z-index: 1;
   max-width: 480px;
   margin: 0 auto;
   padding: 1.5rem;
@@ -115,17 +136,12 @@ button:focus-visible {
   gap: 1rem;
 }
 
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+.page-header {
   border-radius: var(--radius);
-  padding: 1rem 1.25rem;
 }
 
-.muted {
-  color: var(--color-text-muted);
-}
-
-h1 {
-  font-size: 1.6rem;
-}
+body.has-wallpaper .page-header {
+  background: var(--color-surface-veil);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 0.75rem
