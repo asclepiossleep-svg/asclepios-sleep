@@ -16,6 +16,7 @@ router.get("/", async (req: AuthedRequest, res) => {
     include: { wallpaper: true },
   });
   res.json({
+    displayName: user.displayName,
     wallpaperId: user.wallpaperId,
     wallpaper: user.wallpaper,
     themeColor: user.themeColor,
@@ -31,7 +32,11 @@ router.get("/", async (req: AuthedRequest, res) => {
 });
 
 router.patch("/", async (req: AuthedRequest, res) => {
-  const { wallpaperId, themeColor, timezone, preferredSleepAudioId, audioMuted } = req.body as {
+  const { displayName, wallpaperId, themeColor, timezone, preferredSleepAudioId, audioMuted } = req.body as {
+    // 31 Aug 2026 — lets an existing account set/change their name from
+    // Settings, same fix as the Register-time name field in routes/auth.ts.
+    // Empty string clears it back to the email-prefix fallback.
+    displayName?: string | null;
     wallpaperId?: string | null;
     themeColor?: string | null;
     timezone?: string;
@@ -47,6 +52,7 @@ router.patch("/", async (req: AuthedRequest, res) => {
   const user = await prisma.user.update({
     where: { id: req.userId! },
     data: {
+      ...(displayName !== undefined ? { displayName: displayName?.trim() || null } : {}),
       ...(wallpaperId !== undefined ? { wallpaperId } : {}),
       ...(themeColor !== undefined ? { themeColor } : {}),
       ...(timezone !== undefined ? { timezone } : {}),
@@ -57,6 +63,7 @@ router.patch("/", async (req: AuthedRequest, res) => {
   });
 
   res.json({
+    displayName: user.displayName,
     wallpaperId: user.wallpaperId,
     wallpaper: user.wallpaper,
     themeColor: user.themeColor,
