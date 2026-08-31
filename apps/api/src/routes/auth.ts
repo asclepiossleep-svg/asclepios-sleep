@@ -30,8 +30,33 @@ router.post("/otp/request", async (req, res) => {
   res.json({ sent: true, devCode: process.env.NODE_ENV === "production" ? undefined : code });
 });
 
+/**
+ * 31 Aug 2026 — Edmund's rule: "Login" and "Register" must be distinct, not
+ * the old single flow that silently created an account on any email typed
+ * into the login form. `mode` is optional and defaults to "login" for
+ * backward compatibility (older clients / the demo flow don't send it):
+ *   - mode "login" + no existing account -> 404 account_not_found, nothing
+ *     is created. The web app sends the user to the Register tab.
+ *   - mode "register" + an account already exists -> no error, just logs
+ *     them in as normal (friendlier than blocking on "already exists", and
+ *     avoids ever creating a duplicate).
+ */
 router.post("/otp/verify", async (req, res) => {
-  const { email, code, locale, timezone } = req.body as { email?: string; code?: string; locale?: string; timezone?: string };
+  const { email, code, locale, timezone, mode, name } = req.body as {
+    email?: string;
+    code?: string;
+    locale?: string;
+    timezone?: string;
+    mode?: "login" | "register";
+    // 31 Aug 2026 — Edmund's feedback: the app never asked a new user's
+    // name, then greeted them with their email prefix as if it were one.
+    // Collected once, on Register, and stored as displayName (the schema
+    // field already existed from an earlier pass but nothing ever wrote to
+    // it). Optional/trimmed — a user who skips it still gets an account,
+    // just with the old email-prefix fallback until they set one later
+    // from Settings.
+    name?: string;
+  };
   if (!email || !code) return res.status(400).json({ error: "email_and_code_required" });
 
   const challenge = await prisma.otpChallenge.findFirst({
@@ -40,11 +65,21 @@ router.post("/otp/verify", async (req, res) => {
   });
   if (!challenge) return res.status(400).json({ error: "invalid_or_expired_code" });
 
+  let user = await prisma.user.findUnique({ where: { email } });
+  if (!user && mode === "login") return res.status(404).json({ error: "account_not_found" });
+
   await prisma.otpChallenge.update({ where: { id: challenge.id }, data: { consumedAt: new Date() } });
 
-  let user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    user = await prisma.user.create({ data: { email, locale: locale ?? "en", timezone: timezone ?? "Europe/London" } });
+    const trimmedName = name?.trim();
+    user = await prisma.user.create({
+      data: {
+        email,
+        locale: locale ?? "en",
+        timezone: timezone ?? "Europe/London",
+        ...(trimmedName ? { displayName: trimmedName } : {}),
+      },
+    });
     await prisma.authIdentity.create({ data: { userId: user.id, provider: "EMAIL_OTP" } });
     await prisma.membership.create({ data: { userId: user.id, tier: "FREE" } });
   }
