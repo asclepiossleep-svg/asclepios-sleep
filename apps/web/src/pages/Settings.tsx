@@ -6,18 +6,38 @@ import { t } from "../i18n";
 import BottomNav from "../components/BottomNav";
 import PageHeader from "../components/PageHeader";
 
-// A short curated list rather than the full IANA database — enough to cover
-// this project's current markets (UK, Romania, Hong Kong) plus a few common
-// travel destinations (Doc 03 §1 "Travel/timezone change" scenario).
-const TIMEZONES = [
-  "Europe/London",
-  "Europe/Bucharest",
-  "Asia/Hong_Kong",
-  "Asia/Shanghai",
-  "America/New_York",
-  "America/Los_Angeles",
-  "Australia/Sydney",
+// 31 Aug 2026 fix — Edmund's feedback: the original 7-zone curated list
+// ("enough to cover this project's current markets") was too narrow once
+// real users outside those markets started signing up. `Intl.supportedValuesOf`
+// gives the browser's full official IANA list (~400 zones, every country)
+// on any reasonably current browser (Chrome 99+/Safari 15.4+/2022 onward) —
+// no server round trip, always current. FALLBACK_TIMEZONES only kicks in on
+// an older browser that lacks `supportedValuesOf`, so nobody sees an empty
+// dropdown; it's a broad country-by-country spread, not just our 3 markets.
+const FALLBACK_TIMEZONES = [
+  "Pacific/Midway", "Pacific/Honolulu", "America/Anchorage", "America/Los_Angeles", "America/Tijuana",
+  "America/Denver", "America/Phoenix", "America/Chicago", "America/Mexico_City", "America/New_York",
+  "America/Toronto", "America/Bogota", "America/Lima", "America/Halifax", "America/Sao_Paulo",
+  "America/Argentina/Buenos_Aires", "Atlantic/Azores", "Europe/London", "Europe/Dublin", "Europe/Lisbon",
+  "Europe/Madrid", "Europe/Paris", "Europe/Amsterdam", "Europe/Berlin", "Europe/Rome", "Europe/Bucharest",
+  "Europe/Athens", "Europe/Helsinki", "Europe/Istanbul", "Europe/Moscow", "Africa/Cairo", "Africa/Lagos",
+  "Africa/Johannesburg", "Africa/Nairobi", "Asia/Jerusalem", "Asia/Dubai", "Asia/Tehran", "Asia/Karachi",
+  "Asia/Kolkata", "Asia/Dhaka", "Asia/Bangkok", "Asia/Jakarta", "Asia/Shanghai", "Asia/Hong_Kong",
+  "Asia/Taipei", "Asia/Singapore", "Asia/Seoul", "Asia/Tokyo", "Australia/Perth", "Australia/Adelaide",
+  "Australia/Sydney", "Australia/Brisbane", "Pacific/Auckland", "Pacific/Fiji",
 ];
+
+function getTimezones(): string[] {
+  try {
+    // @ts-ignore — supportedValuesOf isn't in every TS lib target yet
+    const list: string[] = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
+    return list.length > 0 ? list : FALLBACK_TIMEZONES;
+  } catch {
+    return FALLBACK_TIMEZONES;
+  }
+}
+
+const TIMEZONES = getTimezones();
 
 export default function Settings() {
   const { user, updateUser, logout } = useSession();
@@ -78,7 +98,7 @@ export default function Settings() {
         >
           {TIMEZONES.map((tz) => (
             <option key={tz} value={tz}>
-              {tz}
+              {tz.replace(/_/g, " ")}
             </option>
           ))}
         </select>
