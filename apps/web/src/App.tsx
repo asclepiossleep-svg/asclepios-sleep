@@ -15,6 +15,7 @@ import Library from "./pages/Library";
 import Programmes from "./pages/Programmes";
 import Admin from "./pages/Admin";
 import MusicLibrary from "./pages/MusicLibrary";
+import NowPlaying from "./pages/NowPlaying";
 import AppBackground from "./components/AppBackground";
 import MusicPlayerBar from "./components/MusicPlayerBar";
 
@@ -190,6 +191,14 @@ export default function App() {
         element={
           <RequireAuth>
             <MusicLibrary />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/music/now-playing"
+        element={
+          <RequireAuth>
+            <NowPlaying />
           </RequireAuth>
         }
       />
