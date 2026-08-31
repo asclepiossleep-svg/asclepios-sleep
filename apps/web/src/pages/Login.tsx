@@ -69,13 +69,30 @@ export default function Login() {
   const [demoPassword, setDemoPassword] = useState("");
   const [showDemo, setShowDemo] = useState(false);
   const [locale, setLocaleState] = useState(getLocale());
-  const { setToken } = useSession();
+  const { setToken, user, loading } = useSession();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Staging-only endpoint — 404s in production, so this silently no-ops there.
     api.get<DemoAccount[]>("/demo/accounts").then(setDemoAccounts).catch(() => setDemoAccounts([]));
   }, []);
+
+  // 31 Aug 2026 fix — Edmund's report: reopening the app still asked for a
+  // fresh code even though the session was actually restoring fine
+  // underneath (confirmed via server logs — GET /auth/session kept
+  // succeeding right before each "need to login again" report). Root
+  // cause: this page never checked whether a session had already been
+  // restored — session.tsx's own mount effect (api/client.ts's stored
+  // token + GET /auth/session) runs everywhere in the app, but /login
+  // itself just always rendered the empty form regardless, with no
+  // redirect-away-if-already-logged-in. Anyone whose browser opens
+  // straight back to /login (a bookmark, a home-screen icon, iOS Safari
+  // restoring its last tab) saw this every single time, even mid-session.
+  useEffect(() => {
+    if (!loading && user) {
+      navigate(landingRoute(user), { replace: true });
+    }
+  }, [loading, user, navigate]);
 
   function changeLocale(next: string) {
     setLocale(next);
