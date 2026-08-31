@@ -1,4 +1,5 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
 import { prisma } from "../db";
 import { signSession, requireAuth, AuthedRequest } from "../middleware/auth";
 import { resolveEntitlements } from "../domain/entitlement";
@@ -88,6 +89,71 @@ router.post("/otp/verify", async (req, res) => {
     data: { userId: user.id, deviceLabel: req.headers["user-agent"]?.toString().slice(0, 80) ?? "unknown device" },
   });
 
+  const token = signSession(user.id, user.role);
+  res.json({ token, user, deviceSessionId: session.id });
+});
+
+/**
+ * 31 Aug 2026 — password login, added at Edmund's explicit request: real
+ * transactional email (Resend or similar) still isn't wired up, so anyone
+ * who isn't Edmund has no way to ever receive an email-OTP code — the app
+ * was genuinely unusable for a real second user. The schema already had
+ * `AuthIdentity.passwordHash` / provider "PASSWORD" reserved for this from
+ * the start, just never implemented. This is deliberately a *second*
+ * credential path alongside email-OTP, not a replacement — once real email
+ * is wired up, both keep working side by side; a user can have either or
+ * both AuthIdentity rows. Passwords are hashed with bcrypt (cost 10),
+ * never stored or logged in plain text, and the login error is
+ * intentionally the same "invalid_credentials" whether the email doesn't
+ * exist or the password is wrong, so this endpoint can't be used to probe
+ * which emails have accounts.
+ */
+router.post("/password/register", async (req, res) => {
+  const { email, password, name, locale, timezone } = req.body as {
+    email?: string;
+    password?: string;
+    name?: string;
+    locale?: string;
+    timezone?: string;
+  };
+  if (!email || !password) return res.status(400).json({ error: "email_and_password_required" });
+  if (password.length < 6) return res.status(400).json({ error: "password_too_short" });
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) return res.status(409).json({ error: "account_already_exists" });
+
+  const trimmedName = name?.trim();
+  const user = await prisma.user.create({
+    data: {
+      email,
+      locale: locale ?? "en",
+      timezone: timezone ?? "Europe/London",
+      ...(trimmedName ? { displayName: trimmedName } : {}),
+    },
+  });
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.authIdentity.create({ data: { userId: user.id, provider: "PASSWORD", passwordHash } });
+  await prisma.membership.create({ data: { userId: user.id, tier: "FREE" } });
+
+  const session = await prisma.deviceSession.create({
+    data: { userId: user.id, deviceLabel: req.headers["user-agent"]?.toString().slice(0, 80) ?? "unknown device" },
+  });
+  const token = signSession(user.id, user.role);
+  res.json({ token, user, deviceSessionId: session.id });
+});
+
+router.post("/password/login", async (req, res) => {
+  const { email, password } = req.body as { email?: string; password?: string };
+  if (!email || !password) return res.status(400).json({ error: "email_and_password_required" });
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  const identity = user ? await prisma.authIdentity.findFirst({ where: { userId: user.id, provider: "PASSWORD" } }) : null;
+  const ok = identity?.passwordHash ? await bcrypt.compare(password, identity.passwordHash) : false;
+  if (!user || !identity || !ok) return res.status(401).json({ error: "invalid_credentials" });
+
+  const session = await prisma.deviceSession.create({
+    data: { userId: user.id, deviceLabel: req.headers["user-agent"]?.toString().slice(0, 80) ?? "unknown device" },
+  });
   const token = signSession(user.id, user.role);
   res.json({ token, user, deviceSessionId: session.id });
 });
