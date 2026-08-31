@@ -14,16 +14,9 @@ interface WallpaperOption {
   themeColor: string | null;
 }
 
-/**
- * Design moodboard 28 Aug 2026 — Wallpaper picker. Real photo assets don't
- * exist yet (Wallpaper.imageUrl is null for every seeded row), so each tile
- * renders as a colour-card using the wallpaper's own themeColor until real
- * images are uploaded via Admin — the picker itself is fully functional
- * either way. Reachable both as a setup step (/setup/wallpaper, chains into
- * the Theme Colour step) and from Settings (/wallpaper, saves immediately).
- */
 export default function Wallpaper() {
   const [options, setOptions] = useState<WallpaperOption[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { user, updateUser } = useSession();
@@ -31,19 +24,27 @@ export default function Wallpaper() {
   const navigate = useNavigate();
   const isSetup = location.pathname.startsWith("/setup");
 
+  function load() {
+    setStatus("loading");
+    api
+      .get<{ wallpapers: WallpaperOption[] }>("/wallpapers")
+      .then((r) => {
+        setOptions(r.wallpapers);
+        setStatus("ready");
+      })
+      .catch(() => setStatus("error"));
+  }
+
   useEffect(() => {
-    api.get<{ wallpapers: WallpaperOption[] }>("/wallpapers").then((r) => setOptions(r.wallpapers));
+    load();
     setSelected(user?.wallpaperId ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.wallpaperId]);
 
   async function save(next: () => void) {
     if (!selected) return next();
     setSaving(true);
     try {
-      // App-wide wallpaper (29 Aug 2026) — the API already returns the full
-      // Wallpaper row (see apps/api/src/routes/preferences.ts), so grab
-      // `wallpaper` here too and push it into session — AppBackground picks
-      // it up immediately, no extra round trip.
       const res = await api.patch<{ wallpaperId: string | null; wallpaper: { imageUrl: string | null; themeColor: string | null } | null }>(
         "/preferences",
         { wallpaperId: selected }
@@ -67,34 +68,47 @@ export default function Wallpaper() {
     <div className="screen">
       <PageHeader title={t(isSetup ? "setup.wallpaper.title" : "wallpaper.title")} subtitle={isSetup ? t("setup.wallpaper.subtitle") : undefined} />
 
-      {options.length === 0 && <p className="muted">{t("setup.loading")}</p>}
+      {status === "loading" && <p className="muted">{t("setup.loading")}</p>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-        {options.map((w) => (
-          <button
-            key={w.id}
-            onClick={() => setSelected(w.id)}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: "0.5rem",
-              padding: "1rem",
-              height: "6.5rem",
-              borderRadius: "var(--radius)",
-              border: selected === w.id ? "3px solid var(--color-primary)" : "1px solid var(--color-border)",
-              background: w.imageUrl ? `center/cover url(${w.imageUrl})` : w.themeColor ?? "var(--color-surface)",
-              color: "#fff",
-              textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-              justifyContent: "flex-end",
-              width: "100%",
-            }}
-          >
-            <strong>{w.title}</strong>
-            <span style={{ fontSize: "0.8rem", opacity: 0.9 }}>{t(`wallpaper.category.${w.category}`)}</span>
+      {status === "error" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", alignItems: "flex-start" }}>
+          <p className="muted">{t("setup.wallpaper.loadError")}</p>
+          <button className="muted" onClick={load}>
+            {t("setup.retry")}
           </button>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {status === "ready" && options.length === 0 && <p className="muted">{t("setup.wallpaper.empty")}</p>}
+
+      {status === "ready" && options.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          {options.map((w) => (
+            <button
+              key={w.id}
+              onClick={() => setSelected(w.id)}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: "0.5rem",
+                padding: "1rem",
+                height: "6.5rem",
+                borderRadius: "var(--radius)",
+                border: selected === w.id ? "3px solid var(--color-primary)" : "1px solid var(--color-border)",
+                background: w.imageUrl ? `center/cover url(${w.imageUrl})` : w.themeColor ?? "var(--color-surface)",
+                color: "#fff",
+                textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+                justifyContent: "flex-end",
+                width: "100%",
+              }}
+            >
+              <strong>{w.title}</strong>
+              <span style={{ fontSize: "0.8rem", opacity: 0.9 }}>{t(`wallpaper.category.${w.category}`)}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {isSetup ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "auto" }}>
