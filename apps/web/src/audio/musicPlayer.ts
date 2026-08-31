@@ -153,6 +153,38 @@ export function setVolume(v: number) {
   emit();
 }
 
+let fadeInterval: ReturnType<typeof setInterval> | null = null;
+
+// 31 Aug 2026 — Sleep Setting correction: a Music Library track picked as
+// tonight's sleep sound needs the same "fade out near the end, don't just
+// cut off" behaviour SleepAudioEngine already gives synthesized tracks
+// (see SleepPlayer.tsx). A plain <audio> element has no Web-Audio-style
+// gain ramp, so this steps `audio.volume` down in small increments instead
+// — coarser than a true linear ramp but inaudible as a stepped effect at
+// normal fade lengths (60s+), then stops and restores the saved volume for
+// next time.
+export function fadeOutAndStop(seconds: number) {
+  if (!audio || !state.track) return;
+  if (fadeInterval) clearInterval(fadeInterval);
+  const startVolume = audio.volume;
+  const steps = 30;
+  const stepMs = Math.max(50, (seconds * 1000) / steps);
+  let i = 0;
+  fadeInterval = setInterval(() => {
+    i++;
+    audio.volume = Math.max(0, startVolume * (1 - i / steps));
+    if (i >= steps) {
+      if (fadeInterval) clearInterval(fadeInterval);
+      fadeInterval = null;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = startVolume;
+      state = { track: null, playing: false, currentTime: 0, duration: 0, volume: startVolume };
+      emit();
+    }
+  }, stepMs);
+}
+
 export function getState(): PlayerState {
   return state;
 }
