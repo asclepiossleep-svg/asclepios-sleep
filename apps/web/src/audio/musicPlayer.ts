@@ -22,6 +22,11 @@
  * home-screen-installed iOS PWA handle this well; a plain (non-installed)
  * iOS Safari tab is more likely to pause when the screen locks — that's an
  * iOS platform limitation, not something fixable from web code alone.
+ *
+ * 31 Aug 2026 fix — added currentTime/duration/volume so a full-screen
+ * "now playing" view (design moodboard's Sleep Player screen, adapted for
+ * Music Library — see pages/NowPlaying.tsx) can show a real seekable
+ * progress bar and volume control instead of just play/pause/stop.
  */
 export interface PlayableTrack {
   id: string;
@@ -34,15 +39,19 @@ export interface PlayableTrack {
 interface PlayerState {
   track: PlayableTrack | null;
   playing: boolean;
+  currentTime: number;
+  duration: number;
+  volume: number;
 }
 
 const audio = typeof Audio !== "undefined" ? new Audio() : null;
 if (audio) {
   audio.loop = true;
   audio.preload = "none";
+  audio.volume = 0.85;
 }
 
-let state: PlayerState = { track: null, playing: false };
+let state: PlayerState = { track: null, playing: false, currentTime: 0, duration: 0, volume: 0.85 };
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -63,16 +72,26 @@ function updateMediaSession() {
   }
 }
 
-if (audio && "mediaSession" in navigator) {
-  navigator.mediaSession.setActionHandler("play", () => resume());
-  navigator.mediaSession.setActionHandler("pause", () => pause());
-  navigator.mediaSession.setActionHandler("stop", () => stop());
+if (audio) {
+  audio.addEventListener("timeupdate", () => {
+    state = { ...state, currentTime: audio.currentTime };
+    emit();
+  });
+  audio.addEventListener("loadedmetadata", () => {
+    state = { ...state, duration: Number.isFinite(audio.duration) ? audio.duration : 0 };
+    emit();
+  });
+  if ("mediaSession" in navigator) {
+    navigator.mediaSession.setActionHandler("play", () => resume());
+    navigator.mediaSession.setActionHandler("pause", () => pause());
+    navigator.mediaSession.setActionHandler("stop", () => stop());
+  }
 }
 
 export function playTrack(track: PlayableTrack) {
   if (!audio) return;
   const isSameTrack = state.track?.id === track.id;
-  state = { track, playing: true };
+  state = { ...state, track, playing: true, currentTime: isSameTrack ? state.currentTime : 0, duration: isSameTrack ? state.duration : 0 };
   if (!isSameTrack) {
     audio.src = track.audioUrl;
   }
@@ -107,7 +126,7 @@ export function stop() {
   if (!audio) return;
   audio.pause();
   audio.currentTime = 0;
-  state = { track: null, playing: false };
+  state = { track: null, playing: false, currentTime: 0, duration: 0, volume: state.volume };
   if ("mediaSession" in navigator) {
     try {
       navigator.mediaSession.metadata = null;
@@ -116,6 +135,21 @@ export function stop() {
       /* no-op */
     }
   }
+  emit();
+}
+
+export function seek(seconds: number) {
+  if (!audio || !state.track) return;
+  audio.currentTime = Math.max(0, Math.min(seconds, state.duration || seconds));
+  state = { ...state, currentTime: audio.currentTime };
+  emit();
+}
+
+export function setVolume(v: number) {
+  if (!audio) return;
+  const clamped = Math.max(0, Math.min(1, v));
+  audio.volume = clamped;
+  state = { ...state, volume: clamped };
   emit();
 }
 
