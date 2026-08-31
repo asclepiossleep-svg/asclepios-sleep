@@ -6,13 +6,43 @@
 const BASE =
   import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? "https://asclepios-sleep-api.vercel.app" : "/api");
 
+const TOKEN_STORAGE_KEY = "asclepios.session.token";
+
+function readStoredToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
+  } catch {
+    // Private browsing / storage blocked — fall back to in-memory only,
+    // same behaviour as before this fix.
+    return null;
+  }
+}
+
 function getToken(): string | null {
   return sessionState.token;
 }
 
-// In-memory only — a real build should persist via a secure httpOnly
-// pattern or a wrapped storage layer; kept simple here for the scaffold.
-export const sessionState: { token: string | null } = { token: null };
+/**
+ * 31 Aug 2026 fix — token now also persists to localStorage, so a page
+ * refresh (or reopening the tab) doesn't silently log the user out back to
+ * Welcome. sessionState.token stays the single in-memory source of truth
+ * that the rest of the app reads every request; localStorage is just the
+ * durable copy used to restore it on load (see SessionProvider's mount
+ * effect in state/session.tsx, which calls setSessionToken then re-fetches
+ * the user via GET /auth/session).
+ */
+export const sessionState: { token: string | null } = { token: readStoredToken() };
+
+export function setSessionToken(token: string | null) {
+  sessionState.token = token;
+  try {
+    if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    else localStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch {
+    // Storage blocked — session still works for this tab via sessionState,
+    // it just won't survive a reload. Not worth surfacing to the user.
+  }
+}
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
