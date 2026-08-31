@@ -13,15 +13,54 @@ interface DemoAccount {
   scenario: string;
 }
 
+// Design moodboard 28 Aug 2026 — first-time users go through Setup
+// (Wallpaper -> Theme Colour) before ever reaching Home/Tonight; returning
+// users (wallpaperId already chosen) land straight on Home. Admin accounts
+// bypass both and go to the back office, same as before.
 function landingRoute(user: { role: string; wallpaperId?: string | null }): string {
   if (user.role === "ADMIN") return "/admin";
   return user.wallpaperId ? "/home" : "/setup/wallpaper";
 }
 
+/**
+ * Front-page/Login rebuild #2 (29 Aug 2026) — Edmund supplied an approved
+ * reference design (real lifestyle photography, not the illustrated
+ * day/night scene this page shipped with a day earlier) with an explicit
+ * brief: "The supplied new login design is approved. Please implement it,
+ * not reinterpret it." This replaces the illustrated hero + separate
+ * floating panel with:
+ *
+ *  - A left content column: brand mark, language selector, headline,
+ *    tagline, lead copy, the (unchanged) email/OTP login card, a
+ *    security reassurance line, demo access, then the three value props.
+ *  - A right/full-bleed photo column (single approved photo — no
+ *    day/night crossfade this pass; the mechanism can come back once a
+ *    matching night photo exists).
+ *  - A working language selector (English / 繁體中文 / 简体中文) that
+ *    switches every t() string on this page live, and is sent as the new
+ *    user's locale on verify — previously this was inferred silently from
+ *    navigator.language.
+ *
+ * Brand name logic (Edmund's brief §2): "ASCLEPIOS" always shows; "阿斯康"
+ * shows only when the active locale is a Chinese one. Layout mechanics are
+ * documented in login.css.
+ *
+ * Auth flow (OTP request/verify, demo login) is untouched — this is a
+ * visual/i18n change only.
+ */
 export default function Login() {
+  // 31 Aug 2026 — explicit Login vs Register, per Edmund's rule: the old
+  // single "type your email" flow silently created an account for anyone,
+  // with no way to tell the two intents apart. Backend enforcement is in
+  // apps/api/src/routes/auth.ts's /otp/verify (mode param).
   const [mode, setMode] = useState<"login" | "register">("login");
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
+  // 31 Aug 2026 — Edmund's feedback: the app never asked for a name and
+  // just showed the email prefix on Home instead. Asked once, on Register
+  // only — an existing account (Login tab) already has whatever name it
+  // was given, or can add one later from Settings.
+  const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [devCode, setDevCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +73,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Staging-only endpoint — 404s in production, so this silently no-ops there.
     api.get<DemoAccount[]>("/demo/accounts").then(setDemoAccounts).catch(() => setDemoAccounts([]));
   }, []);
 
@@ -64,6 +104,7 @@ export default function Login() {
         code,
         locale,
         mode,
+        name: mode === "register" ? name : undefined,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
       setToken(res.token, res.user);
@@ -154,6 +195,22 @@ export default function Login() {
           )}
           {step === "email" ? (
             <>
+              {mode === "register" && (
+                <>
+                  <label className="login-field-label" htmlFor="name">
+                    {t("login.nameLabel")}
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t("login.namePlaceholder")}
+                    className="login-input"
+                    style={{ marginBottom: "0.75rem" }}
+                  />
+                </>
+              )}
               <label className="login-field-label" htmlFor="email">
                 {t("login.emailLabel")}
               </label>
