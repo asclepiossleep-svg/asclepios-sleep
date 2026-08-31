@@ -217,6 +217,124 @@ export async function seedBaseConfig() {
 
   await prisma.wallpaper.upsert({ where: { code: "WALL_PHOTO_MEADOW_LIGHT" }, update: {}, create: { code: "WALL_PHOTO_MEADOW_LIGHT", title: "Meadow Light", category: "BRITISH_COUNTRYSIDE", imageUrl: "/wallpapers/meadow-light.webp", themeColor: "#7c8452" } });
 
+  // Music Library V1 — Phase 3 (31 Aug 2026): the first 12 real, properly
+  // licensed audio files (Edmund downloaded these from Pixabay Music,
+  // "Free for commercial use, no attribution required", and uploaded them
+  // himself to apps/web/public/audio/). sourceType is ASCLEPIOS_LICENSED —
+  // not THIRD_PARTY_API, since these are permanent local files, not a
+  // live-resolved provider stream. artworkUrl reuses an existing wallpaper
+  // photo whose mood matches each track, rather than sourcing separate
+  // cover art. primaryCategory/subcategory follow packages/shared's
+  // MUSIC_SUBCATEGORIES controlled vocabulary.
+  await prisma.musicTrack.upsert({
+    where: { slug: "gentle-rain" },
+    update: {},
+    create: {
+      slug: "gentle-rain", title: "Gentle Rain", artist: "Eryliaa", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/gentle-rain.mp3", artworkUrl: "/wallpapers/rain-window.webp",
+      primaryCategory: "SLEEP_SOUNDS", subcategory: "RAIN",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "ocean-waves" },
+    update: {},
+    create: {
+      slug: "ocean-waves", title: "Soothing Ocean Waves", artist: "DRAGON-STUDIO", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/ocean-waves.mp3", artworkUrl: "/wallpapers/waterfall-cove.webp",
+      primaryCategory: "SLEEP_SOUNDS", subcategory: "OCEAN_WAVES",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "forest-wind-birds" },
+    update: {},
+    create: {
+      slug: "forest-wind-birds", title: "Forest Wind with Birds", artist: "Eryliaa", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/forest-wind-birds.mp3", artworkUrl: "/wallpapers/forest-mist.webp",
+      primaryCategory: "SLEEP_SOUNDS", subcategory: "FOREST",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "singing-bowl-struck" },
+    update: {},
+    create: {
+      slug: "singing-bowl-struck", title: "E Flat Tibetan Singing Bowl", artist: "freesound_community", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/singing-bowl-struck.mp3", artworkUrl: "/wallpapers/singing-bowl-glow.webp",
+      primaryCategory: "SOUND_HEALING", subcategory: "TIBETAN_BOWL",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "singing-bowl-long" },
+    update: {},
+    create: {
+      slug: "singing-bowl-long", title: "Singing Bowl, Long", artist: "freesound_community", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/singing-bowl-long.mp3", artworkUrl: "/wallpapers/singing-bowl-glow.webp",
+      primaryCategory: "SOUND_HEALING", subcategory: "SINGING_BOWL",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "852hz-deep-meditation" },
+    update: {},
+    create: {
+      slug: "852hz-deep-meditation", title: "Deep Meditation 852Hz", artist: "Dominique_GARNIER", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/852hz-deep-meditation.mp3", artworkUrl: "/wallpapers/chakra-light.webp",
+      primaryCategory: "SOUND_HEALING", subcategory: "FREQ_852", frequencyHz: 852,
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "relaxing-sleep" },
+    update: {},
+    create: {
+      slug: "relaxing-sleep", title: "Relaxing Sleep", artist: "AtlasAudio", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/relaxing-sleep.mp3", artworkUrl: "/wallpapers/moonlit-lake.webp",
+      primaryCategory: "MUSIC", subcategory: "DEEP_SLEEP_AMBIENT",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "space-music" },
+    update: {},
+    create: {
+      slug: "space-music", title: "Space", artist: "AtlasAudio", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/space-music.mp3", artworkUrl: "/wallpapers/nebula-calm.webp",
+      primaryCategory: "MUSIC", subcategory: "SOFT_SPACE",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "calm-soft-piano" },
+    update: {},
+    create: {
+      slug: "calm-soft-piano", title: "Calm and Soft Piano", artist: "Clavier-Music", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/calm-soft-piano.mp3", artworkUrl: "/wallpapers/tea-by-window.webp",
+      primaryCategory: "MUSIC", subcategory: "SLEEP_PIANO",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "classical-piano" },
+    update: {},
+    create: {
+      slug: "classical-piano", title: "Classical Piano Music", artist: "Clavier-Music", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/classical-piano.mp3", artworkUrl: "/wallpapers/candle-zen.webp",
+      primaryCategory: "MUSIC", subcategory: "CLASSICAL_RELAXATION",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "lullaby-piano-sleep" },
+    update: {},
+    create: {
+      slug: "lullaby-piano-sleep", title: "Lullaby — Relaxing Piano for Sleep", artist: "Clavier-Music", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/lullaby-piano-sleep.mp3", artworkUrl: "/wallpapers/sleep-sanctuary.webp",
+      primaryCategory: "MUSIC", subcategory: "MINIMAL_PIANO",
+    },
+  });
+  await prisma.musicTrack.upsert({
+    where: { slug: "pachelbels-canon" },
+    update: {},
+    create: {
+      slug: "pachelbels-canon", title: "Pachelbel's Canon (Canon in D)", artist: "Clavier-Music", sourceType: "ASCLEPIOS_LICENSED",
+      audioUrl: "/audio/pachelbels-canon.mp3", artworkUrl: "/wallpapers/quiet-pier.webp",
+      primaryCategory: "MUSIC", subcategory: "CHAMBER_MUSIC",
+    },
+  });
+
   // Pre-existing generic programme (kept as-is — not one of the two named
   // programmes below; flagged in OWNER_RUNBOOK.md as worth a naming check
   // with Edmund since "28-Day" is close to but not the same as "30-Day
