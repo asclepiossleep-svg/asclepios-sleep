@@ -7,12 +7,18 @@ import { DEMO_ACCOUNTS } from "@asclepios/shared";
 const router = Router();
 
 /**
- * Supplement 07 §5-6 — staging-only Demo Selector. Gated on
- * NODE_ENV !== "production" so this never ships live; production demo
- * access (if ever needed) should go through the normal OTP flow instead.
+ * Supplement 07 §5-6 — staging-only Demo Selector.
+ *
+ * This deployment has no separate Vercel "staging" project — Vercel sets
+ * NODE_ENV=production for every deployment on this project regardless of
+ * target, so gating on NODE_ENV permanently 404'd this route with no way
+ * to open it. Gate on an explicit opt-OUT flag instead, defaulting to
+ * enabled: once a real production custom domain goes live, set
+ * DEMO_DISABLED=true in that Vercel environment's variables to turn this
+ * off. Until then it stays open by default, exactly as it is today.
  */
 router.use((req, res, next) => {
-  if (process.env.NODE_ENV === "production") return res.status(404).json({ error: "not_available" });
+  if (process.env.DEMO_DISABLED === "true") return res.status(404).json({ error: "not_available" });
   next();
 });
 
