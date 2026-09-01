@@ -22,6 +22,7 @@ function landingRoute(user: { role: string; wallpaperId?: string | null }): stri
   return user.wallpaperId ? "/home" : "/setup/wallpaper";
 }
 
+
 /**
  * Front-page/Login rebuild #2 (29 Aug 2026) — Edmund supplied an approved
  * reference design (real lifestyle photography, not the illustrated
