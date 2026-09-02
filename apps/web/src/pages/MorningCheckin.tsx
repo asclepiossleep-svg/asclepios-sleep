@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { t } from "../i18n";
@@ -16,7 +16,16 @@ export default function MorningCheckin() {
   const [showAddDetails, setShowAddDetails] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const sessionId = (location.state as any)?.sessionId;
+  const [sessionId, setSessionId] = useState<string | undefined>((location.state as any)?.sessionId);
+
+  useEffect(() => {
+    if (sessionId) return;
+    // A9 fix — location.state is gone on refresh/reopen; recover the
+    // session that's actually waiting on a check-in instead.
+    api.get<{ sessionId: string | null }>("/checkin/pending-session").then((r) => {
+      if (r.sessionId) setSessionId(r.sessionId);
+    });
+  }, [sessionId]);
 
   const canSubmit = sleepRating && nightWakingCount && morningEnergy;
 
