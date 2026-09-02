@@ -95,6 +95,7 @@
   "checkin.energy.good": "Good",
   "checkin.submit": "Done",
   "checkin.addDetails": "+ Add more detail (optional)",
+  "checkin.noPendingSession": "Couldn't find a sleep session to check in for. Please start again from the Tonight page.",
   "review.title": "7-Day Review",
   "review.crunching": "Crunching the last 7 days…",
   "review.adherence": "Adherence",
