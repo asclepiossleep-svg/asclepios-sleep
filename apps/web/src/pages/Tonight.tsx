@@ -44,24 +44,29 @@ function stepLabel(step: TonightStep): string {
   return step.stepCode;
 }
 
-// today at HH:MM, rolled to tomorrow if that time has already passed today —
-// the natural reading of "bedtime 22:30" typed at 6pm vs typed at 11pm.
-function nextOccurrence(hhmm: string): Date {
-  return nextOccurrenceAfter(hhmm, new Date());
-}
-
-// Repair Plan A8 (2 Sep 2026) — same HH:MM resolution, but anchored to an
-// arbitrary reference instant instead of "now". Used to resolve wake time
-// relative to the just-resolved bedtime, not independently off "now" —
-// otherwise a session started after midnight (bedtime picker still showing
-// a value like "23:00" that reads as "later tonight") could compute a
-// wakeTime that lands before, or a full day away from, the actual bedtime.
+// HH:MM resolved to the next occurrence at or after a given reference
+// instant (rolls to the next day if that clock-time has already passed
+// relative to `after`).
 function nextOccurrenceAfter(hhmm: string, after: Date): Date {
   const [h, m] = hhmm.split(":").map(Number);
   const d = new Date(after);
   d.setHours(h, m, 0, 0);
   if (d.getTime() <= after.getTime()) d.setDate(d.getDate() + 1);
   return d;
+}
+
+// Repair Plan A8 correction (2 Sep 2026, per audit) — nextOccurrence(bedtime)
+// alone isn't enough: it's still anchored to "now", so pressing Start Sleep
+// at 00:30 with the bedtime picker still showing "23:00" resolved to
+// *tonight's* 23:00 — almost a full day away — not the session actually
+// being started right now. Start Sleep is an explicit "I'm sleeping now"
+// action, so if the configured bedtime's next occurrence is more than 4h
+// away, the configured clock-time has already passed for this session;
+// use "now" as the real target instead of rolling a day forward.
+function resolveTargetSleepTime(bedtimeHHMM: string, now: Date): Date {
+  const naive = nextOccurrenceAfter(bedtimeHHMM, now);
+  const hoursAhead = (naive.getTime() - now.getTime()) / 3_600_000;
+  return hoursAhead > 4 ? now : naive;
 }
 
 /**
@@ -168,7 +173,7 @@ export default function Tonight() {
   }
 
   async function startSleep() {
-    const targetSleepTime = nextOccurrence(bedtime);
+    const targetSleepTime = resolveTargetSleepTime(bedtime, new Date());
     // A8 fix — wake time is resolved relative to bedtime, not "now", so it
     // can never land before or the wrong number of days from the session's
     // actual bedtime (see nextOccurrenceAfter's doc comment above).
