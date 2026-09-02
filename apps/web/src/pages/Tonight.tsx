@@ -15,6 +15,7 @@ interface ProtocolStep {
 interface TonightStep {
   stepCode: string;
   stepInstanceId: string;
+  actionInstanceId: string;
   productId?: string;
   productName?: string;
   mode?: "RHYTHM" | "CALM" | "BODY" | "SUPPORT";
@@ -170,7 +171,7 @@ export default function Tonight() {
 
   async function mark(step: TonightStep, status: "DONE" | "SKIPPED") {
     setStepStatus((s) => ({ ...s, [step.stepInstanceId]: status }));
-    await api.post("/tonight/log-step", { stepCode: step.stepCode, status, productId: step.productId });
+    await api.post("/tonight/log-step", { stepCode: step.stepCode, status, productId: step.productId, actionInstanceId: step.actionInstanceId });
   }
 
   async function startSleep() {
