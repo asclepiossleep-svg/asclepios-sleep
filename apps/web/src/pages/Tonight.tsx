@@ -47,10 +47,20 @@ function stepLabel(step: TonightStep): string {
 // today at HH:MM, rolled to tomorrow if that time has already passed today —
 // the natural reading of "bedtime 22:30" typed at 6pm vs typed at 11pm.
 function nextOccurrence(hhmm: string): Date {
+  return nextOccurrenceAfter(hhmm, new Date());
+}
+
+// Repair Plan A8 (2 Sep 2026) — same HH:MM resolution, but anchored to an
+// arbitrary reference instant instead of "now". Used to resolve wake time
+// relative to the just-resolved bedtime, not independently off "now" —
+// otherwise a session started after midnight (bedtime picker still showing
+// a value like "23:00" that reads as "later tonight") could compute a
+// wakeTime that lands before, or a full day away from, the actual bedtime.
+function nextOccurrenceAfter(hhmm: string, after: Date): Date {
   const [h, m] = hhmm.split(":").map(Number);
-  const d = new Date();
+  const d = new Date(after);
   d.setHours(h, m, 0, 0);
-  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  if (d.getTime() <= after.getTime()) d.setDate(d.getDate() + 1);
   return d;
 }
 
@@ -159,7 +169,10 @@ export default function Tonight() {
 
   async function startSleep() {
     const targetSleepTime = nextOccurrence(bedtime);
-    const wakeTimeDate = wakeAlarmEnabled ? nextOccurrence(wakeTime) : null;
+    // A8 fix — wake time is resolved relative to bedtime, not "now", so it
+    // can never land before or the wrong number of days from the session's
+    // actual bedtime (see nextOccurrenceAfter's doc comment above).
+    const wakeTimeDate = wakeAlarmEnabled ? nextOccurrenceAfter(wakeTime, targetSleepTime) : null;
     const sleepAudioId = chosenAudio.kind === "OFF" ? null : chosenAudio.kind === "SYNTH" ? chosenAudio.code : chosenAudio.id;
 
     const res = await api.post<{ session: any }>("/sleep-session/start", {
