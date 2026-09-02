@@ -28,6 +28,15 @@ router.use(requireAuth);
  * `stepCode` remains the step *type* (still "PRODUCT" for all of them) —
  * client code that only cares about the type keeps working unchanged.
  *
+ * Repair Plan A2/A4/A5 (Fix #4, 2 Sep 2026) — every generated step is now
+ * also upserted as a `PlannedAction` row (see schema.prisma's doc comment),
+ * and its id returned as `actionInstanceId`. Per audit: this closes the
+ * "unique identity stops at the frontend boundary" gap flagged on Fix #3 —
+ * `stepInstanceId` is a client-side React key, `actionInstanceId` is the
+ * real persisted row `/tonight/log-step` updates. The upsert is keyed on
+ * (userId, stepKey, plannedDate) so re-loading Tonight the same night is
+ * idempotent — it never creates duplicate "planned" rows.
+ *
  * Matrix #14 — each PRODUCT step also carries `protocolSteps`: the real
  * Apply→Breathe→Sleep (or Apply→Drink) micro-protocol for that specific
  * product, read from `ProductProtocolStep` (admin-configurable, no deploy
@@ -91,17 +100,34 @@ router.get("/", async (req: AuthedRequest, res) => {
     steps.push({ stepCode: "MUSIC", stepInstanceId: "MUSIC" });
   }
 
-  const withMode = steps.slice(0, maxSteps).map((s) => ({ ...s, mode: stepModeFor(s.stepCode) }));
-  res.json({ steps: withMode, routineLevel });
+  const finalSteps = steps.slice(0, maxSteps);
+  const plannedDate = new Date().toISOString().slice(0, 10);
+  const withActionId = await Promise.all(
+    finalSteps.map(async (s) => {
+      const planned = await prisma.plannedAction.upsert({
+        where: { userId_stepKey_plannedDate: { userId, stepKey: s.stepInstanceId, plannedDate } },
+        create: { userId, stepCode: s.stepCode, stepKey: s.stepInstanceId, productId: s.productId ?? null, plannedDate },
+        update: {},
+      });
+      return { ...s, actionInstanceId: planned.id, mode: stepModeFor(s.stepCode) };
+    }),
+  );
+  res.json({ steps: withActionId, routineLevel });
 });
 
 router.post("/log-step", async (req: AuthedRequest, res) => {
-  const { stepCode, status, sessionId, productId } = req.body as {
+  const { stepCode, status, sessionId, productId, actionInstanceId } = req.body as {
     stepCode: string;
     status: "DONE" | "SKIPPED";
     sessionId?: string;
     productId?: string;
+    actionInstanceId?: string;
   };
+  if (actionInstanceId) {
+    // Best-effort — a stale/unknown id (e.g. from a previous night's cached
+    // client state) should never block the underlying log write below.
+    await prisma.plannedAction.updateMany({ where: { id: actionInstanceId, userId: req.userId! }, data: { status, sessionId, completedAt: new Date() } });
+  }
   if (stepCode === "PRODUCT" && productId) {
     const log = await prisma.productUsageLog.create({ data: { userId: req.userId!, productId, sessionId, status } });
     return res.json(log);
