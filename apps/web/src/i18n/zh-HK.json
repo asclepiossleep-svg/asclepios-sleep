@@ -95,6 +95,7 @@
   "checkin.energy.good": "好",
   "checkin.submit": "完成",
   "checkin.addDetails": "+ 加多啲資料(可選)",
+  "checkin.noPendingSession": "搵唔到待完成嘅睡眠紀錄，請由 Tonight 頁面重新開始。",
   "review.title": "7 日回顧",
   "review.crunching": "分析緊過去 7 日…",
   "review.adherence": "依從程度",
