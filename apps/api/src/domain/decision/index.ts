@@ -77,7 +77,7 @@ export async function run7DayReview(userId: string, decisionVersion = "v1") {
     newEligibleProductAvailable: false,
   });
 
-  const findings = { adherence, response, routineCompletionRatio, productOwnershipCount: productOwnerships.length };
+  const findings = { adherence, response, routineCompletionRatio, productOwnershipCount: productOwnerships.length, explanation: strategy.explanation };
 
   const snapshot = await prisma.reviewSnapshot.create({
     data: {
