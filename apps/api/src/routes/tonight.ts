@@ -4,6 +4,7 @@ import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { stepModeFor } from "@asclepios/shared";
 import { computeRoutineLevel, maxStepsForLevel } from "../domain/decision/routineLevelEngine";
 import { selectProductSteps, productBudgetForMaxSteps } from "../domain/decision/productSelectionEngine";
+import { localDateKey } from "../domain/decision/dateKey";
 
 const router = Router();
 router.use(requireAuth);
@@ -45,6 +46,7 @@ router.use(requireAuth);
 router.get("/", async (req: AuthedRequest, res) => {
   const userId = req.userId!;
   const locale = (req.query.locale as string) || "en";
+  const userRecord = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } });
   const ownerships = await prisma.productOwnership.findMany({ where: { userId }, include: { product: true } });
   const currentState = await prisma.tagScore.findMany({ where: { userId, source: "CURRENT_STATE" } });
   const racingThoughts = currentState.find((t: (typeof currentState)[number]) => t.tag === "RACING_THOUGHTS");
@@ -101,7 +103,11 @@ router.get("/", async (req: AuthedRequest, res) => {
   }
 
   const finalSteps = steps.slice(0, maxSteps);
-  const plannedDate = new Date().toISOString().slice(0, 10);
+  // Repair Plan A2/A5 timezone correction (2 Sep 2026, per audit) — was
+  // UTC (new Date().toISOString().slice(0,10)); now the user's own
+  // calendar date, so a late-night session in e.g. Asia/Hong_Kong isn't
+  // recorded against the wrong night (see dateKey.ts doc comment).
+  const plannedDate = localDateKey(new Date(), userRecord?.timezone ?? "Europe/London");
   const withActionId = await Promise.all(
     finalSteps.map(async (s) => {
       const planned = await prisma.plannedAction.upsert({
