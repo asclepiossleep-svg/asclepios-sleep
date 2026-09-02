@@ -604,6 +604,7 @@ async function wipeUserTransactionalData(userId: string) {
   await prisma.morningCheckin.deleteMany({ where: { userId } });
   await prisma.productUsageLog.deleteMany({ where: { userId } });
   await prisma.routineStepLog.deleteMany({ where: { userId } });
+  await prisma.plannedAction.deleteMany({ where: { userId } });
   await prisma.sleepSession.deleteMany({ where: { userId } });
   await prisma.assessmentAnswer.deleteMany({ where: { assessment: { userId } } });
   await prisma.assessment.deleteMany({ where: { userId } });
@@ -618,14 +619,21 @@ async function seedNights(userId: string, productId: string | null, doneNights: 
   for (let i = 0; i < 7; i++) {
     const dayOffset = 7 - i;
     const windDown = new Date(Date.now() - dayOffset * 24 * 3600 * 1000);
+    const plannedDate = windDown.toISOString().slice(0, 10);
     const session = await prisma.sleepSession.create({
       data: { userId, windDownStart: windDown, sleepAudioDurationMode: "FIXED", sleepAudioDurationSeconds: 3600, status: "ENDED" },
     });
     const status = i < doneNights ? "DONE" : "SKIPPED";
     if (productId) {
       await prisma.productUsageLog.create({ data: { userId, productId, sessionId: session.id, status, loggedAt: windDown } });
+      await prisma.plannedAction.create({
+        data: { userId, stepCode: "PRODUCT", stepKey: `PRODUCT:${productId}`, productId, sessionId: session.id, plannedDate, status, completedAt: windDown },
+      });
     }
     await prisma.routineStepLog.create({ data: { userId, sessionId: session.id, stepCode: "MUSIC", status: "DONE", loggedAt: windDown } });
+    await prisma.plannedAction.create({
+      data: { userId, stepCode: "MUSIC", stepKey: "MUSIC", sessionId: session.id, plannedDate, status: "DONE", completedAt: windDown },
+    });
     await prisma.morningCheckin.create({
       data: {
         userId,
