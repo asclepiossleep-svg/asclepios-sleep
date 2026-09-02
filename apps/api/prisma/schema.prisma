@@ -72,6 +72,7 @@ model User {
   routineStepLogs  RoutineStepLog[]
   productUsageLogs ProductUsageLog[]
   morningCheckins  MorningCheckin[]
+  plannedActions   PlannedAction[]
   enrollments      ProgrammeEnrollment[]
   musicFavourites  MusicFavourite[]
   musicPlayHistory MusicPlayHistory[]
@@ -210,6 +211,7 @@ model Product {
   activationCodes ActivationCode[]
   usageLogs       ProductUsageLog[]
   protocolSteps   ProductProtocolStep[]
+  plannedActions  PlannedAction[]
 }
 
 // Requirement Recovery Matrix #14 — Product micro-protocols. Replaces the
@@ -520,6 +522,42 @@ model SleepSession {
   routineStepLogs  RoutineStepLog[]
   productUsageLogs ProductUsageLog[]
   morningCheckin   MorningCheckin?
+  plannedActions   PlannedAction[]
+}
+
+/**
+ * Repair Plan A2/A4/A5 (Fix #3/#4, 2 Sep 2026) — the persistent identity
+ * behind a Tonight step. GET /tonight upserts one of these per generated
+ * step (keyed by stepKey + plannedDate, so re-loading Tonight the same
+ * night never creates duplicates); /tonight/log-step updates its status.
+ *
+ * This is what makes "planned but not done" distinguishable from "never
+ * scheduled at all" (A5) — ProductUsageLog/RoutineStepLog only ever
+ * recorded that a user acted, never that a step was offered and ignored.
+ * It's also what per-product adherence (A4) groups by, instead of the old
+ * single combined count across every owned product.
+ *
+ * stepKey mirrors the client's TonightStep.stepInstanceId exactly
+ * (`PRODUCT:<productId>`, `"BREATHING"`, `"MUSIC"`) — productId alone
+ * can't be the uniqueness key since NULL productId values don't collide
+ * in a unique index, which would defeat the upsert for non-product steps.
+ */
+model PlannedAction {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  stepCode    String // PRODUCT | BREATHING | MUSIC | ...
+  stepKey     String // matches TonightStep.stepInstanceId
+  productId   String?
+  product     Product?  @relation(fields: [productId], references: [id])
+  sessionId   String?
+  session     SleepSession? @relation(fields: [sessionId], references: [id])
+  plannedDate String // "YYYY-MM-DD" — the night this was planned for
+  status      String    @default("PLANNED") // PLANNED | DONE | SKIPPED
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, stepKey, plannedDate])
 }
 
 model RoutineStepLog {
