@@ -3,6 +3,7 @@ import { computeAdherence } from "./adherenceEngine";
 import { compareWindows, WindowMetrics } from "./responseEngine";
 import { decideStrategy } from "./strategyEngine";
 import { promoteToCoreProfile } from "./stateEngine";
+import { localDateKey } from "./dateKey";
 import { ActionCode } from "@asclepios/shared";
 
 export * from "./scoringEngine";
@@ -13,6 +14,7 @@ export * from "./stateEngine";
 export * from "./sleepScoreEngine";
 export * from "./routineLevelEngine";
 export * from "./productSelectionEngine";
+export * from "./dateKey";
 
 const nightWakingScore = (v: string) => (v === "3+" ? 3 : Number(v));
 const energyScore = (v: string) => (v === "GOOD" ? 2 : v === "AVERAGE" ? 1 : 0);
@@ -57,6 +59,14 @@ async function windowMetrics(userId: string, from: Date, to: Date): Promise<Wind
  * were actually planned in the window", defaulting to a neutral 1.0
  * (nothing missed) when nothing was planned at all, rather than the old
  * `|| 7` fallback which silently manufactured a fake week.
+ * Repair Plan A4/A5 timezone correction (Fix #4 follow-up, 2 Sep 2026, per
+ * audit) — the window boundary used to compare against `PlannedAction.
+ * plannedDate` was computed via `toISOString().slice(0, 10)` (UTC), while
+ * `plannedDate` itself is now written in the user's own local calendar
+ * date (see tonight.ts + dateKey.ts). A user well outside UTC (e.g.
+ * Asia/Hong_Kong late at night) could see the boundary land on the wrong
+ * night. Both now resolve through the same `localDateKey(..., user.
+ * timezone)` so they're always comparing the same kind of date.
  */
 function adherenceSeverityRank(level: string): number {
   // Lower = more concerning = takes priority when picking the "worst" of
@@ -70,7 +80,8 @@ export async function run7DayReview(userId: string, decisionVersion = "v1") {
   const now = new Date();
   const recentStart = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
   const baselineStart = new Date(now.getTime() - 14 * 24 * 3600 * 1000);
-  const recentStartDateKey = recentStart.toISOString().slice(0, 10);
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } });
+  const recentStartDateKey = localDateKey(recentStart, user?.timezone ?? "Europe/London");
 
   const recent = await windowMetrics(userId, recentStart, now);
   const baseline = await windowMetrics(userId, baselineStart, recentStart);
