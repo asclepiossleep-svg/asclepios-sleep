@@ -67,6 +67,7 @@
   "checkin.energy.good": "良好",
   "checkin.submit": "完成",
   "checkin.addDetails": "+ 添加更多信息（可选）",
+  "checkin.noPendingSession": "找不到待完成的睡眠记录，请从 Tonight 页面重新开始。",
   "review.title": "7 日回顾",
   "review.crunching": "正在分析过去 7 天…",
   "review.adherence": "依从程度",
