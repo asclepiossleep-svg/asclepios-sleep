@@ -6,8 +6,25 @@ import { run7DayReview, run28DayReassessment, buildProgressTrend } from "../doma
 const router = Router();
 router.use(requireAuth);
 
+// Repair Plan (2 Sep 2026) A11 / fix-order #1 — opening this page previously
+// created a brand-new SEVEN_DAY ReviewSnapshot on every mount (Review.tsx's
+// useEffect calling this unconditionally). That polluted review history and
+// fed duplicate snapshots into computeRoutineLevel(). A 7-day review is only
+// meaningful to recompute roughly once a day; reuse the latest snapshot
+// within a 20h window instead of always creating a new one.
+const REVIEW_IDEMPOTENCY_WINDOW_MS = 20 * 60 * 60 * 1000;
+
 router.post("/7-day", async (req: AuthedRequest, res) => {
-  const result = await run7DayReview(req.userId!);
+  const userId = req.userId!;
+  const existing = await prisma.reviewSnapshot.findFirst({
+    where: { userId, type: "SEVEN_DAY" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing && Date.now() - existing.createdAt.getTime() < REVIEW_IDEMPOTENCY_WINDOW_MS) {
+    const findings = JSON.parse(existing.findingsJson);
+    return res.json({ actionCode: existing.actionCode, explanation: findings.explanation ?? "", findings, reused: true });
+  }
+  const result = await run7DayReview(userId);
   res.json(result);
 });
 
