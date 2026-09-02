@@ -39,31 +39,75 @@ async function windowMetrics(userId: string, from: Date, to: Date): Promise<Wind
  * ReviewSnapshot. Per the doc, a 7-day review only *tunes* the current
  * plan — it must NOT rewrite Core Profile (that only happens at 28 days,
  * see run28DayReassessment below).
+ *
+ * Repair Plan A4/A5 (Fix #4, 2 Sep 2026, per audit corrections) —
+ * previously this combined every owned product's usage logs into one
+ * count against a hard-coded `totalNights: 7`, so a user with 2 products
+ * used 7/7 nights each showed as "14/7 = 200% adherence", and routine
+ * completion used `routineLogsRecent.length` as its own denominator —
+ * meaning "nothing logged" (never offered) was indistinguishable from
+ * "logged and skipped every time".
+ *
+ * Both are now driven by `PlannedAction` — the row created when a step
+ * was actually offered on Tonight (see tonight.ts), not just when the
+ * user acted on it. Adherence is computed *per product* (findings.
+ * productAdherence), and the single `adherenceLevel` fed to the Strategy
+ * Engine is the worst of those (the product most needing attention).
+ * Routine completion's denominator is now "how many non-product steps
+ * were actually planned in the window", defaulting to a neutral 1.0
+ * (nothing missed) when nothing was planned at all, rather than the old
+ * `|| 7` fallback which silently manufactured a fake week.
  */
+function adherenceSeverityRank(level: string): number {
+  // Lower = more concerning = takes priority when picking the "worst" of
+  // several products' adherence for the single scalar decideStrategy needs.
+  if (level === "LOW" || level === "ROUTINE_NON_ADHERENCE") return 0;
+  if (level === "HIGH_NO_IMPROVEMENT") return 1;
+  return 2; // GOOD
+}
+
 export async function run7DayReview(userId: string, decisionVersion = "v1") {
   const now = new Date();
   const recentStart = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
   const baselineStart = new Date(now.getTime() - 14 * 24 * 3600 * 1000);
+  const recentStartDateKey = recentStart.toISOString().slice(0, 10);
 
   const recent = await windowMetrics(userId, recentStart, now);
   const baseline = await windowMetrics(userId, baselineStart, recentStart);
   const response = compareWindows(baseline, recent);
 
   const productOwnerships = await prisma.productOwnership.findMany({ where: { userId } });
-  const routineLogsRecent = await prisma.routineStepLog.findMany({ where: { userId, loggedAt: { gte: recentStart } } });
-  const productLogsRecent = await prisma.productUsageLog.findMany({ where: { userId, loggedAt: { gte: recentStart } } });
+  const plannedRecent = await prisma.plannedAction.findMany({ where: { userId, plannedDate: { gte: recentStartDateKey } } });
 
-  const routineDone = routineLogsRecent.filter((l: (typeof routineLogsRecent)[number]) => l.status === "DONE").length;
-  const routineTotal = routineLogsRecent.length || 7;
-  const routineCompletionRatio = routineTotal === 0 ? 0 : routineDone / routineTotal;
+  const plannedByProduct = new Map<string, (typeof plannedRecent)[number][]>();
+  const routinePlanned: (typeof plannedRecent)[number][] = [];
+  for (const p of plannedRecent) {
+    if (p.productId) {
+      const list = plannedByProduct.get(p.productId) ?? [];
+      list.push(p);
+      plannedByProduct.set(p.productId, list);
+    } else {
+      routinePlanned.push(p);
+    }
+  }
 
-  const productDoneCount = productLogsRecent.filter((l: (typeof productLogsRecent)[number]) => l.status === "DONE").length;
-  const adherence = computeAdherence({
-    doneCount: productDoneCount,
-    totalNights: 7,
-    kind: "PRODUCT",
-    hadImprovement: response.direction === "IMPROVED",
+  const productAdherence = [...plannedByProduct.entries()].map(([productId, rows]) => {
+    const doneCount = rows.filter((r) => r.status === "DONE").length;
+    return { productId, ...computeAdherence({ doneCount, totalNights: rows.length, kind: "PRODUCT", hadImprovement: response.direction === "IMPROVED" }) };
   });
+
+  const routineDone = routinePlanned.filter((r) => r.status === "DONE").length;
+  const routineTotal = routinePlanned.length;
+  const routineCompletionRatio = routineTotal === 0 ? 1 : routineDone / routineTotal;
+
+  // The single scalar the Strategy Engine takes: the worst-performing
+  // product (most needing attention), or a neutral GOOD/0 result if the
+  // user owns no products yet — matches the old "no product" branch in
+  // decideStrategy, which only reads adherenceLevel when ownsRelevantProduct.
+  const adherence =
+    productAdherence.length > 0
+      ? productAdherence.reduce((worst, a) => (adherenceSeverityRank(a.level) < adherenceSeverityRank(worst.level) ? a : worst))
+      : computeAdherence({ doneCount: 0, totalNights: 0, kind: "PRODUCT", hadImprovement: false });
 
   const safetyFlagTriggered = await hasOpenSafetyFlag(userId);
 
@@ -78,7 +122,14 @@ export async function run7DayReview(userId: string, decisionVersion = "v1") {
     newEligibleProductAvailable: false,
   });
 
-  const findings = { adherence, response, routineCompletionRatio, productOwnershipCount: productOwnerships.length, explanation: strategy.explanation };
+  const findings = {
+    adherence,
+    productAdherence,
+    response,
+    routineCompletionRatio,
+    productOwnershipCount: productOwnerships.length,
+    explanation: strategy.explanation,
+  };
 
   const snapshot = await prisma.reviewSnapshot.create({
     data: {
