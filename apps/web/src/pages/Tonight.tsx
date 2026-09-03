@@ -90,7 +90,6 @@ export default function Tonight() {
   const [stepStatus, setStepStatus] = useState<Record<string, "DONE" | "SKIPPED">>({});
   const [chosenAudio, setChosenAudio] = useState<ChosenAudio>({ kind: "SYNTH", code: SYNTH_TRACKS[0].code });
   const [libraryTracks, setLibraryTracks] = useState<LibraryTrack[]>([]);
-  const [showLibraryPicker, setShowLibraryPicker] = useState(false);
 
   const [durationMode, setDurationMode] = useState<DurationMode>("FIXED");
   const [presetLabel, setPresetLabel] = useState<string>("1 hr");
@@ -151,17 +150,6 @@ export default function Tonight() {
       })
       .then((res) => updateUser({ preferredSleepAudioId: res.preferredSleepAudioId, audioMuted: res.audioMuted }))
       .catch(() => {});
-  }
-
-  function chooseSynth(code: SynthTrackCode) {
-    setChosenAudio({ kind: "SYNTH", code });
-    persistAudioChoice({ kind: "SYNTH", code });
-  }
-
-  function chooseReal(tr: LibraryTrack) {
-    setChosenAudio({ kind: "REAL", id: tr.id, title: tr.title });
-    persistAudioChoice({ kind: "REAL", id: tr.id, title: tr.title });
-    setShowLibraryPicker(false);
   }
 
   function chooseOff() {
@@ -268,52 +256,23 @@ export default function Tonight() {
         <input id="bedtime" type="time" value={bedtime} onChange={(e) => setBedtime(e.target.value)} style={{ fontSize: "1.1rem", padding: "0.5rem" }} />
       </div>
 
-      {/* Music — synth quick-picks (unchanged) + off, plus a Music Library
-          browse option for real tracks (correction point #4). */}
+      {/* Music — Fix #5.1 (2 Sep 2026): a single entry point into Music
+          Library (real tracks + synthesized ambience together), not a
+          duplicated row of quick-pick buttons here too. */}
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
         <div>
           <p className="muted" style={{ margin: "0 0 0.4rem" }}>
             {t("tonight.trackLabel")}
           </p>
           <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }}>{audioLabel}</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-            {SYNTH_TRACKS.map((track) => (
-              <button
-                key={track.code}
-                onClick={() => chooseSynth(track.code)}
-                style={chosenAudio.kind === "SYNTH" && chosenAudio.code === track.code ? { borderColor: "var(--color-primary)" } : {}}
-              >
-                {t(`tonight.track.${track.code}`)}
-              </button>
-            ))}
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <Link to="/music?selectFor=tonight" className="primary" style={{ textDecoration: "none" }}>
+              🎵 {t("tonight.chooseMusic")}
+            </Link>
             <button onClick={chooseOff} style={chosenAudio.kind === "OFF" ? { borderColor: "var(--color-primary)" } : {}}>
               🔇 {t("tonight.track.OFF")}
             </button>
-            <button onClick={() => setShowLibraryPicker((v) => !v)} className="primary">
-              🎵 {t("tonight.browseLibrary")}
-            </button>
           </div>
-          {showLibraryPicker && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginTop: "0.6rem", maxHeight: "12rem", overflowY: "auto" }}>
-              {libraryTracks.length === 0 && <p className="muted">{t("library.empty")}</p>}
-              {libraryTracks.map((tr) => (
-                <button
-                  key={tr.id}
-                  onClick={() => chooseReal(tr)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.6rem",
-                    textAlign: "left",
-                    borderColor: chosenAudio.kind === "REAL" && chosenAudio.id === tr.id ? "var(--color-primary)" : undefined,
-                  }}
-                >
-                  {tr.artworkUrl && <img src={tr.artworkUrl} alt="" aria-hidden="true" style={{ width: "2rem", height: "2rem", borderRadius: "6px", objectFit: "cover" }} />}
-                  <span>{tr.title}</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Duration — correction point #7/#8: presets from 5 min up to a
