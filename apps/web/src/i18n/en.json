@@ -46,6 +46,8 @@
   "tonight.durationUntilWake": "Until wake",
   "tonight.durationAllNight": "All night",
   "tonight.durationCustom": "Custom",
+  "tonight.durationCustomShow": "Custom duration…",
+  "tonight.durationCustomHide": "Hide custom duration",
   "tonight.browseLibrary": "Browse Music Library",
   "tonight.chooseMusic": "Choose Music",
   "wakeStyle.GENTLE": "Gentle",
