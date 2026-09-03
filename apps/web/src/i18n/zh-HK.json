@@ -46,6 +46,8 @@
   "tonight.durationUntilWake": "播到起身",
   "tonight.durationAllNight": "成晚播",
   "tonight.durationCustom": "自訂",
+  "tonight.durationCustomShow": "自訂時長…",
+  "tonight.durationCustomHide": "收埋自訂時長",
   "tonight.browseLibrary": "去音樂庫揀歌",
   "tonight.chooseMusic": "揀音樂",
   "wakeStyle.GENTLE": "溫和",
