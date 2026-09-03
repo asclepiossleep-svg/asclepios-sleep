@@ -39,6 +39,24 @@ type ChosenAudio = { kind: "SYNTH"; code: SynthTrackCode } | { kind: "REAL"; id:
 
 type DurationMode = "FIXED" | "CUSTOM" | "UNTIL_WAKE" | "ALL_NIGHT";
 
+type DurationChoice = { kind: "FIXED"; label: string; seconds: number } | { kind: "UNTIL_WAKE" } | { kind: "ALL_NIGHT" };
+
+// Fix #5.2 (2 Sep 2026) — the wheel picker's single source of items: every
+// FIXED preset plus the two open-ended modes, in display order. Custom is
+// deliberately NOT in this list — it's a secondary "Custom…" link below
+// the wheel, not another item to swipe past (per Edmund's brief).
+const DURATION_CHOICES: DurationChoice[] = [
+  ...SLEEP_AUDIO_DURATION_PRESETS.map((p) => ({ kind: "FIXED" as const, label: p.label, seconds: p.seconds })),
+  { kind: "UNTIL_WAKE" },
+  { kind: "ALL_NIGHT" },
+];
+
+function durationChoiceLabel(choice: DurationChoice): string {
+  if (choice.kind === "FIXED") return choice.label;
+  if (choice.kind === "UNTIL_WAKE") return t("tonight.durationUntilWake");
+  return t("tonight.durationAllNight");
+}
+
 function stepLabel(step: TonightStep): string {
   if (step.stepCode === "PRODUCT") return `${t("tonight.step.useProduct")} ${step.productName ?? ""}`.trim();
   if (step.stepCode === "BREATHING") return t("tonight.step.breathing");
@@ -94,6 +112,8 @@ export default function Tonight() {
   const [durationMode, setDurationMode] = useState<DurationMode>("FIXED");
   const [presetLabel, setPresetLabel] = useState<string>("1 hr");
   const [customMinutes, setCustomMinutes] = useState<number>(40);
+  const durationScrollRef = useRef<HTMLDivElement>(null);
+  const durationScrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [bedtime, setBedtime] = useState<string>("22:30");
   const [wakeAlarmEnabled, setWakeAlarmEnabled] = useState(false);
@@ -156,6 +176,62 @@ export default function Tonight() {
     setChosenAudio({ kind: "OFF" });
     persistAudioChoice({ kind: "OFF" });
   }
+
+  // Fix #5.2 (2 Sep 2026) — replaces the old wall of duration buttons with
+  // a horizontal, scroll-snap "wheel" (5m/10m/.../3h/Until Wake/All Night).
+  // DURATION_ITEM_WIDTH/GAP are real layout constants, not arbitrary —
+  // the container's side padding is set to exactly (100% - item width)/2
+  // in the JSX below so that item i sits centered when
+  // scrollLeft === i * (width + gap). That symmetry is what makes swipe
+  // detection below a one-line calculation instead of a size-measuring
+  // exercise.
+  const DURATION_ITEM_WIDTH = 84;
+  const DURATION_ITEM_GAP = 10;
+  const DURATION_STEP = DURATION_ITEM_WIDTH + DURATION_ITEM_GAP;
+
+  function selectedDurationIndex(): number {
+    if (durationMode === "UNTIL_WAKE") return DURATION_CHOICES.findIndex((c) => c.kind === "UNTIL_WAKE");
+    if (durationMode === "ALL_NIGHT") return DURATION_CHOICES.findIndex((c) => c.kind === "ALL_NIGHT");
+    if (durationMode === "FIXED") return DURATION_CHOICES.findIndex((c) => c.kind === "FIXED" && c.label === presetLabel);
+    return -1; // CUSTOM — no wheel item is "the" selection while custom is active
+  }
+
+  function applyDurationChoice(choice: DurationChoice) {
+    if (choice.kind === "FIXED") {
+      setDurationMode("FIXED");
+      setPresetLabel(choice.label);
+    } else {
+      setDurationMode(choice.kind);
+    }
+  }
+
+  // Tap-to-select — always works regardless of touch/swipe support, and is
+  // a real keyboard fallback since these are plain <button> elements
+  // (Enter/Space activate onClick natively).
+  function tapDuration(choice: DurationChoice, index: number) {
+    applyDurationChoice(choice);
+    durationScrollRef.current?.children[index]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }
+
+  // Swipe-to-select — after scrolling stops (150ms of no scroll events),
+  // whichever item is nearest the container's center becomes the
+  // selection. Debounced so this runs once per swipe, not on every frame.
+  function onDurationScroll() {
+    if (durationScrollTimeout.current) clearTimeout(durationScrollTimeout.current);
+    durationScrollTimeout.current = setTimeout(() => {
+      const container = durationScrollRef.current;
+      if (!container) return;
+      const index = Math.max(0, Math.min(DURATION_CHOICES.length - 1, Math.round(container.scrollLeft / DURATION_STEP)));
+      applyDurationChoice(DURATION_CHOICES[index]);
+    }, 150);
+  }
+
+  useEffect(() => {
+    const index = selectedDurationIndex();
+    const el = durationScrollRef.current?.children[index] as HTMLElement | undefined;
+    el?.scrollIntoView({ behavior: "auto", inline: "center", block: "nearest" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function mark(step: TonightStep, status: "DONE" | "SKIPPED") {
     setStepStatus((s) => ({ ...s, [step.stepInstanceId]: status }));
@@ -275,38 +351,71 @@ export default function Tonight() {
           </div>
         </div>
 
-        {/* Duration — correction point #7/#8: presets from 5 min up to a
-            genuinely open-ended "whole night" (Until Wake / All Night),
-            plus a free-entry custom length — not capped at a short fixed
-            list. Only shown when music isn't off. */}
+        {/* Duration — Fix #5.2 (2 Sep 2026): a scroll-snap "wheel" instead
+            of a wrapped grid of buttons. Presets from 5 min up to a
+            genuinely open-ended "whole night" (Until Wake / All Night)
+            are swipeable in one row; Custom is a secondary link below,
+            not another item to swipe past. Only shown when music isn't
+            off. */}
         {chosenAudio.kind !== "OFF" && (
           <div>
             <p className="muted" style={{ margin: "0 0 0.4rem" }}>
               {t("tonight.durationLabel")}
             </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-              {SLEEP_AUDIO_DURATION_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  onClick={() => {
-                    setDurationMode("FIXED");
-                    setPresetLabel(preset.label);
-                  }}
-                  style={durationMode === "FIXED" && presetLabel === preset.label ? { borderColor: "var(--color-primary)" } : {}}
-                >
-                  {preset.label}
-                </button>
-              ))}
-              <button onClick={() => setDurationMode("UNTIL_WAKE")} style={durationMode === "UNTIL_WAKE" ? { borderColor: "var(--color-primary)" } : {}}>
-                {t("tonight.durationUntilWake")}
-              </button>
-              <button onClick={() => setDurationMode("ALL_NIGHT")} style={durationMode === "ALL_NIGHT" ? { borderColor: "var(--color-primary)" } : {}}>
-                {t("tonight.durationAllNight")}
-              </button>
-              <button onClick={() => setDurationMode("CUSTOM")} style={durationMode === "CUSTOM" ? { borderColor: "var(--color-primary)" } : {}}>
-                {t("tonight.durationCustom")}
-              </button>
+            <div
+              ref={durationScrollRef}
+              onScroll={onDurationScroll}
+              role="listbox"
+              aria-label={t("tonight.durationLabel")}
+              style={{
+                display: "flex",
+                gap: `${DURATION_ITEM_GAP}px`,
+                overflowX: "auto",
+                scrollSnapType: "x mandatory",
+                WebkitOverflowScrolling: "touch",
+                padding: `0.4rem calc(50% - ${DURATION_ITEM_WIDTH / 2}px)`,
+                marginLeft: "-1rem",
+                marginRight: "-1rem",
+              }}
+            >
+              {DURATION_CHOICES.map((choice, index) => {
+                const isSelected = durationMode !== "CUSTOM" && index === selectedDurationIndex();
+                return (
+                  <button
+                    key={durationChoiceLabel(choice) + index}
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => tapDuration(choice, index)}
+                    style={{
+                      flex: `0 0 ${DURATION_ITEM_WIDTH}px`,
+                      scrollSnapAlign: "center",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center",
+                      padding: "0.75rem 0.3rem",
+                      borderRadius: "999px",
+                      fontSize: isSelected ? "1rem" : "0.85rem",
+                      fontWeight: isSelected ? 700 : 400,
+                      opacity: isSelected ? 1 : 0.6,
+                      transform: isSelected ? "scale(1.08)" : "scale(1)",
+                      transition: "transform 0.15s, opacity 0.15s, font-size 0.15s",
+                      borderColor: isSelected ? "var(--color-primary)" : undefined,
+                    }}
+                  >
+                    {durationChoiceLabel(choice)}
+                  </button>
+                );
+              })}
             </div>
+            <button
+              type="button"
+              onClick={() => setDurationMode((m) => (m === "CUSTOM" ? "FIXED" : "CUSTOM"))}
+              className="muted"
+              style={{ background: "none", border: "none", textDecoration: "underline", fontSize: "0.8rem", marginTop: "0.4rem", padding: 0 }}
+            >
+              {durationMode === "CUSTOM" ? t("tonight.durationCustomHide") : t("tonight.durationCustomShow")}
+            </button>
             {durationMode === "CUSTOM" && (
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem" }}>
                 <input
