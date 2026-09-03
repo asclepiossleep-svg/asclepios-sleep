@@ -36,6 +36,8 @@
   "tonight.trackLabel": "声音",
   "tonight.chooseMusic": "选择音乐",
   "tonight.durationLabel": "时长",
+  "tonight.durationCustomShow": "自定义时长…",
+  "tonight.durationCustomHide": "隐藏自定义时长",
   "music.category.AMBIENCE": "环境音与噪音",
   "music.selectForTonightSubtitle": "选择今晚的声音——会自动与 Tonight 同步。",
   "music.ambienceSelectOnly": "在 Tonight 中播放",
