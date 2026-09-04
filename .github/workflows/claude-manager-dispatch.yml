@@ -52,6 +52,10 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Debug (2 Sep 2026) — temporary, to see the real error behind an
+          # is_error:true / 1-turn / $0-cost instant failure that the
+          # summary log hides by default. Remove once resolved.
+          show_full_output: true
           # Cost control #3/#4 — claude-sonnet-5 (not Opus) as the routine
           # working model for this repo's implementation tasks. If a future
           # task turns out to need a stronger model, override per-issue by
