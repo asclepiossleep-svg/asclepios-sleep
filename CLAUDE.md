@@ -26,8 +26,8 @@ Before working, read:
   - `[AI-STATUS] CHECKPOINT` plus completed work and the next action
   - `[AI-STATUS] READY_FOR_AUDIT` plus tests and known limitations
   - `[AI-STATUS] BLOCKED` plus the precise blocker
+  - `[AI-STATUS] PAUSED-QUOTA` when subscription usage is temporarily unavailable
 - If the platform stops the run before a final comment can be posted, the GitHub workflow will classify the failure and schedule a retry when appropriate.
 - On resumption, read the latest commits, issue/PR discussion, and status marker. Continue from the last verified checkpoint; do not redo completed work.
 - Run the relevant tests and build before declaring `READY_FOR_AUDIT`. Never hide failing checks.
 - Respond to Codex review comments in the same PR and push fixes to the same task branch.
-

@@ -24,10 +24,11 @@ permissions:
 jobs:
   claude:
     if: >-
-      contains(github.event.comment.body || '', '@claude') ||
+      (github.actor == github.repository_owner || github.actor == 'github-actions[bot]') &&
+      (contains(github.event.comment.body || '', '@claude') ||
       contains(github.event.review.body || '', '@claude') ||
       contains(github.event.issue.body || '', '@claude') ||
-      github.event.action == 'assigned'
+      github.event.action == 'assigned')
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -116,4 +117,3 @@ jobs:
         if: steps.claude.outputs.conclusion != 'success'
         shell: bash
         run: exit 1
-
