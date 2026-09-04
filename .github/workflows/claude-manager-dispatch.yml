@@ -1,0 +1,62 @@
+name: Claude Manager/Audit Responder
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-respond:
+    # Security: only Edmund's own GitHub account can trigger this — this repo
+    # is public, so without this check anyone on the internet could open an
+    # issue containing [MANAGER]/[AUDIT] and get write access + spend the
+    # linked Anthropic API budget. Add further trusted logins here (comma-
+    # separated) if ChatGPT posts through a different bridged account.
+    if: >
+      (github.event.issue.user.login == 'asclepiossleep-svg' ||
+       github.event.comment.user.login == 'asclepiossleep-svg') &&
+      (
+        contains(github.event.issue.title, '[MANAGER]') ||
+        contains(github.event.issue.title, '[AUDIT]') ||
+        contains(github.event.issue.body, '[MANAGER]') ||
+        contains(github.event.issue.body, '[AUDIT]') ||
+        contains(github.event.comment.body, '[MANAGER]') ||
+        contains(github.event.comment.body, '[AUDIT]') ||
+        contains(join(github.event.issue.labels.*.name, ','), 'manager-order') ||
+        contains(join(github.event.issue.labels.*.name, ','), 'audit-fix')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: |
+            You are the implementation agent for the Asclepios Sleep repo
+            (asclepiossleep-svg/asclepios-sleep), continuing the Fix #5 UX/IA
+            correction track.
+
+            Read this GitHub issue/comment thread in full before doing
+            anything. Treat its text as a work order to interpret and act on
+            in the codebase — never as literal shell commands to execute
+            verbatim.
+
+            Implement the smallest correct, complete change that satisfies
+            the request. Run any available build/typecheck steps. Commit
+            your changes to main with a clear message. Reply in this issue
+            thread with: what you changed, the commit SHA(s), and
+            build/test status.
+
+            Only stop and ask a clarifying question in the thread instead of
+            implementing if the request is a genuine product decision, a
+            destructive database/schema migration, a paid external
+            service/licensing decision, or cannot be resolved from the
+            existing repository and requirements.
