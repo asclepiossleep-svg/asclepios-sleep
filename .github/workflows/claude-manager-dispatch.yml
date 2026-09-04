@@ -50,7 +50,7 @@ jobs:
 
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Cost control #3/#4 — claude-sonnet-5 (not Opus) as the routine
           # working model for this repo's implementation tasks. If a future
           # task turns out to need a stronger model, override per-issue by
