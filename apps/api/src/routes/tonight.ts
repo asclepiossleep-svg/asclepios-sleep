@@ -56,6 +56,19 @@ router.get("/", async (req: AuthedRequest, res) => {
   const routineLevel = computeRoutineLevel(reviewSnapshots);
   const maxSteps = maxStepsForLevel(routineLevel);
 
+  // Fix #5.6 audit follow-up (5 Sep 2026) — the Programme KEEP/REMOVE/ADJUST
+  // review's real consequence: a step type last marked REMOVE here is never
+  // generated below (same tier as the "no owned product"/"racing thoughts
+  // below threshold" gates already on PRODUCT/BREATHING — the selection
+  // engines themselves are untouched). `pausedStepCodes` only lists a code
+  // that would otherwise have appeared, so Tonight can show a "paused via
+  // your programme review" note instead of silently doing nothing. ADJUST
+  // doesn't suppress the step — it attaches the reviewer's note back onto it.
+  const stepPreferences = await prisma.userStepPreference.findMany({ where: { userId } });
+  const preferenceByStepCode = new Map(stepPreferences.map((p: (typeof stepPreferences)[number]) => [p.stepCode, p]));
+  const isRemoved = (stepCode: string) => preferenceByStepCode.get(stepCode)?.decision === "REMOVE";
+  const pausedStepCodes: string[] = [];
+
   // Labels are not baked in server-side — the client owns all user-facing
   // copy via its locale resources (apps/web/src/i18n), so this route only
   // ever returns stepCode + the raw data (e.g. product name) a label needs.
@@ -68,39 +81,51 @@ router.get("/", async (req: AuthedRequest, res) => {
   }[] = [];
 
   if (ownerships.length > 0) {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
-    const recentUsage = await prisma.productUsageLog.findMany({
-      where: { userId, productId: { in: ownerships.map((o: (typeof ownerships)[number]) => o.productId) }, loggedAt: { gte: sevenDaysAgo } },
-    });
-    const productBudget = productBudgetForMaxSteps(maxSteps);
-    const selected = selectProductSteps(
-      ownerships.map((o: (typeof ownerships)[number]) => ({ productId: o.productId, productName: o.product.name, acquiredAt: o.acquiredAt })),
-      recentUsage.map((l: (typeof recentUsage)[number]) => ({ productId: l.productId!, status: l.status, loggedAt: l.loggedAt })),
-      productBudget,
-    );
+    if (isRemoved("PRODUCT")) {
+      pausedStepCodes.push("PRODUCT");
+    } else {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+      const recentUsage = await prisma.productUsageLog.findMany({
+        where: { userId, productId: { in: ownerships.map((o: (typeof ownerships)[number]) => o.productId) }, loggedAt: { gte: sevenDaysAgo } },
+      });
+      const productBudget = productBudgetForMaxSteps(maxSteps);
+      const selected = selectProductSteps(
+        ownerships.map((o: (typeof ownerships)[number]) => ({ productId: o.productId, productName: o.product.name, acquiredAt: o.acquiredAt })),
+        recentUsage.map((l: (typeof recentUsage)[number]) => ({ productId: l.productId!, status: l.status, loggedAt: l.loggedAt })),
+        productBudget,
+      );
 
-    for (const p of selected) {
-      let protocolRows = await prisma.productProtocolStep.findMany({
-        where: { productId: p.productId, locale },
-        orderBy: { stepOrder: "asc" },
-      });
-      if (protocolRows.length === 0 && locale !== "en") {
-        protocolRows = await prisma.productProtocolStep.findMany({ where: { productId: p.productId, locale: "en" }, orderBy: { stepOrder: "asc" } });
+      for (const p of selected) {
+        let protocolRows = await prisma.productProtocolStep.findMany({
+          where: { productId: p.productId, locale },
+          orderBy: { stepOrder: "asc" },
+        });
+        if (protocolRows.length === 0 && locale !== "en") {
+          protocolRows = await prisma.productProtocolStep.findMany({ where: { productId: p.productId, locale: "en" }, orderBy: { stepOrder: "asc" } });
+        }
+        steps.push({
+          stepCode: "PRODUCT",
+          stepInstanceId: `PRODUCT:${p.productId}`,
+          productId: p.productId,
+          productName: p.productName,
+          protocolSteps: protocolRows.map((r: (typeof protocolRows)[number]) => ({ title: r.title, instruction: r.instruction })),
+        });
       }
-      steps.push({
-        stepCode: "PRODUCT",
-        stepInstanceId: `PRODUCT:${p.productId}`,
-        productId: p.productId,
-        productName: p.productName,
-        protocolSteps: protocolRows.map((r: (typeof protocolRows)[number]) => ({ title: r.title, instruction: r.instruction })),
-      });
     }
   }
   if (racingThoughts && racingThoughts.severity >= 3 && steps.length < maxSteps) {
-    steps.push({ stepCode: "BREATHING", stepInstanceId: "BREATHING" });
+    if (isRemoved("BREATHING")) {
+      pausedStepCodes.push("BREATHING");
+    } else {
+      steps.push({ stepCode: "BREATHING", stepInstanceId: "BREATHING" });
+    }
   }
   if (steps.length < maxSteps) {
-    steps.push({ stepCode: "MUSIC", stepInstanceId: "MUSIC" });
+    if (isRemoved("MUSIC")) {
+      pausedStepCodes.push("MUSIC");
+    } else {
+      steps.push({ stepCode: "MUSIC", stepInstanceId: "MUSIC" });
+    }
   }
 
   const finalSteps = steps.slice(0, maxSteps);
@@ -132,10 +157,17 @@ router.get("/", async (req: AuthedRequest, res) => {
         create: { userId, stepCode: s.stepCode, stepKey: s.stepInstanceId, productId: s.productId ?? null, plannedDate },
         update: {},
       });
-      return { ...s, actionInstanceId: planned.id, mode: stepModeFor(s.stepCode), guidance: guidanceByStepCode.get(s.stepCode) ?? null };
+      const pref = preferenceByStepCode.get(s.stepCode);
+      return {
+        ...s,
+        actionInstanceId: planned.id,
+        mode: stepModeFor(s.stepCode),
+        guidance: guidanceByStepCode.get(s.stepCode) ?? null,
+        adjustmentNote: pref?.decision === "ADJUST" ? pref.note ?? "" : null,
+      };
     }),
   );
-  res.json({ steps: withActionId, routineLevel });
+  res.json({ steps: withActionId, routineLevel, pausedStepCodes });
 });
 
 router.post("/log-step", async (req: AuthedRequest, res) => {

@@ -32,10 +32,14 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * progress, and whether a KEEP/REMOVE/ADJUST routine-step review is due
  * (every `reviewFrequencyDays`). Two new endpoints support the day-to-day
  * loop: POST /:code/day/:day/log (Done/Skip a day) and POST /:code/review
- * (submit the retro). Per this run's scoped MVP, the review only *records*
- * KEEP/REMOVE/ADJUST decisions (ProgrammeStepReview) — it does not mutate
- * Tonight's generated step list, which stays exactly as computed by
- * productSelectionEngine.ts/routineLevelEngine.ts.
+ * (submit the retro).
+ *
+ * Audit follow-up (5 Sep 2026) — the review now has a real, user-visible
+ * consequence: POST /:code/review also upserts UserStepPreference (one row
+ * per userId+stepCode, "latest decision wins"), which GET /tonight reads to
+ * skip generating a step type last marked REMOVE. GET /:code now also
+ * returns `currentStepPreferences` so the review form can prefill from the
+ * user's actual current decision instead of resetting to KEEP every time.
  */
 router.get("/", async (req: AuthedRequest, res) => {
   const userId = req.userId!;
@@ -93,10 +97,11 @@ router.get("/:code", async (req: AuthedRequest, res) => {
   const currentDay = Math.min(daysElapsed, programme.lengthDays);
   const isComplete = daysElapsed > programme.lengthDays;
 
-  const [today, dayLogs, ownsAnyProduct] = await Promise.all([
+  const [today, dayLogs, ownsAnyProduct, stepPreferences] = await Promise.all([
     prisma.programmeDay.findUnique({ where: { programmeId_dayNumber: { programmeId: programme.id, dayNumber: currentDay } } }),
     prisma.programmeDayLog.findMany({ where: { enrollmentId: enrollment.id } }),
     prisma.productOwnership.count({ where: { userId } }).then((n: number) => n > 0),
+    prisma.userStepPreference.findMany({ where: { userId } }),
   ]);
   const todayContent = today?.contentItemCode ? await resolveContentItem(today.contentItemCode, locale) : null;
 
@@ -128,6 +133,10 @@ router.get("/:code", async (req: AuthedRequest, res) => {
     // selection engine here — BREATHING/MUSIC are always potentially in a
     // user's routine, PRODUCT only if they own one.
     reviewableSteps: ownsAnyProduct ? ["PRODUCT", "BREATHING", "MUSIC"] : ["BREATHING", "MUSIC"],
+    // The real current decision per step (UserStepPreference — "latest
+    // decision wins"), so the review form can prefill from what's actually
+    // in effect right now instead of resetting everyone to KEEP.
+    currentStepPreferences: Object.fromEntries(stepPreferences.map((p: (typeof stepPreferences)[number]) => [p.stepCode, { decision: p.decision, note: p.note }])),
   });
 });
 
@@ -179,9 +188,20 @@ router.post("/:code/review", async (req: AuthedRequest, res) => {
 
   const valid = (decisions ?? []).filter((d) => (STEP_REVIEW_DECISIONS as readonly string[]).includes(d.decision));
   await prisma.$transaction([
+    // Audit trail — every submitted decision, kept forever.
     ...valid.map((d) =>
       prisma.programmeStepReview.create({
         data: { userId, enrollmentId: enrollment.id, stepCode: d.stepCode, decision: d.decision, note: d.note ?? null },
+      }),
+    ),
+    // The actual consequence — "latest decision wins" per (userId, stepCode),
+    // which GET /tonight reads to skip a REMOVEd step type. KEEP is a plain
+    // reversal of a prior REMOVE/ADJUST via the same upsert.
+    ...valid.map((d) =>
+      prisma.userStepPreference.upsert({
+        where: { userId_stepCode: { userId, stepCode: d.stepCode } },
+        create: { userId, stepCode: d.stepCode, decision: d.decision, note: d.note ?? null },
+        update: { decision: d.decision, note: d.note ?? null },
       }),
     ),
     prisma.programmeEnrollment.update({ where: { id: enrollment.id }, data: { lastReviewedAt: new Date() } }),

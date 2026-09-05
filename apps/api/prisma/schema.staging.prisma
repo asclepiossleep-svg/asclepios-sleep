@@ -77,6 +77,7 @@ model User {
   enrollments      ProgrammeEnrollment[]
   programmeDayLogs     ProgrammeDayLog[]
   programmeStepReviews ProgrammeStepReview[]
+  stepPreferences      UserStepPreference[]
   musicFavourites  MusicFavourite[]
   musicPlayHistory MusicPlayHistory[]
   analyticsEvents  AnalyticsEvent[]
@@ -690,6 +691,27 @@ model ProgrammeStepReview {
   decision     String // KEEP | REMOVE | ADJUST
   note         String?
   createdAt    DateTime            @default(now())
+}
+
+// Fix #5.6 audit follow-up (5 Sep 2026) — gives KEEP/REMOVE/ADJUST an actual
+// consequence instead of only writing to the ProgrammeStepReview audit
+// trail. One row per (userId, stepCode): "latest decision wins", upserted
+// alongside every ProgrammeStepReview write in POST /programmes/:code/review.
+// GET /tonight reads this to skip generating a step type last marked REMOVE
+// (same tier as the existing "no owned product" / "racing thoughts below
+// threshold" gates — productSelectionEngine.ts/routineLevelEngine.ts stay
+// untouched) and to surface an ADJUST note back on the step. KEEP is a
+// plain, non-destructive reversal of a prior REMOVE/ADJUST.
+model UserStepPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  stepCode  String // PRODUCT | BREATHING | MUSIC
+  decision  String // KEEP | REMOVE | ADJUST
+  note      String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, stepCode])
 }
 
 model RoutineStepDef {
