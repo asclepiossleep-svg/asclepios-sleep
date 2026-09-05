@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { useSession } from "../state/session";
 import { t } from "../i18n";
 import PageHeader from "../components/PageHeader";
+import { WALLPAPER_CATEGORIES } from "@asclepios/shared";
 
 interface WallpaperOption {
   id: string;
@@ -81,34 +82,42 @@ export default function Wallpaper() {
 
       {status === "ready" && options.length === 0 && <p className="muted">{t("setup.wallpaper.empty")}</p>}
 
-      {status === "ready" && options.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-          {options.map((w) => (
-            <button
-              key={w.id}
-              onClick={() => setSelected(w.id)}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: "0.5rem",
-                padding: "1rem",
-                height: "6.5rem",
-                borderRadius: "var(--radius)",
-                border: selected === w.id ? "3px solid var(--color-primary)" : "1px solid var(--color-border)",
-                background: w.imageUrl ? `center/cover url(${w.imageUrl})` : w.themeColor ?? "var(--color-surface)",
-                color: "#fff",
-                textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-                justifyContent: "flex-end",
-                width: "100%",
-              }}
-            >
-              <strong>{w.title}</strong>
-              <span style={{ fontSize: "0.8rem", opacity: 0.9 }}>{t(`wallpaper.category.${w.category}`)}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {status === "ready" &&
+        options.length > 0 &&
+        WALLPAPER_CATEGORIES.map((category) => {
+          const items = options.filter((w) => w.category === category);
+          if (items.length === 0) return null;
+          return (
+            <div key={category}>
+              <h2 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>{t(`wallpaper.category.${category}`)}</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                {items.map((w) => (
+                  <button
+                    key={w.id}
+                    onClick={() => setSelected(w.id)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: "0.5rem",
+                      padding: "1rem",
+                      height: "6.5rem",
+                      borderRadius: "var(--radius)",
+                      border: selected === w.id ? "3px solid var(--color-primary)" : "1px solid var(--color-border)",
+                      background: w.imageUrl ? `center/cover url(${w.imageUrl})` : w.themeColor ?? "var(--color-surface)",
+                      color: "#fff",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+                      justifyContent: "flex-end",
+                      width: "100%",
+                    }}
+                  >
+                    <strong>{w.title}</strong>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
 
       {isSetup ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "auto" }}>
