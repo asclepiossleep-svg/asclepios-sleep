@@ -6,6 +6,14 @@ requirements, safety constraints, the autonomous PM workflow, testing
 gates, and the GitHub / Vercel / Supabase rules. This file adds only what
 is specific to running Claude Code here.
 
+`AGENTS.md` §0 links the approved master specifications — read the ones
+relevant to your task and treat them as the intent of record:
+
+- [`docs/company/AI_OS_MASTER.md`](./docs/company/AI_OS_MASTER.md) — company operating model, PMO/orchestrator, maturity & evidence, non-negotiable controls
+- [`docs/product/ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md`](./docs/product/ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md) — assessment, user model, tags, decision strategies, safety, research framework
+- [`docs/growth/GROWTH_MARKETING_MASTER.md`](./docs/growth/GROWTH_MARKETING_MASTER.md) — content model, claim rules, funnel, commerce split
+- [`docs/ai/AI_COLLABORATION.md`](./docs/ai/AI_COLLABORATION.md) — roles, `[AI-STATUS]` markers, the CI workflows, usage-limit recovery
+
 Then read `OWNER_RUNBOOK.md` and, for anything you're about to change, the
 relevant source and the issue / PR acceptance criteria.
 

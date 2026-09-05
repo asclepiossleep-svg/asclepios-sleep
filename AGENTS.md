@@ -5,10 +5,29 @@ contributors and AI coding agents alike. `CLAUDE.md` (Claude Code) and
 `GEMINI.md` (Gemini CLI) carry only tool-specific notes and defer here for
 everything below.
 
-Read this file, then `OWNER_RUNBOOK.md`, `DEPLOYMENT.md`, and `README.md`
-before making changes. Where this file and older handoff docs disagree on
-process, this file wins; where they disagree on product facts, the real
-product catalogue and the Master Kick-off V1 doc win (see `README.md`).
+Read this file, then the canonical specifications below, then
+`OWNER_RUNBOOK.md`, `DEPLOYMENT.md`, and `README.md` before making
+changes. Where this file and older handoff docs disagree on process, this
+file wins; where they disagree on product facts, the master
+specifications, the real product catalogue, and the Master Kick-off V1 doc
+win (see `README.md`).
+
+---
+
+## 0. Canonical specifications
+
+These are the approved, version-controlled master specs. This file
+summarises the parts that bear on day-to-day engineering; **do not
+duplicate them — link to the relevant section.** If code and a master spec
+disagree, the spec is the intent and the gap is a bug or an unbuilt
+feature.
+
+| Spec | Scope |
+|---|---|
+| [`docs/company/AI_OS_MASTER.md`](./docs/company/AI_OS_MASTER.md) | RockPillar AI Operating System — departments, agent governance, PMO/orchestrator model, maturity & evidence standard, GitHub control structure, non-negotiable controls |
+| [`docs/product/ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md`](./docs/product/ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md) | Dynamic assessment, the layered user model, tag/scenario vocabulary, decision-engine strategies, safety/screening (not diagnosis), the research-evidence framework and V1 anchors, programme logic, data-efficiency principles |
+| [`docs/growth/GROWTH_MARKETING_MASTER.md`](./docs/growth/GROWTH_MARKETING_MASTER.md) | Content object model, research-to-marketing claim rules, brand messaging, Sleep-app vs Asclepios Health commerce split, funnel & measurement, referral/affiliate architecture |
+| [`docs/ai/AI_COLLABORATION.md`](./docs/ai/AI_COLLABORATION.md) | Agent roles, `[AI-STATUS]` markers, the three CI workflows, usage-limit recovery |
 
 ---
 
@@ -27,6 +46,12 @@ combines four things and keeps them together:
 Do **not** let the product drift into a pure content app or a pure
 ecommerce storefront. The physical product, the education, the app, and the
 guidance reinforce each other; that integration is the product.
+
+Full product philosophy, the dynamic user model, and the intelligence
+design are in
+[`ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md`](./docs/product/ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md);
+the company-level operating model is in
+[`AI_OS_MASTER.md`](./docs/company/AI_OS_MASTER.md).
 
 ### Design baseline: SaaS-first, AI-light
 
@@ -74,7 +99,9 @@ history, they are stale.
 
 ## 3. Multilingual requirements
 
-Three **V1 languages, all first-class**:
+Three **V1 languages, all first-class** (the Sleep Intelligence master spec
+§11 also lists `zh-TW` as a planned locale — the app is built so adding it
+is one JSON file + two lines, but it is not shipped yet):
 
 | Locale | Language | Notes |
 |---|---|---|
@@ -101,6 +128,11 @@ Rules:
 ---
 
 ## 4. Safety constraints (non-negotiable)
+
+Full screening-not-diagnosis rules, red-flag list, and the research-claim
+boundary are in `ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md` §12–§15 and
+`GROWTH_MARKETING_MASTER.md` §5; `AI_OS_MASTER.md` §11 lists the
+company-wide non-negotiable controls.
 
 **Content / claims** — apply to every tier, *including internal drafts and
 Admin-entered copy*:
@@ -168,12 +200,15 @@ make a broad technical call the specification already answers.
 - **Kill switch:** set repo Actions variable `CLAUDE_AUTOMATION_ENABLED` to
   `false` to pause the workflow without touching the file or secrets.
 
-### Two-agent model (proposed, not yet merged)
+### Two-agent model
 
-Branch `codex/ai-collaboration-setup` proposes a Codex-as-PM /
-Claude-as-implementer split with `[AI-STATUS]` markers and a
-`docs/ai/AI_COLLABORATION.md`. Treat it as **pending** until it merges;
-this file is the current source of truth for process.
+PM/audit agent (ChatGPT / "Codex") ↔ implementer (Claude Code), with
+`[AI-STATUS]` markers and checkpoint-based usage-limit recovery. Full
+detail in [`docs/ai/AI_COLLABORATION.md`](./docs/ai/AI_COLLABORATION.md)
+and `AI_OS_MASTER.md` §3, §7. Three workflows, disjoint triggers:
+`claude-manager-dispatch.yml` (`[MANAGER]`/`[AUDIT]`), `claude.yml`
+(`@claude` mentions on issues/PRs), `claude-quota-retry.yml` (hourly
+resume of `ai:paused-quota`).
 
 ---
 
