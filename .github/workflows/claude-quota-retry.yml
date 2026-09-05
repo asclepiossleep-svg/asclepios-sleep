@@ -1,7 +1,15 @@
 # Hourly retry for Claude work paused by a usage limit.
-# Carried forward verbatim from branch codex/ai-collaboration-setup.
+# Carried forward from branch codex/ai-collaboration-setup. Changes:
+#   - added the `vars.CLAUDE_AUTOMATION_ENABLED != 'false'` guard so the
+#     repo kill switch also stops the retry loop;
+#   - added a concurrency group so a manual run cannot overlap the
+#     scheduled one.
 # Pairs with the "Classify Claude result" step in claude.yml.
 # See docs/ai/AI_COLLABORATION.md.
+#
+# Note: this re-pings a quota-paused issue once per hour with no maximum
+# retry count; it self-clears when the quota returns, and the kill switch
+# above is the manual stop.
 name: Retry Claude quota-paused work
 
 on:
@@ -13,8 +21,13 @@ permissions:
   issues: write
   pull-requests: write
 
+concurrency:
+  group: claude-quota-retry
+  cancel-in-progress: false
+
 jobs:
   retry:
+    if: vars.CLAUDE_AUTOMATION_ENABLED != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

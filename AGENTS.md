@@ -198,7 +198,9 @@ make a broad technical call the specification already answers.
   --max-turns 150 --dangerously-skip-permissions`, `contents: write`,
   45-minute job timeout.
 - **Kill switch:** set repo Actions variable `CLAUDE_AUTOMATION_ENABLED` to
-  `false` to pause the workflow without touching the file or secrets.
+  `false`. All three Claude workflows (`claude-manager-dispatch.yml`,
+  `claude.yml`, `claude-quota-retry.yml`) check it, so one variable pauses
+  every automated run without touching a file or secrets.
 
 ### Two-agent model
 

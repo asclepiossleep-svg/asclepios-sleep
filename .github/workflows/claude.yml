@@ -7,8 +7,12 @@
 #   - claude-manager-dispatch.yml responds only to "[MANAGER]" / "[AUDIT]".
 # Keep them disjoint. See docs/ai/AI_COLLABORATION.md.
 #
-# Only checkout@v6 -> v4 was changed from the source branch (v6 does not
-# exist); every other line is preserved as authored.
+# Changes from the source branch:
+#   - actions/checkout@v6 -> @v4 (v6 does not exist);
+#   - added the `vars.CLAUDE_AUTOMATION_ENABLED != 'false'` guard so the
+#     repo's existing kill switch (see claude-manager-dispatch.yml) also
+#     pauses this workflow.
+# Every other line is preserved as authored.
 name: Claude Code
 
 on:
@@ -35,6 +39,7 @@ permissions:
 jobs:
   claude:
     if: >-
+      vars.CLAUDE_AUTOMATION_ENABLED != 'false' &&
       (github.actor == github.repository_owner || github.actor == 'github-actions[bot]') &&
       (contains(github.event.comment.body || '', '@claude') ||
       contains(github.event.review.body || '', '@claude') ||

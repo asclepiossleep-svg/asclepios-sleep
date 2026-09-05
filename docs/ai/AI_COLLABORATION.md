@@ -54,8 +54,8 @@ earlier one.
 
 ## Workflows
 
-Two GitHub Actions workflows support this, and they have **disjoint
-triggers** by convention — keep it that way:
+Three GitHub Actions workflows support this, and the two Claude-invoking
+ones have **disjoint triggers** by convention — keep it that way:
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
@@ -63,8 +63,10 @@ triggers** by convention — keep it that way:
 | `.github/workflows/claude.yml` | Comment / review / issue containing `@claude`, or an issue assigned to the bot | Interactive `@claude` responder on issues and PRs, with quota/blocker classification |
 | `.github/workflows/claude-quota-retry.yml` | Hourly schedule | Re-pings issues labelled `ai:paused-quota` to resume from the last checkpoint |
 
-Kill switch for the manager dispatch workflow: set repo Actions variable
-`CLAUDE_AUTOMATION_ENABLED` to `false`.
+**Kill switch:** set repo Actions variable `CLAUDE_AUTOMATION_ENABLED` to
+`false`. All three workflows check it in their job `if:` condition, so one
+variable pauses every automated Claude run — including the hourly quota
+retry loop — without editing a file or touching secrets.
 
 ## Usage-limit recovery
 
@@ -77,6 +79,11 @@ Claude reconstructs state from commits and the latest checkpoint.
 Unrecognised failures get `ai:blocked` and are **not** retried blindly —
 the PM agent diagnoses them from the workflow logs and decides whether to
 fix, retry, or request the minimum owner action.
+
+The retry has **no maximum count** — a genuinely stuck issue is re-pinged
+every hour until the quota returns or someone removes the
+`ai:paused-quota` label (or flips the kill switch). Each ping is one
+bounded `claude.yml` run.
 
 Recovery is checkpoint-based, not dependent on a private chat session, so
 it works across machines and after a session ends.
