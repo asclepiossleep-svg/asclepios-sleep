@@ -1,6 +1,6 @@
 import { prisma } from "../db";
 import { grantEntitlement } from "./entitlement";
-import { DEMO_ACCOUNTS } from "@asclepios/shared";
+import { DEMO_ACCOUNTS, type Tag, type ProgrammeGoal, type ProgrammeDayTheme } from "@asclepios/shared";
 
 /**
  * All base config (Products, Questions, Rules, Content, Audio, Wallpaper,
@@ -342,11 +342,43 @@ export async function seedBaseConfig() {
   await prisma.programme.upsert({ where: { code: "PRG_28DAY_CORE" }, update: {}, create: { code: "PRG_28DAY_CORE", name: "28-Day Sleep Reset", lengthDays: 28, reviewFrequencyDays: 7 } });
 
   // Requirement Recovery Matrix #20/#21 — the two named programmes.
-  // Display copy (name/description) lives client-side in i18n keyed by
-  // `code` (same pattern as tonight.track.* / library.category.*) — these
-  // DB rows only carry the structural facts (length, review cadence).
-  await prisma.programme.upsert({ where: { code: "PRG_7NIGHT_QUICKSTART" }, update: {}, create: { code: "PRG_7NIGHT_QUICKSTART", name: "7-Night Quick Start", lengthDays: 7, reviewFrequencyDays: 7 } });
-  await prisma.programme.upsert({ where: { code: "PRG_30DAY_RESET" }, update: {}, create: { code: "PRG_30DAY_RESET", name: "30-Day Sleep Reset", lengthDays: 30, reviewFrequencyDays: 7 } });
+  // Display copy (name/description, overview/who-for) lives client-side in
+  // i18n keyed by `code` (same pattern as tonight.track.* / library.category.*)
+  // — these DB rows only carry the structural facts (length, review cadence,
+  // goal/improvement-area codes, and the 7-night -> 30-day continuity link).
+  const quickstartGoals: ProgrammeGoal[] = ["FALL_ASLEEP_FASTER", "CONSISTENT_ROUTINE"];
+  const quickstartTags: Tag[] = ["SLEEP_ONSET", "IRREGULAR_SCHEDULE"];
+  const quickstart = await prisma.programme.upsert({
+    where: { code: "PRG_7NIGHT_QUICKSTART" },
+    update: { goalsJson: JSON.stringify(quickstartGoals), improvementTagsJson: JSON.stringify(quickstartTags), nextProgrammeCode: "PRG_30DAY_RESET" },
+    create: {
+      code: "PRG_7NIGHT_QUICKSTART",
+      name: "7-Night Quick Start",
+      lengthDays: 7,
+      reviewFrequencyDays: 7,
+      goalsJson: JSON.stringify(quickstartGoals),
+      improvementTagsJson: JSON.stringify(quickstartTags),
+      nextProgrammeCode: "PRG_30DAY_RESET",
+    },
+  });
+
+  const resetGoals: ProgrammeGoal[] = ["FALL_ASLEEP_FASTER", "FEWER_NIGHT_WAKINGS", "CALMER_MIND_AT_BEDTIME", "MORE_MORNING_ENERGY"];
+  const resetTags: Tag[] = ["SLEEP_ONSET", "NIGHT_WAKING", "STRESS", "LOW_MORNING_ENERGY"];
+  const reset = await prisma.programme.upsert({
+    where: { code: "PRG_30DAY_RESET" },
+    update: { goalsJson: JSON.stringify(resetGoals), improvementTagsJson: JSON.stringify(resetTags) },
+    create: {
+      code: "PRG_30DAY_RESET",
+      name: "30-Day Sleep Reset",
+      lengthDays: 30,
+      reviewFrequencyDays: 7,
+      goalsJson: JSON.stringify(resetGoals),
+      improvementTagsJson: JSON.stringify(resetTags),
+    },
+  });
+
+  await seedProgrammeDays(quickstart.id, quickstart.lengthDays);
+  await seedProgrammeDays(reset.id, reset.lengthDays);
 
   const q100 = await prisma.question.upsert({
     where: { code_version: { code: "Q100", version: 1 } },
@@ -600,6 +632,36 @@ async function seedContentLibrary() {
   }
 
   await seedTonightGuidance();
+}
+
+// Fix #5.6 (5 Sep 2026) — the 7 recurring day themes both programmes are
+// built from. A 30-day programme isn't 30 hand-authored days; it cycles
+// through the same themed journey ~4.3 times, which is a defensible V1
+// MVP per this track's own "best-guess MVP, placeholder/generic copy where
+// no specific content exists yet" instruction. contentItemCode reuses base
+// ContentItem codes already seeded above (by seedContentLibrary) or by
+// seedTonightGuidance below — resolved to a locale row at read time by
+// GET /programmes/:code, same `<code>_<locale>` + en-fallback convention
+// GET /tonight already uses for step guidance.
+const PROGRAMME_DAY_CYCLE: { theme: ProgrammeDayTheme; contentItemCode: string }[] = [
+  { theme: "WINDDOWN_CONSISTENCY", contentItemCode: "CONTENT_LEARN_WINDDOWN_ROUTINE" },
+  { theme: "BREATHING_BEFORE_BED", contentItemCode: "CONTENT_LEARN_478_BREATHING" },
+  { theme: "PRODUCT_ROUTINE", contentItemCode: "TONIGHT_GUIDE_PRODUCT" },
+  { theme: "CAFFEINE_CUTOFF", contentItemCode: "CONTENT_EXPLORE_CAFFEINE" },
+  { theme: "SCREEN_WINDDOWN", contentItemCode: "CONTENT_EXPLORE_BLUE_LIGHT" },
+  { theme: "CONSISTENT_WAKE", contentItemCode: "CONTENT_UNDERSTAND_SLEEP_PRESSURE" },
+  { theme: "REFLECT_NOTICE", contentItemCode: "CONTENT_UNDERSTAND_SLEEP_QUALITY" },
+];
+
+async function seedProgrammeDays(programmeId: string, lengthDays: number) {
+  for (let dayNumber = 1; dayNumber <= lengthDays; dayNumber++) {
+    const { theme, contentItemCode } = PROGRAMME_DAY_CYCLE[(dayNumber - 1) % PROGRAMME_DAY_CYCLE.length];
+    await prisma.programmeDay.upsert({
+      where: { programmeId_dayNumber: { programmeId, dayNumber } },
+      update: { themeCode: theme, contentItemCode },
+      create: { programmeId, dayNumber, themeCode: theme, contentItemCode },
+    });
+  }
 }
 
 /**
