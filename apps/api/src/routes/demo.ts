@@ -41,7 +41,7 @@ router.post("/login", async (req, res) => {
   if (!user) user = await reseedDemoUser(account.email);
 
   const session = await prisma.deviceSession.create({ data: { userId: user.id, deviceLabel: "Demo Selector" } });
-  const token = signSession(user.id, user.role);
+  const token = signSession(user.id, user.role, session.id);
   res.json({ token, user, deviceSessionId: session.id });
 });
 

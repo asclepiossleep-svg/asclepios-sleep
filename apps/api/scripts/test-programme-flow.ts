@@ -98,7 +98,8 @@ async function main() {
     },
   });
 
-  const token = signSession(user.id, "MEMBER");
+  const deviceSession = await prisma.deviceSession.create({ data: { userId: user.id, deviceLabel: "test-programme-flow" } });
+  const token = signSession(user.id, "MEMBER", deviceSession.id);
   const authHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
   const app = createApp();
@@ -301,6 +302,25 @@ async function main() {
     check("GET /preferences still responds 200", prefs.status === 200);
     const tonightAgain = await api("GET", "/tonight?locale=en");
     check("GET /tonight still responds 200 after all review changes", tonightAgain.status === 200);
+
+    // --- 16. Auth persistence audit: device revocation must actually work ---
+    // A token minted before this fix carries no deviceSessionId at all —
+    // must keep working exactly as before (no forced logout of pre-existing
+    // sessions), so this checks the backward-compatible path too.
+    const legacyToken = signSession(user.id, "MEMBER", undefined as unknown as string);
+    const legacyHeaders = { Authorization: `Bearer ${legacyToken}`, "Content-Type": "application/json" };
+    const legacyPrefs = await fetch(`${base}/preferences`, { headers: legacyHeaders });
+    check("a pre-fix token with no deviceSessionId still authenticates", legacyPrefs.status === 200);
+
+    const preRevoke = await fetch(`${base}/preferences`, { headers: authHeaders });
+    check("device-bound token authenticates before revocation", preRevoke.status === 200);
+
+    await prisma.deviceSession.update({ where: { id: deviceSession.id }, data: { revokedAt: new Date() } });
+
+    const postRevoke = await fetch(`${base}/preferences`, { headers: authHeaders });
+    check("device-bound token is rejected (401) once its DeviceSession is revoked", postRevoke.status === 401);
+    const postRevokeBody = await postRevoke.json();
+    check("revoked token's rejection reports revoked_session", postRevokeBody.error === "revoked_session");
   } finally {
     server.close();
     await prisma.$disconnect();

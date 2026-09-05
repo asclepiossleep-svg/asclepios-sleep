@@ -89,7 +89,7 @@ router.post("/otp/verify", async (req, res) => {
     data: { userId: user.id, deviceLabel: req.headers["user-agent"]?.toString().slice(0, 80) ?? "unknown device" },
   });
 
-  const token = signSession(user.id, user.role);
+  const token = signSession(user.id, user.role, session.id);
   res.json({ token, user, deviceSessionId: session.id });
 });
 
@@ -138,7 +138,7 @@ router.post("/password/register", async (req, res) => {
   const session = await prisma.deviceSession.create({
     data: { userId: user.id, deviceLabel: req.headers["user-agent"]?.toString().slice(0, 80) ?? "unknown device" },
   });
-  const token = signSession(user.id, user.role);
+  const token = signSession(user.id, user.role, session.id);
   res.json({ token, user, deviceSessionId: session.id });
 });
 
@@ -154,7 +154,7 @@ router.post("/password/login", async (req, res) => {
   const session = await prisma.deviceSession.create({
     data: { userId: user.id, deviceLabel: req.headers["user-agent"]?.toString().slice(0, 80) ?? "unknown device" },
   });
-  const token = signSession(user.id, user.role);
+  const token = signSession(user.id, user.role, session.id);
   res.json({ token, user, deviceSessionId: session.id });
 });
 
@@ -191,7 +191,7 @@ router.post("/social/:provider", async (req, res) => {
   }
 
   const session = await prisma.deviceSession.create({ data: { userId: user.id, deviceLabel: `${provider} sign-in` } });
-  const token = signSession(user.id, user.role);
+  const token = signSession(user.id, user.role, session.id);
   res.json({ token, user, deviceSessionId: session.id });
 });
 

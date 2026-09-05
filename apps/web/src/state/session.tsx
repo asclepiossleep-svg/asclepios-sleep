@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { api, sessionState, setSessionToken } from "../api/client";
+import { api, sessionState, setSessionToken, SESSION_EXPIRED_EVENT } from "../api/client";
 import { setLocale } from "../i18n";
 
 interface SessionWallpaper {
@@ -82,6 +82,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auth persistence audit (5 Sep 2026) — client.ts dispatches this when any
+  // authenticated request comes back 401 (token expired/invalid, or its
+  // device was revoked from another session). Previously only the initial
+  // page-load session check could ever clear a bad token; a token going bad
+  // mid-session left the app half-authenticated with silently-failing calls
+  // instead of cleanly returning to /login.
+  useEffect(() => {
+    function handleExpired() {
+      setUser(null);
+      setEntitlements([]);
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleExpired);
   }, []);
 
   function setToken(token: string, nextUser: SessionUser) {

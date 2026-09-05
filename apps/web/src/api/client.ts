@@ -44,6 +44,12 @@ export function setSessionToken(token: string | null) {
   }
 }
 
+// Auth persistence audit (5 Sep 2026) — event name the app listens for to
+// force a clean logout (see state/session.tsx). A plain window event, not a
+// callback registered here, so this module doesn't need to import/depend on
+// SessionProvider.
+export const SESSION_EXPIRED_EVENT = "asclepios:session-expired";
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
@@ -56,6 +62,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    // Only a 401 on a request that actually carried a session token means
+    // "this session is no longer valid" (expired/invalid/revoked) — a 401
+    // from e.g. /auth/password/login with a wrong password never sends a
+    // token and must not be treated as "log the (already logged-out) user
+    // out". Previously nothing handled this case at all: a token going bad
+    // mid-session (e.g. a revoked device) just surfaced as a generic thrown
+    // error to whichever component happened to be calling.
+    if (res.status === 401 && token) {
+      setSessionToken(null);
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    }
     throw new Error(body.error ?? `request_failed_${res.status}`);
   }
   return res.json();
