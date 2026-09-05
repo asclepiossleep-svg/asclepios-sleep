@@ -65,9 +65,16 @@ jobs:
           # (--max-turns caps a single run's back-and-forth instead of
           # letting it iterate indefinitely; timeout-minutes above is the
           # hard backstop).
+          # Permissions fix (5 Sep 2026) — without an explicit allowlist,
+          # every network-capable tool (gh CLI, WebFetch) sits behind an
+          # interactive approval prompt that nothing in this unattended
+          # pipeline can click, so the agent could not even read the
+          # triggering issue. This allowlist lets it act without a human
+          # in the loop, which is required for autonomous operation.
           claude_args: |
             --model claude-sonnet-5
             --max-turns 30
+            --allowedTools "Bash(gh:*),WebFetch,Bash(git:*)"
           prompt: |
             You are the implementation agent for the Asclepios Sleep repo
             (asclepiossleep-svg/asclepios-sleep), continuing the Fix #5
