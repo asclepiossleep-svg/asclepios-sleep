@@ -598,6 +598,83 @@ async function seedContentLibrary() {
       },
     });
   }
+
+  await seedTonightGuidance();
+}
+
+/**
+ * Fix #5.4 (5 Sep 2026) — Tonight steps previously had no what/why copy at
+ * all (PRODUCT steps only had an optional "how" via ProductProtocolStep).
+ * Rather than inventing a new content mechanism, this reuses the existing
+ * ContentItem table with the same `<code>_<locale>` convention
+ * seedContentLibrary already uses — so a future text/video/audio lesson can
+ * replace a row here (by changing `type`/`url`) without any schema or route
+ * change. `category` is intentionally null: these rows aren't part of the
+ * Sleep Answer Library's UNDERSTAND/LEARN/USE/EXPLORE taxonomy — they're
+ * read directly by GET /tonight via a `TONIGHT_GUIDE_<stepCode>` code
+ * lookup, not surfaced through /content.
+ */
+async function seedTonightGuidance() {
+  const items: { code: string; locale: "en" | "zh-HK"; title: string; bodyMarkdown: string }[] = [
+    {
+      code: "TONIGHT_GUIDE_PRODUCT",
+      locale: "en",
+      title: "Why this step is here",
+      bodyMarkdown:
+        "Using your product at the same point in your routine every night is what helps it work — skipping it breaks the pattern your body is starting to learn. Tap \"View steps\" above for tonight's exact how-to.",
+    },
+    {
+      code: "TONIGHT_GUIDE_PRODUCT",
+      locale: "zh-HK",
+      title: "點解會有呢個步驟",
+      bodyMarkdown: "每晚喺程序入面同一個位用返你嘅產品,先可以幫到效果——唔跟就會打亂身體已經開始習慣嘅節奏。撳返上面「睇用法步驟」睇今晚實際點做。",
+    },
+    {
+      code: "TONIGHT_GUIDE_BREATHING",
+      locale: "en",
+      title: "A short breathing exercise",
+      bodyMarkdown:
+        "Racing thoughts before bed are common — breathing out for longer than you breathe in signals your nervous system to calm down. Try 4-7-8: breathe in for 4 seconds, hold for 7, exhale slowly for 8, and repeat 3-4 times before you start tonight's sound.",
+    },
+    {
+      code: "TONIGHT_GUIDE_BREATHING",
+      locale: "zh-HK",
+      title: "簡單呼吸練習",
+      bodyMarkdown: "瞓覺前腦入面諗嘢多好正常——呼氣拉長過吸氣,可以提示神經系統慢慢靜落嚟。試下4-7-8:吸氣4秒,閂氣7秒,慢慢呼氣8秒,重複3-4次先開始今晚嘅聲音。",
+    },
+    {
+      code: "TONIGHT_GUIDE_MUSIC",
+      locale: "en",
+      title: "Picking tonight's sound",
+      bodyMarkdown:
+        "A steady sound can mask background noise and give your mind something calm to settle into. Noise (Pink/Brown/White) works well if your room isn't quiet; gentler ambient tracks suit an already-quiet space.",
+    },
+    {
+      code: "TONIGHT_GUIDE_MUSIC",
+      locale: "zh-HK",
+      title: "點揀今晚嘅聲音",
+      bodyMarkdown: "穩定嘅聲音可以遮蓋背景噪音,俾個心靜落嚟。房間唔夠靜就啱用噪音類(粉紅/棕色/白噪音);本身已經好靜就啱用溫和啲嘅背景音樂。",
+    },
+  ];
+
+  for (const item of items) {
+    const uniqueCode = `${item.code}_${item.locale}`;
+    await prisma.contentItem.upsert({
+      where: { code: uniqueCode },
+      update: {},
+      create: {
+        code: uniqueCode,
+        type: "ARTICLE",
+        title: item.title,
+        locale: item.locale,
+        url: null,
+        active: true,
+        layer: "PUBLIC",
+        category: null,
+        bodyMarkdown: item.bodyMarkdown,
+      },
+    });
+  }
 }
 
 async function wipeUserTransactionalData(userId: string) {

@@ -103,6 +103,25 @@ router.get("/", async (req: AuthedRequest, res) => {
   }
 
   const finalSteps = steps.slice(0, maxSteps);
+
+  // Fix #5.4 (5 Sep 2026) — each step now carries a short what/why/how
+  // `guidance` blurb, one ContentItem lookup per distinct stepCode (not
+  // per step — several PRODUCT steps share the same generic guidance,
+  // per-product "how" already comes from protocolSteps above). Sourced
+  // from the same admin-editable ContentItem table as the Sleep Answer
+  // Library, using the `TONIGHT_GUIDE_<stepCode>_<locale>` convention so a
+  // future text/video/audio lesson can replace a row without a route
+  // change. Falls back to `en` if the requested locale has no row, same
+  // pattern as the protocolSteps fallback above.
+  const guidanceByStepCode = new Map<string, { title: string; bodyMarkdown: string } | null>();
+  for (const stepCode of new Set(finalSteps.map((s) => s.stepCode))) {
+    let item = await prisma.contentItem.findUnique({ where: { code: `TONIGHT_GUIDE_${stepCode}_${locale}` } });
+    if (!item && locale !== "en") {
+      item = await prisma.contentItem.findUnique({ where: { code: `TONIGHT_GUIDE_${stepCode}_en` } });
+    }
+    guidanceByStepCode.set(stepCode, item?.bodyMarkdown ? { title: item.title, bodyMarkdown: item.bodyMarkdown } : null);
+  }
+
   // Repair Plan A2/A5 timezone correction (2 Sep 2026, per audit) — was
   // UTC (new Date().toISOString().slice(0,10)); now the user's own
   // calendar date, so a late-night session in e.g. Asia/Hong_Kong isn't
@@ -115,7 +134,7 @@ router.get("/", async (req: AuthedRequest, res) => {
         create: { userId, stepCode: s.stepCode, stepKey: s.stepInstanceId, productId: s.productId ?? null, plannedDate },
         update: {},
       });
-      return { ...s, actionInstanceId: planned.id, mode: stepModeFor(s.stepCode) };
+      return { ...s, actionInstanceId: planned.id, mode: stepModeFor(s.stepCode), guidance: guidanceByStepCode.get(s.stepCode) ?? null };
     }),
   );
   res.json({ steps: withActionId, routineLevel });
