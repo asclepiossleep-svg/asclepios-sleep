@@ -2,6 +2,8 @@ import { Router } from "express";
 import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { grantEntitlement } from "../domain/entitlement";
+import { resolveContentItem } from "../domain/contentResolver";
+import { STEP_REVIEW_DECISIONS } from "@asclepios/shared";
 
 const router = Router();
 router.use(requireAuth);
@@ -17,14 +19,23 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  *
  * Free self-enrolment for V1 (Milestone 4 — payment/entitlement — hasn't
  * been decided yet), so enrolling just grants the matching entitlement key
- * directly (grantedVia: SELF_ENROLL) rather than gating on an order. This
- * keeps content that's already wired to check entitlements (Matrix #22's
- * PAID_PROGRAMME layer) working the moment a real paid gate is added later
- * — nothing here has to change, only how the entitlement gets granted.
+ * directly (grantedVia: SELF_ENROLL) rather than gating on an order.
  *
  * currentDay is computed from `startedAt` on every read rather than trusted
  * from a stored counter, so it's always correct even if a user skips a day
  * or the process restarts mid-programme.
+ *
+ * Fix #5.6 (5 Sep 2026) — rebuilds this from an enrol+day-counter mechanism
+ * into a guided journey: GET /:code returns today's ProgrammeDay (theme +
+ * content slot, resolved via the same ContentItem `<code>_<locale>` +
+ * en-fallback convention GET /tonight's step guidance uses), overall
+ * progress, and whether a KEEP/REMOVE/ADJUST routine-step review is due
+ * (every `reviewFrequencyDays`). Two new endpoints support the day-to-day
+ * loop: POST /:code/day/:day/log (Done/Skip a day) and POST /:code/review
+ * (submit the retro). Per this run's scoped MVP, the review only *records*
+ * KEEP/REMOVE/ADJUST decisions (ProgrammeStepReview) — it does not mutate
+ * Tonight's generated step list, which stays exactly as computed by
+ * productSelectionEngine.ts/routineLevelEngine.ts.
  */
 router.get("/", async (req: AuthedRequest, res) => {
   const userId = req.userId!;
@@ -42,10 +53,82 @@ router.get("/", async (req: AuthedRequest, res) => {
       currentDay = Math.min(daysElapsed, p.lengthDays);
       isComplete = daysElapsed > p.lengthDays;
     }
-    return { code: p.code, lengthDays: p.lengthDays, enrolled: !!enrollment, currentDay, isComplete };
+    return {
+      code: p.code,
+      lengthDays: p.lengthDays,
+      enrolled: !!enrollment,
+      currentDay,
+      isComplete,
+      goals: p.goalsJson ? JSON.parse(p.goalsJson) : [],
+      improvementAreas: p.improvementTagsJson ? JSON.parse(p.improvementTagsJson) : [],
+      nextProgrammeCode: p.nextProgrammeCode,
+    };
   });
 
   res.json({ programmes: result });
+});
+
+router.get("/:code", async (req: AuthedRequest, res) => {
+  const userId = req.userId!;
+  const { code } = req.params;
+  const locale = (req.query.locale as string) || "en";
+  const programme = await prisma.programme.findUnique({ where: { code } });
+  if (!programme) return res.status(404).json({ error: "not_found" });
+
+  const base = {
+    code: programme.code,
+    lengthDays: programme.lengthDays,
+    reviewFrequencyDays: programme.reviewFrequencyDays,
+    goals: programme.goalsJson ? JSON.parse(programme.goalsJson) : [],
+    improvementAreas: programme.improvementTagsJson ? JSON.parse(programme.improvementTagsJson) : [],
+    nextProgrammeCode: programme.nextProgrammeCode,
+  };
+
+  const enrollment = await prisma.programmeEnrollment.findFirst({ where: { userId, programmeId: programme.id } });
+  if (!enrollment) {
+    return res.json({ ...base, enrolled: false, currentDay: null, isComplete: false });
+  }
+
+  const daysElapsed = Math.floor((Date.now() - enrollment.startedAt.getTime()) / MS_PER_DAY) + 1;
+  const currentDay = Math.min(daysElapsed, programme.lengthDays);
+  const isComplete = daysElapsed > programme.lengthDays;
+
+  const [today, dayLogs, ownsAnyProduct] = await Promise.all([
+    prisma.programmeDay.findUnique({ where: { programmeId_dayNumber: { programmeId: programme.id, dayNumber: currentDay } } }),
+    prisma.programmeDayLog.findMany({ where: { enrollmentId: enrollment.id } }),
+    prisma.productOwnership.count({ where: { userId } }).then((n: number) => n > 0),
+  ]);
+  const todayContent = today?.contentItemCode ? await resolveContentItem(today.contentItemCode, locale) : null;
+
+  // Due on day `reviewFrequencyDays`, `2x`, `3x`... and again reviewFrequencyDays
+  // after the last one actually submitted (so a late review doesn't
+  // immediately re-trigger the day after).
+  const reviewDue =
+    !isComplete &&
+    (enrollment.lastReviewedAt
+      ? Date.now() - enrollment.lastReviewedAt.getTime() >= programme.reviewFrequencyDays * MS_PER_DAY
+      : currentDay >= programme.reviewFrequencyDays);
+
+  res.json({
+    ...base,
+    enrolled: true,
+    currentDay,
+    isComplete,
+    today: today
+      ? {
+          dayNumber: today.dayNumber,
+          themeCode: today.themeCode,
+          status: dayLogs.find((l: (typeof dayLogs)[number]) => l.dayNumber === today.dayNumber)?.status ?? null,
+          content: todayContent?.bodyMarkdown ? { title: todayContent.title, bodyMarkdown: todayContent.bodyMarkdown } : null,
+        }
+      : null,
+    progress: { done: dayLogs.filter((l: (typeof dayLogs)[number]) => l.status === "DONE").length, total: programme.lengthDays },
+    reviewDue,
+    // Fixed candidate list for V1 rather than re-running Tonight's full
+    // selection engine here — BREATHING/MUSIC are always potentially in a
+    // user's routine, PRODUCT only if they own one.
+    reviewableSteps: ownsAnyProduct ? ["PRODUCT", "BREATHING", "MUSIC"] : ["BREATHING", "MUSIC"],
+  });
 });
 
 router.post("/:code/enroll", async (req: AuthedRequest, res) => {
@@ -60,6 +143,50 @@ router.post("/:code/enroll", async (req: AuthedRequest, res) => {
   const enrollment = await prisma.programmeEnrollment.create({ data: { userId, programmeId: programme.id } });
   await grantEntitlement(userId, `PROGRAMME_${code.replace("PRG_", "")}`, "SELF_ENROLL");
   res.json({ enrolled: true, startedAt: enrollment.startedAt });
+});
+
+router.post("/:code/day/:day/log", async (req: AuthedRequest, res) => {
+  const userId = req.userId!;
+  const { code, day } = req.params;
+  const { status } = req.body as { status: "DONE" | "SKIPPED" };
+  const dayNumber = Number(day);
+  if (!Number.isInteger(dayNumber) || (status !== "DONE" && status !== "SKIPPED")) {
+    return res.status(400).json({ error: "invalid_request" });
+  }
+
+  const programme = await prisma.programme.findUnique({ where: { code } });
+  if (!programme) return res.status(404).json({ error: "not_found" });
+  const enrollment = await prisma.programmeEnrollment.findFirst({ where: { userId, programmeId: programme.id } });
+  if (!enrollment) return res.status(404).json({ error: "not_enrolled" });
+
+  const log = await prisma.programmeDayLog.upsert({
+    where: { enrollmentId_dayNumber: { enrollmentId: enrollment.id, dayNumber } },
+    create: { userId, enrollmentId: enrollment.id, dayNumber, status },
+    update: { status, loggedAt: new Date() },
+  });
+  res.json(log);
+});
+
+router.post("/:code/review", async (req: AuthedRequest, res) => {
+  const userId = req.userId!;
+  const { code } = req.params;
+  const { decisions } = req.body as { decisions: { stepCode: string; decision: string; note?: string }[] };
+
+  const programme = await prisma.programme.findUnique({ where: { code } });
+  if (!programme) return res.status(404).json({ error: "not_found" });
+  const enrollment = await prisma.programmeEnrollment.findFirst({ where: { userId, programmeId: programme.id } });
+  if (!enrollment) return res.status(404).json({ error: "not_enrolled" });
+
+  const valid = (decisions ?? []).filter((d) => (STEP_REVIEW_DECISIONS as readonly string[]).includes(d.decision));
+  await prisma.$transaction([
+    ...valid.map((d) =>
+      prisma.programmeStepReview.create({
+        data: { userId, enrollmentId: enrollment.id, stepCode: d.stepCode, decision: d.decision, note: d.note ?? null },
+      }),
+    ),
+    prisma.programmeEnrollment.update({ where: { id: enrollment.id }, data: { lastReviewedAt: new Date() } }),
+  ]);
+  res.json({ ok: true, reviewed: valid.length });
 });
 
 export default router;

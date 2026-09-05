@@ -5,6 +5,7 @@ import { stepModeFor } from "@asclepios/shared";
 import { computeRoutineLevel, maxStepsForLevel } from "../domain/decision/routineLevelEngine";
 import { selectProductSteps, productBudgetForMaxSteps } from "../domain/decision/productSelectionEngine";
 import { localDateKey } from "../domain/decision/dateKey";
+import { resolveContentItem } from "../domain/contentResolver";
 
 const router = Router();
 router.use(requireAuth);
@@ -115,10 +116,7 @@ router.get("/", async (req: AuthedRequest, res) => {
   // pattern as the protocolSteps fallback above.
   const guidanceByStepCode = new Map<string, { title: string; bodyMarkdown: string } | null>();
   for (const stepCode of new Set(finalSteps.map((s) => s.stepCode))) {
-    let item = await prisma.contentItem.findUnique({ where: { code: `TONIGHT_GUIDE_${stepCode}_${locale}` } });
-    if (!item && locale !== "en") {
-      item = await prisma.contentItem.findUnique({ where: { code: `TONIGHT_GUIDE_${stepCode}_en` } });
-    }
+    const item = await resolveContentItem(`TONIGHT_GUIDE_${stepCode}`, locale);
     guidanceByStepCode.set(stepCode, item?.bodyMarkdown ? { title: item.title, bodyMarkdown: item.bodyMarkdown } : null);
   }
 
