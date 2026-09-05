@@ -14,6 +14,12 @@ import { t } from "../i18n";
  * 31 Aug 2026 — now acts as a "tap to reopen" affordance for the
  * full-screen NowPlaying view (design moodboard's Sleep Player screen) —
  * hidden on that screen itself so it doesn't duplicate its own controls.
+ *
+ * 5 Sep 2026 — also hidden on /player/:sessionId (SleepPlayer.tsx). That
+ * screen has its own play/pause/volume card for tonight's sleep audio
+ * (which can itself be a Music Library track); without this exclusion this
+ * bar was floating a second, redundant play/pause control on top of the
+ * full-screen session's own "I'm Awake" button.
  */
 // Mobile readability audit (5 Sep 2026) — the pages that also render
 // BottomNav (see BottomNav.tsx's own comment for the underlying bug this
@@ -52,7 +58,7 @@ export default function MusicPlayerBar() {
   const { track, playing } = useMusicPlayer();
   const location = useLocation();
   const navigate = useNavigate();
-  if (!track || location.pathname === "/music/now-playing") return null;
+  if (!track || location.pathname === "/music/now-playing" || location.pathname.startsWith("/player/")) return null;
 
   const stacksAboveBottomNav = BOTTOM_NAV_ROUTES.has(location.pathname);
 

@@ -64,6 +64,7 @@ export default function SleepPlayer() {
   const { sessionId } = useParams();
   const location = useLocation();
   const [session, setSession] = useState<SleepSessionData | null>((location.state as any)?.session ?? null);
+  const [sessionLoadFailed, setSessionLoadFailed] = useState(false);
   const [woken, setWoken] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
@@ -77,9 +78,14 @@ export default function SleepPlayer() {
   const isRealTrack = !!session?.sleepAudioId && !isSynthTrack(session.sleepAudioId);
 
   // Recover session details on a hard refresh (navigate() state is gone then).
+  // A stale link or a session that has already ended can 404 here — without
+  // a .catch this left the screen stuck forever with no way out.
   useEffect(() => {
     if (session || !sessionId) return;
-    api.get<{ session: SleepSessionData }>(`/sleep-session/${sessionId}`).then((r) => setSession(r.session));
+    api
+      .get<{ session: SleepSessionData }>(`/sleep-session/${sessionId}`)
+      .then((r) => setSession(r.session))
+      .catch(() => setSessionLoadFailed(true));
   }, [session, sessionId]);
 
   // A real Music Library track id needs its audioUrl/title/artwork resolved
@@ -175,7 +181,14 @@ export default function SleepPlayer() {
     if (isRealTrack) musicPlayer.stop();
     engineRef.current.playWakeChime(session?.wakeStyle ?? "NORMAL");
     setPlaying(false);
-    await api.post(`/sleep-session/${sessionId}/wake`);
+    // The local session is already over regardless of whether the backend
+    // call succeeds — a failed request must not strand the user on a
+    // "still sleeping" screen with the audio already stopped.
+    try {
+      await api.post(`/sleep-session/${sessionId}/wake`);
+    } catch {
+      // best-effort; UI still advances below
+    }
     setWoken(true);
   }
 
@@ -186,7 +199,12 @@ export default function SleepPlayer() {
   async function goToCheckin() {
     engineRef.current.stop();
     if (isRealTrack) musicPlayer.stop();
-    await api.post(`/sleep-session/${sessionId}/stop`);
+    try {
+      await api.post(`/sleep-session/${sessionId}/stop`);
+    } catch {
+      // best-effort; Morning Check-in's own pending-session recovery
+      // (see checkin.pending-session) covers the session lookup either way
+    }
     navigate("/checkin", { state: { sessionId } });
   }
 
@@ -220,8 +238,22 @@ export default function SleepPlayer() {
           justifyContent: "space-between",
           minHeight: "100vh",
           color: "#f6f5fa",
+          // Unlike scrolling pages, this screen pins its primary CTA to the
+          // bottom edge via flex, not normal document flow — so it needs
+          // its own home-indicator safe-area padding, same as BottomNav and
+          // MusicPlayerBar already account for.
+          paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
         }}
       >
+        {sessionLoadFailed ? (
+          <div style={{ textAlign: "center", margin: "auto 0" }}>
+            <p style={{ color: "#f6f5fa", opacity: 0.85, marginBottom: "1rem" }}>{t("player.sessionLoadFailed")}</p>
+            <button className="primary" onClick={() => navigate("/tonight")}>
+              {t("player.backToTonight")}
+            </button>
+          </div>
+        ) : (
+          <>
         <div style={{ textAlign: "center", marginTop: "3rem" }}>
           <p style={{ color: "#f6f5fa", opacity: 0.85 }}>{t("player.windDown")}</p>
           <h1>{trackDisplayName}</h1>
@@ -234,8 +266,11 @@ export default function SleepPlayer() {
         </div>
 
         {/* No play/pause/volume card at all when the user chose "🔇 Off"
-            on Sleep Setting; nothing to control. */}
-        {!woken && session?.sleepAudioId !== null && (
+            on Sleep Setting; nothing to control. Also gated on `session`
+            actually being loaded — `session?.sleepAudioId !== null` was
+            true while session was still null (undefined !== null), so this
+            card used to flash briefly before the session ever loaded. */}
+        {!woken && session && session.sleepAudioId !== null && (
           <div
             className="card"
             style={{
@@ -291,6 +326,8 @@ export default function SleepPlayer() {
               {t("player.continueToCheckin")}
             </button>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

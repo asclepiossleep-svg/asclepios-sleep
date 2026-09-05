@@ -4,6 +4,24 @@ import { api } from "../api/client";
 import { t } from "../i18n";
 import PageHeader from "../components/PageHeader";
 
+// Visual/interaction audit (5 Sep 2026) — "+ Add more detail" used to just
+// flip `showAddDetails` and render nothing: a dead control. These are the 9
+// optional quick-toggle questions it now reveals, each a simple yes/no chip
+// that folds into POST /checkin's existing `addDetails` -> addDetailsJson
+// field (already wired server-side; only the UI was missing).
+const ADD_DETAILS_QUESTIONS = [
+  "sleepOnsetDelay",
+  "nocturia",
+  "stress",
+  "mood",
+  "pain",
+  "nasal",
+  "caffeine",
+  "alcohol",
+  "digestive",
+] as const;
+type AddDetailsKey = (typeof ADD_DETAILS_QUESTIONS)[number];
+
 /**
  * Doc 05 §5 / Doc 06 §8 — Morning Check-in: <=3 primary actions. "Add
  * Details" is optional and collapsed by default (Doc 05 §5: only shown when
@@ -14,6 +32,7 @@ export default function MorningCheckin() {
   const [nightWakingCount, setNightWakingCount] = useState<"0" | "1" | "2" | "3+" | null>(null);
   const [morningEnergy, setMorningEnergy] = useState<"POOR" | "AVERAGE" | "GOOD" | null>(null);
   const [showAddDetails, setShowAddDetails] = useState(false);
+  const [addDetails, setAddDetails] = useState<Partial<Record<AddDetailsKey, boolean>>>({});
   const location = useLocation();
   const navigate = useNavigate();
   const [sessionId, setSessionId] = useState<string | undefined>((location.state as any)?.sessionId);
@@ -47,7 +66,14 @@ export default function MorningCheckin() {
 
   async function submit() {
     if (!sessionId) return;
-    await api.post("/checkin", { sessionId, sleepRating, nightWakingCount, morningEnergy });
+    const hasAddDetails = Object.keys(addDetails).length > 0;
+    await api.post("/checkin", {
+      sessionId,
+      sleepRating,
+      nightWakingCount,
+      morningEnergy,
+      addDetails: hasAddDetails ? addDetails : undefined,
+    });
     navigate("/tonight");
   }
 
@@ -96,6 +122,27 @@ export default function MorningCheckin() {
         <button onClick={() => setShowAddDetails(true)} className="muted">
           {t("checkin.addDetails")}
         </button>
+      )}
+
+      {showAddDetails && (
+        <div className="card">
+          <p>{t("checkin.addDetails")}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            {ADD_DETAILS_QUESTIONS.map((key) => {
+              const active = !!addDetails[key];
+              return (
+                <button
+                  key={key}
+                  onClick={() => setAddDetails((prev) => ({ ...prev, [key]: !prev[key] }))}
+                  style={active ? { borderColor: "var(--color-primary)" } : {}}
+                  aria-pressed={active}
+                >
+                  {t(`checkin.details.${key}`)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {sessionStatus === "not_found" && <p className="login-error">{t("checkin.noPendingSession")}</p>}
