@@ -3,12 +3,18 @@ import { prisma } from "../db";
 import { requireAuth, AuthedRequest } from "../middleware/auth";
 import { grantEntitlement } from "../domain/entitlement";
 import { resolveContentItem } from "../domain/contentResolver";
-import { STEP_REVIEW_DECISIONS } from "@asclepios/shared";
+import { STEP_REVIEW_DECISIONS, PROGRAMME_COMPLETION_CHOICES, type ProgrammeCompletionChoice } from "@asclepios/shared";
+import { computeProgrammeDayState, applyCompletionChoice } from "../domain/decision/programmeContinuity";
 
 const router = Router();
 router.use(requireAuth);
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+async function getUserTimeZone(userId: string): Promise<string> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { timezone: true } });
+  return user?.timezone ?? "Europe/London";
+}
 
 /**
  * Requirement Recovery Matrix #20/#21 — the two named programmes (7-Night
@@ -43,29 +49,41 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  */
 router.get("/", async (req: AuthedRequest, res) => {
   const userId = req.userId!;
-  const [programmes, enrollments] = await Promise.all([
+  const [programmes, enrollments, timeZone] = await Promise.all([
     prisma.programme.findMany({ where: { active: true, code: { in: ["PRG_7NIGHT_QUICKSTART", "PRG_30DAY_RESET"] } } }),
     prisma.programmeEnrollment.findMany({ where: { userId } }),
+    getUserTimeZone(userId),
   ]);
 
+  const now = new Date();
   const result = programmes.map((p: (typeof programmes)[number]) => {
     const enrollment = enrollments.find((e: (typeof enrollments)[number]) => e.programmeId === p.id);
     let currentDay: number | null = null;
-    let isComplete = false;
+    let completionState: string | null = null;
     if (enrollment) {
-      const daysElapsed = Math.floor((Date.now() - enrollment.startedAt.getTime()) / MS_PER_DAY) + 1;
-      currentDay = Math.min(daysElapsed, p.lengthDays);
-      isComplete = daysElapsed > p.lengthDays;
+      const state = computeProgrammeDayState({
+        startedAt: enrollment.startedAt,
+        now,
+        timeZone,
+        lengthDays: p.lengthDays,
+        extendedDays: enrollment.extendedDays,
+        continuous: enrollment.continuous,
+        finishedAt: enrollment.finishedAt,
+      });
+      currentDay = state.currentDay;
+      completionState = state.completionState;
     }
     return {
       code: p.code,
       lengthDays: p.lengthDays,
       enrolled: !!enrollment,
       currentDay,
-      isComplete,
+      completionState,
+      // Kept for any older client still reading it — true once the current
+      // cycle has ended and hasn't been continued via CONTINUOUS.
+      isComplete: completionState === "AWAITING_CHOICE" || completionState === "FINISHED",
       goals: p.goalsJson ? JSON.parse(p.goalsJson) : [],
       improvementAreas: p.improvementTagsJson ? JSON.parse(p.improvementTagsJson) : [],
-      nextProgrammeCode: p.nextProgrammeCode,
     };
   });
 
@@ -85,20 +103,29 @@ router.get("/:code", async (req: AuthedRequest, res) => {
     reviewFrequencyDays: programme.reviewFrequencyDays,
     goals: programme.goalsJson ? JSON.parse(programme.goalsJson) : [],
     improvementAreas: programme.improvementTagsJson ? JSON.parse(programme.improvementTagsJson) : [],
-    nextProgrammeCode: programme.nextProgrammeCode,
   };
 
   const enrollment = await prisma.programmeEnrollment.findFirst({ where: { userId, programmeId: programme.id } });
   if (!enrollment) {
-    return res.json({ ...base, enrolled: false, currentDay: null, isComplete: false });
+    return res.json({ ...base, enrolled: false, currentDay: null, isComplete: false, completionState: null });
   }
 
-  const daysElapsed = Math.floor((Date.now() - enrollment.startedAt.getTime()) / MS_PER_DAY) + 1;
-  const currentDay = Math.min(daysElapsed, programme.lengthDays);
-  const isComplete = daysElapsed > programme.lengthDays;
+  const timeZone = await getUserTimeZone(userId);
+  const state = computeProgrammeDayState({
+    startedAt: enrollment.startedAt,
+    now: new Date(),
+    timeZone,
+    lengthDays: programme.lengthDays,
+    extendedDays: enrollment.extendedDays,
+    continuous: enrollment.continuous,
+    finishedAt: enrollment.finishedAt,
+  });
+  const { currentDay, contentDayNumber, effectiveLengthDays, completionState } = state;
+  const isComplete = completionState === "AWAITING_CHOICE" || completionState === "FINISHED";
+  const canLogToday = completionState === "ACTIVE" || completionState === "CONTINUOUS";
 
   const [today, dayLogs, ownsAnyProduct, stepPreferences] = await Promise.all([
-    prisma.programmeDay.findUnique({ where: { programmeId_dayNumber: { programmeId: programme.id, dayNumber: currentDay } } }),
+    prisma.programmeDay.findUnique({ where: { programmeId_dayNumber: { programmeId: programme.id, dayNumber: contentDayNumber } } }),
     prisma.programmeDayLog.findMany({ where: { enrollmentId: enrollment.id } }),
     prisma.productOwnership.count({ where: { userId } }).then((n: number) => n > 0),
     prisma.userStepPreference.findMany({ where: { userId } }),
@@ -107,9 +134,11 @@ router.get("/:code", async (req: AuthedRequest, res) => {
 
   // Due on day `reviewFrequencyDays`, `2x`, `3x`... and again reviewFrequencyDays
   // after the last one actually submitted (so a late review doesn't
-  // immediately re-trigger the day after).
+  // immediately re-trigger the day after). Suspended once the current cycle
+  // has ended (AWAITING_CHOICE/FINISHED) — nothing new to review until the
+  // user picks how to continue.
   const reviewDue =
-    !isComplete &&
+    canLogToday &&
     (enrollment.lastReviewedAt
       ? Date.now() - enrollment.lastReviewedAt.getTime() >= programme.reviewFrequencyDays * MS_PER_DAY
       : currentDay >= programme.reviewFrequencyDays);
@@ -118,16 +147,25 @@ router.get("/:code", async (req: AuthedRequest, res) => {
     ...base,
     enrolled: true,
     currentDay,
+    effectiveLengthDays,
     isComplete,
-    today: today
-      ? {
-          dayNumber: today.dayNumber,
-          themeCode: today.themeCode,
-          status: dayLogs.find((l: (typeof dayLogs)[number]) => l.dayNumber === today.dayNumber)?.status ?? null,
-          content: todayContent?.bodyMarkdown ? { title: todayContent.title, bodyMarkdown: todayContent.bodyMarkdown } : null,
-        }
-      : null,
-    progress: { done: dayLogs.filter((l: (typeof dayLogs)[number]) => l.status === "DONE").length, total: programme.lengthDays },
+    completionState,
+    // `dayNumber` here is the *absolute* day since enrollment (the day-log
+    // key), not the 1..lengthDays content cycle position — an extension or
+    // Continuous re-run reuses the same theme/content on a later absolute
+    // day, and logging against the absolute day keeps each real calendar
+    // day's Done/Skip history distinct instead of overwriting the original
+    // week's log when the cycle repeats.
+    today:
+      today && canLogToday
+        ? {
+            dayNumber: currentDay,
+            themeCode: today.themeCode,
+            status: dayLogs.find((l: (typeof dayLogs)[number]) => l.dayNumber === currentDay)?.status ?? null,
+            content: todayContent?.bodyMarkdown ? { title: todayContent.title, bodyMarkdown: todayContent.bodyMarkdown } : null,
+          }
+        : null,
+    progress: { done: dayLogs.filter((l: (typeof dayLogs)[number]) => l.status === "DONE").length, total: completionState === "CONTINUOUS" ? currentDay : effectiveLengthDays },
     reviewDue,
     // Fixed candidate list for V1 rather than re-running Tonight's full
     // selection engine here — BREATHING/MUSIC are always potentially in a
@@ -167,6 +205,7 @@ router.post("/:code/day/:day/log", async (req: AuthedRequest, res) => {
   if (!programme) return res.status(404).json({ error: "not_found" });
   const enrollment = await prisma.programmeEnrollment.findFirst({ where: { userId, programmeId: programme.id } });
   if (!enrollment) return res.status(404).json({ error: "not_enrolled" });
+  if (enrollment.finishedAt) return res.status(409).json({ error: "programme_finished" });
 
   const log = await prisma.programmeDayLog.upsert({
     where: { enrollmentId_dayNumber: { enrollmentId: enrollment.id, dayNumber } },
@@ -185,6 +224,7 @@ router.post("/:code/review", async (req: AuthedRequest, res) => {
   if (!programme) return res.status(404).json({ error: "not_found" });
   const enrollment = await prisma.programmeEnrollment.findFirst({ where: { userId, programmeId: programme.id } });
   if (!enrollment) return res.status(404).json({ error: "not_enrolled" });
+  if (enrollment.finishedAt) return res.status(409).json({ error: "programme_finished" });
 
   const valid = (decisions ?? []).filter((d) => (STEP_REVIEW_DECISIONS as readonly string[]).includes(d.decision));
   await prisma.$transaction([
@@ -207,6 +247,47 @@ router.post("/:code/review", async (req: AuthedRequest, res) => {
     prisma.programmeEnrollment.update({ where: { id: enrollment.id }, data: { lastReviewedAt: new Date() } }),
   ]);
   res.json({ ok: true, reviewed: valid.length });
+});
+
+/**
+ * Fix #5 programme-continuity correction (5 Sep 2026) — the owner-approved
+ * replacement for the old "7-night complete -> one button straight into the
+ * 30-day programme" dead end. Only valid once the current cycle has
+ * actually ended (completionState AWAITING_CHOICE); none of FINISH, an
+ * EXTEND_ choice, or CONTINUOUS ever touch dayLogs/stepReviews/
+ * UserStepPreference, so all existing progress and history survive every
+ * choice.
+ */
+router.post("/:code/complete", async (req: AuthedRequest, res) => {
+  const userId = req.userId!;
+  const { code } = req.params;
+  const { choice } = req.body as { choice: string };
+  if (!(PROGRAMME_COMPLETION_CHOICES as readonly string[]).includes(choice)) {
+    return res.status(400).json({ error: "invalid_choice" });
+  }
+
+  const programme = await prisma.programme.findUnique({ where: { code } });
+  if (!programme) return res.status(404).json({ error: "not_found" });
+  const enrollment = await prisma.programmeEnrollment.findFirst({ where: { userId, programmeId: programme.id } });
+  if (!enrollment) return res.status(404).json({ error: "not_enrolled" });
+
+  const timeZone = await getUserTimeZone(userId);
+  const state = computeProgrammeDayState({
+    startedAt: enrollment.startedAt,
+    now: new Date(),
+    timeZone,
+    lengthDays: programme.lengthDays,
+    extendedDays: enrollment.extendedDays,
+    continuous: enrollment.continuous,
+    finishedAt: enrollment.finishedAt,
+  });
+  if (state.completionState !== "AWAITING_CHOICE") {
+    return res.status(409).json({ error: "not_awaiting_choice", completionState: state.completionState });
+  }
+
+  const update = applyCompletionChoice(choice as ProgrammeCompletionChoice, { extendedDays: enrollment.extendedDays });
+  await prisma.programmeEnrollment.update({ where: { id: enrollment.id }, data: update });
+  res.json({ ok: true, choice, ...update });
 });
 
 export default router;

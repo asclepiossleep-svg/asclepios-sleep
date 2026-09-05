@@ -427,3 +427,30 @@ export type ProgrammeDayTheme = (typeof PROGRAMME_DAY_THEMES)[number];
 // (ProgrammeStepReview.decision).
 export const STEP_REVIEW_DECISIONS = ["KEEP", "REMOVE", "ADJUST"] as const;
 export type StepReviewDecision = (typeof STEP_REVIEW_DECISIONS)[number];
+
+// Fix #5 programme-continuity correction (5 Sep 2026) — the owner-approved
+// choices offered when a programme's current cycle ends, replacing the old
+// single "continue into the 30-day programme" dead end. EXTEND_* choices add
+// that many weeks to the current enrollment (same programme, same history);
+// CONTINUOUS suspends the completion boundary indefinitely; FINISH stops it.
+export const PROGRAMME_COMPLETION_CHOICES = ["FINISH", "EXTEND_1W", "EXTEND_2W", "EXTEND_3W", "EXTEND_4W", "CONTINUOUS"] as const;
+export type ProgrammeCompletionChoice = (typeof PROGRAMME_COMPLETION_CHOICES)[number];
+
+const PROGRAMME_EXTENSION_WEEKS: Partial<Record<ProgrammeCompletionChoice, number>> = {
+  EXTEND_1W: 1,
+  EXTEND_2W: 2,
+  EXTEND_3W: 3,
+  EXTEND_4W: 4,
+};
+
+/** Days to add to an enrollment's effective length for an EXTEND_* choice; 0 for FINISH/CONTINUOUS. */
+export function extensionDaysFor(choice: ProgrammeCompletionChoice): number {
+  return (PROGRAMME_EXTENSION_WEEKS[choice] ?? 0) * 7;
+}
+
+// Server-computed lifecycle state for an enrollment, returned by GET
+// /programmes/:code and GET /programmes so both the list and detail views
+// agree on when to show ongoing-day content vs. the completion-choice
+// prompt vs. a frozen finished/continuous state.
+export const PROGRAMME_COMPLETION_STATES = ["ACTIVE", "AWAITING_CHOICE", "FINISHED", "CONTINUOUS"] as const;
+export type ProgrammeCompletionState = (typeof PROGRAMME_COMPLETION_STATES)[number];

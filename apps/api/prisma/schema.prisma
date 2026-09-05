@@ -632,6 +632,17 @@ model ProgrammeEnrollment {
   startedAt      DateTime  @default(now())
   currentDay     Int       @default(1)
   lastReviewedAt DateTime? // Fix #5.6 — drives the reviewFrequencyDays-based KEEP/REMOVE/ADJUST prompt
+  // Fix #5 programme-continuity correction (5 Sep 2026) — replaces the old
+  // "isComplete -> single button into nextProgrammeCode" dead end with the
+  // owner-approved completion choices (Finish/Stop, +1/+2/+3/+4 weeks,
+  // Continuous/Ongoing), decided via POST /:code/complete. extendedDays
+  // accumulates 7*n from EXTEND_nW choices; continuous suspends the
+  // completion boundary entirely; finishedAt is set only by an explicit
+  // FINISH choice. None of these ever delete dayLogs/stepReviews/
+  // UserStepPreference — history is preserved across every choice.
+  extendedDays Int       @default(0)
+  continuous   Boolean   @default(false)
+  finishedAt   DateTime?
 
   dayLogs     ProgrammeDayLog[]
   stepReviews ProgrammeStepReview[]

@@ -15,9 +15,18 @@
  * KEEP/REMOVE/ADJUST review's real consequence on Tonight (REMOVE actually
  * removing a step, KEEP reversing it, ADJUST's note appearing), the review
  * not re-triggering immediately after submission but firing again once the
- * cadence is due, programme completion + the 7-night -> 30-day
- * continuation enrol, and a regression smoke check on other endpoints
- * touched by Fix #5 (Wallpaper, Music Library, Preferences, Tonight).
+ * cadence is due, and a regression smoke check on other endpoints touched
+ * by Fix #5 (Wallpaper, Music Library, Preferences, Tonight).
+ *
+ * Fix #5 programme-continuity correction (5 Sep 2026) — also covers the
+ * replacement completion flow end to end: reaching AWAITING_CHOICE at the
+ * 7-night boundary, EXTEND_2W actually extending the same enrollment
+ * (content cycles back to Day 1's theme but the *original* Day 1 log is
+ * untouched — proving history survives the cycle repeat), CONTINUOUS never
+ * re-entering AWAITING_CHOICE no matter how far the clock moves, FINISH
+ * freezing the enrollment and rejecting further day-logs/reviews, and a
+ * deterministic (no wall-clock) unit check that day-boundary math is
+ * timezone-local rather than a raw 24h ms division.
  *
  * Run with: npm run test:programme-flow (from apps/api).
  */
@@ -193,15 +202,97 @@ async function main() {
     detail = (await api("GET", "/programmes/PRG_7NIGHT_QUICKSTART?locale=en")).json;
     check("review due again once reviewFrequencyDays has elapsed", detail.reviewDue === true);
 
-    // --- 10. Completion + 7-night -> 30-day continuation ---------------------
+    // --- 10. Reaching the 7-night boundary -> AWAITING_CHOICE ----------------
     await prisma.programmeEnrollment.update({ where: { id: enrollmentRow.id }, data: { startedAt: new Date(Date.now() - 8 * 86400000) } });
     detail = (await api("GET", "/programmes/PRG_7NIGHT_QUICKSTART?locale=en")).json;
-    check("programme reports complete once lengthDays has elapsed", detail.isComplete === true);
-    check("nextProgrammeCode points to the 30-day reset", detail.nextProgrammeCode === "PRG_30DAY_RESET");
-    const continueEnroll = await api("POST", "/programmes/PRG_30DAY_RESET/enroll", {});
-    check("continuation enrol into 30-Day Sleep Reset succeeds", continueEnroll.status === 200 && continueEnroll.json.enrolled === true);
+    check("completionState is AWAITING_CHOICE once lengthDays has elapsed", detail.completionState === "AWAITING_CHOICE");
+    check("isComplete still true for back-compat", detail.isComplete === true);
+    check("today is withheld while awaiting a completion choice", detail.today === null);
+    check("review is suspended while awaiting a completion choice", detail.reviewDue === false);
 
-    // --- 11. Regression smoke: other Fix #5 surfaces still respond ----------
+    // --- 11. EXTEND_2W actually extends the *same* enrollment, preserving history
+    const dayLog1Before = await prisma.programmeDayLog.findUnique({ where: { enrollmentId_dayNumber: { enrollmentId: enrollmentRow.id, dayNumber: 1 } } });
+    check("Day 1's original log is SKIPPED going into the extension", dayLog1Before?.status === "SKIPPED");
+
+    const extend = await api("POST", "/programmes/PRG_7NIGHT_QUICKSTART/complete", { choice: "EXTEND_2W" });
+    check("EXTEND_2W succeeds", extend.status === 200 && extend.json.extendedDays === 14);
+
+    detail = (await api("GET", "/programmes/PRG_7NIGHT_QUICKSTART?locale=en")).json;
+    check("completionState back to ACTIVE after extending", detail.completionState === "ACTIVE");
+    check("effectiveLengthDays reflects the 2-week extension (7 + 14)", detail.effectiveLengthDays === 21);
+    check("currentDay resumed past the original 7-day length (absolute, not reset)", detail.currentDay > 7);
+    const resumedDay: number = detail.currentDay;
+    // Don't hardcode which theme that absolute day cycles back to — derive it
+    // independently from the DB's own 7-day content order and compare.
+    const quickstartRow = await prisma.programme.findUniqueOrThrow({ where: { code: "PRG_7NIGHT_QUICKSTART" } });
+    const expectedContentDayNumber = ((resumedDay - 1) % quickstartRow.lengthDays) + 1;
+    const expectedContentDay = await prisma.programmeDay.findUniqueOrThrow({
+      where: { programmeId_dayNumber: { programmeId: quickstartRow.id, dayNumber: expectedContentDayNumber } },
+    });
+    check("today's theme matches the 7-day content cycle for the current absolute day", detail.today?.themeCode === expectedContentDay.themeCode);
+    check("today's absolute dayNumber matches currentDay, not the cycled content day", detail.today?.dayNumber === resumedDay);
+
+    await api("POST", `/programmes/PRG_7NIGHT_QUICKSTART/day/${resumedDay}/log`, { status: "DONE" });
+    const dayLog1After = await prisma.programmeDayLog.findUnique({ where: { enrollmentId_dayNumber: { enrollmentId: enrollmentRow.id, dayNumber: 1 } } });
+    check(`logging Day ${resumedDay} leaves Day 1's original SKIPPED history untouched`, dayLog1After?.status === "SKIPPED");
+    detail = (await api("GET", "/programmes/PRG_7NIGHT_QUICKSTART?locale=en")).json;
+    check(`progress counts Day ${resumedDay}'s DONE separately from Day 1's SKIPPED`, detail.progress.done === 1);
+
+    // --- 12. Reaching the extended boundary again -> CONTINUOUS never re-asks
+    await prisma.programmeEnrollment.update({ where: { id: enrollmentRow.id }, data: { startedAt: new Date(Date.now() - 25 * 86400000) } });
+    detail = (await api("GET", "/programmes/PRG_7NIGHT_QUICKSTART?locale=en")).json;
+    check("completionState AWAITING_CHOICE again once the extended length elapses", detail.completionState === "AWAITING_CHOICE");
+
+    const goContinuous = await api("POST", "/programmes/PRG_7NIGHT_QUICKSTART/complete", { choice: "CONTINUOUS" });
+    check("CONTINUOUS choice succeeds", goContinuous.status === 200 && goContinuous.json.continuous === true);
+
+    await prisma.programmeEnrollment.update({ where: { id: enrollmentRow.id }, data: { startedAt: new Date(Date.now() - 100 * 86400000) } });
+    detail = (await api("GET", "/programmes/PRG_7NIGHT_QUICKSTART?locale=en")).json;
+    check("CONTINUOUS never re-enters AWAITING_CHOICE no matter how far along", detail.completionState === "CONTINUOUS");
+    check("CONTINUOUS still resolves a valid cycling theme for today", typeof detail.today?.themeCode === "string");
+    const continuousComplete = await api("POST", "/programmes/PRG_7NIGHT_QUICKSTART/complete", { choice: "FINISH" });
+    check("a completion choice is rejected once already CONTINUOUS (no decision pending)", continuousComplete.status === 409);
+
+    // --- 13. FINISH freezes the enrollment and blocks further logs/reviews --
+    const enroll30 = await api("POST", "/programmes/PRG_30DAY_RESET/enroll", {});
+    check("enrol into 30-Day Sleep Reset succeeds", enroll30.status === 200 && enroll30.json.enrolled === true);
+    const enrollment30Row = await prisma.programmeEnrollment.findFirstOrThrow({ where: { userId: user.id, programme: { code: "PRG_30DAY_RESET" } } });
+    await prisma.programmeEnrollment.update({ where: { id: enrollment30Row.id }, data: { startedAt: new Date(Date.now() - 31 * 86400000) } });
+    detail = (await api("GET", "/programmes/PRG_30DAY_RESET?locale=en")).json;
+    check("30-day programme also reaches AWAITING_CHOICE at its own lengthDays", detail.completionState === "AWAITING_CHOICE");
+
+    const finish = await api("POST", "/programmes/PRG_30DAY_RESET/complete", { choice: "FINISH" });
+    check("FINISH succeeds", finish.status === 200 && !!finish.json.finishedAt);
+    detail = (await api("GET", "/programmes/PRG_30DAY_RESET?locale=en")).json;
+    check("completionState FINISHED after choosing Finish/Stop", detail.completionState === "FINISHED");
+    check("currentDay freezes at effectiveLengthDays once finished", detail.currentDay === detail.effectiveLengthDays);
+
+    const logAfterFinish = await api("POST", "/programmes/PRG_30DAY_RESET/day/30/log", { status: "DONE" });
+    check("day-log rejected once finished", logAfterFinish.status === 409 && logAfterFinish.json.error === "programme_finished");
+    const reviewAfterFinish = await api("POST", "/programmes/PRG_30DAY_RESET/review", { decisions: [{ stepCode: "MUSIC", decision: "REMOVE" }] });
+    check("review rejected once finished", reviewAfterFinish.status === 409 && reviewAfterFinish.json.error === "programme_finished");
+    const completeAgain = await api("POST", "/programmes/PRG_30DAY_RESET/complete", { choice: "EXTEND_1W" });
+    check("a completion choice is rejected once already finished", completeAgain.status === 409);
+
+    // --- 14. Deterministic (no wall-clock) timezone-safe day-boundary check -
+    const { daysElapsedLocal } = await import("../src/domain/decision/programmeContinuity");
+    // A raw (now - startedAt) / 24h division would say "still day 1" here —
+    // only 2 real hours apart. But Pacific/Kiritimati is UTC+14, so
+    // 2026-01-01T09:00Z is already 2026-01-01 23:00 local, and
+    // 2026-01-01T11:00Z is 2026-01-02 01:00 local: a local midnight was
+    // crossed on a 2-hour-apart pair of timestamps, and Day should read 2.
+    const tzStart = new Date("2026-01-01T09:00:00Z");
+    const tzNow = new Date("2026-01-01T11:00:00Z");
+    check(
+      "daysElapsedLocal crosses a local calendar day on a 2-hour gap in a UTC+14 timezone",
+      daysElapsedLocal(tzStart, tzNow, "Pacific/Kiritimati") === 2,
+    );
+    check(
+      "the same 2-hour gap stays on day 1 in a timezone that hasn't crossed local midnight",
+      daysElapsedLocal(tzStart, tzNow, "Europe/London") === 1,
+    );
+
+    // --- 15. Regression smoke: other Fix #5 surfaces still respond ----------
     const wallpapers = await api("GET", "/wallpapers");
     check("GET /wallpapers still responds 200 (Fix #5.3 regression check)", wallpapers.status === 200);
     const musicLib = await api("GET", "/music/tracks");
