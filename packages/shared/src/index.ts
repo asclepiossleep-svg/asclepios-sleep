@@ -394,3 +394,36 @@ export const DEFINITION_OF_DONE = [
 // ---------------------------------------------------------------------------
 export const CONTENT_CATEGORIES = ["UNDERSTAND", "LEARN", "USE", "EXPLORE"] as const;
 export type ContentCategory = (typeof CONTENT_CATEGORIES)[number];
+
+// ---------------------------------------------------------------------------
+// Fix #5.6 (5 Sep 2026) — Programme guided-journey vocabulary. Goal labels
+// and per-day theme copy are never stored as raw prose in the DB — only
+// these codes are (Programme.goalsJson, ProgrammeDay.themeCode) — the
+// client resolves display text via `programme.goal.<code>` /
+// `programme.day.<code>.title|why|how` in i18n, same convention
+// `programme.<code>.name/description` already use.
+// ---------------------------------------------------------------------------
+export const PROGRAMME_GOALS = [
+  "FALL_ASLEEP_FASTER",
+  "FEWER_NIGHT_WAKINGS",
+  "CONSISTENT_ROUTINE",
+  "CALMER_MIND_AT_BEDTIME",
+  "MORE_MORNING_ENERGY",
+] as const;
+export type ProgrammeGoal = (typeof PROGRAMME_GOALS)[number];
+
+export const PROGRAMME_DAY_THEMES = [
+  "WINDDOWN_CONSISTENCY",
+  "BREATHING_BEFORE_BED",
+  "PRODUCT_ROUTINE",
+  "CAFFEINE_CUTOFF",
+  "SCREEN_WINDDOWN",
+  "CONSISTENT_WAKE",
+  "REFLECT_NOTICE",
+] as const;
+export type ProgrammeDayTheme = (typeof PROGRAMME_DAY_THEMES)[number];
+
+// The user-facing decisions in a KEEP/REMOVE/ADJUST routine-step retro
+// (ProgrammeStepReview.decision).
+export const STEP_REVIEW_DECISIONS = ["KEEP", "REMOVE", "ADJUST"] as const;
+export type StepReviewDecision = (typeof STEP_REVIEW_DECISIONS)[number];

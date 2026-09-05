@@ -74,6 +74,8 @@ model User {
   morningCheckins  MorningCheckin[]
   plannedActions   PlannedAction[]
   enrollments      ProgrammeEnrollment[]
+  programmeDayLogs     ProgrammeDayLog[]
+  programmeStepReviews ProgrammeStepReview[]
   musicFavourites  MusicFavourite[]
   musicPlayHistory MusicPlayHistory[]
   analyticsEvents  AnalyticsEvent[]
@@ -606,18 +608,87 @@ model Programme {
   reviewFrequencyDays Int    @default(7) // kept independent of programme length (Doc 03 §8)
   active             Boolean @default(true)
   version            Int     @default(1)
+  // Fix #5.6 (5 Sep 2026) — guided-journey metadata. Overview/who-for/goal
+  // and improvement-area *labels* stay in i18n (programme.<code>.overview /
+  // .whoFor, programme.goal.<code>, tag.<code> — same convention
+  // programme.<code>.name/description already use), never duplicated into
+  // the DB. These two JSON columns are the only *structural* data a screen
+  // needs to know which codes to render for a given programme.
+  goalsJson           String? // JSON-encoded ProgrammeGoal[] (packages/shared)
+  improvementTagsJson String? // JSON-encoded Tag[] (packages/shared) — expected improvement areas
+  nextProgrammeCode   String? // continuity — e.g. 7-Night Quick Start -> 30-Day Sleep Reset
 
   enrollments ProgrammeEnrollment[]
+  days        ProgrammeDay[]
 }
 
 model ProgrammeEnrollment {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  programmeId String
-  programme   Programme @relation(fields: [programmeId], references: [id])
-  startedAt   DateTime  @default(now())
-  currentDay  Int       @default(1)
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  programmeId    String
+  programme      Programme @relation(fields: [programmeId], references: [id])
+  startedAt      DateTime  @default(now())
+  currentDay     Int       @default(1)
+  lastReviewedAt DateTime? // Fix #5.6 — drives the reviewFrequencyDays-based KEEP/REMOVE/ADJUST prompt
+
+  dayLogs     ProgrammeDayLog[]
+  stepReviews ProgrammeStepReview[]
+}
+
+// Fix #5.6 — one row per programme day. `themeCode` is resolved to actual
+// title/why/how copy client-side via i18n (`programme.day.<themeCode>.*`),
+// mirroring how `programme.<code>.name/description` already work — so the
+// day-to-day *journey structure* (which theme falls on which day, for which
+// programme) is admin/DB-driven per Doc 01 §5, without duplicating
+// translatable prose into the database. `contentItemCode` is the day's
+// content slot: a base ContentItem.code (locale suffix resolved at read
+// time, same `<code>_<locale>` + en-fallback convention GET /tonight uses).
+model ProgrammeDay {
+  id              String    @id @default(cuid())
+  programmeId     String
+  programme       Programme @relation(fields: [programmeId], references: [id])
+  dayNumber       Int
+  themeCode       String
+  contentItemCode String?
+
+  @@unique([programmeId, dayNumber])
+}
+
+// Fix #5.6 — Done/Skip per programme day, independent of Tonight's
+// PlannedAction/RoutineStepLog (a programme day can span steps across
+// several nights' Tonight sessions; this tracks the *day of the journey*,
+// not a single Tonight step).
+model ProgrammeDayLog {
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id])
+  enrollmentId String
+  enrollment   ProgrammeEnrollment @relation(fields: [enrollmentId], references: [id])
+  dayNumber    Int
+  status       String // DONE | SKIPPED
+  loggedAt     DateTime            @default(now())
+
+  @@unique([enrollmentId, dayNumber])
+}
+
+// Fix #5.6 — the periodic (every Programme.reviewFrequencyDays) KEEP/REMOVE/
+// ADJUST retro: the user marks each routine step type they've been doing.
+// V1 MVP records the decision as feedback data a future run can wire into
+// the routine/decision engine — it does not itself mutate Tonight's
+// generated step list (Tonight's PRODUCT/BREATHING/MUSIC selection stays
+// exactly as computed by productSelectionEngine.ts/routineLevelEngine.ts,
+// per this track's "preserve... decision architecture" rule).
+model ProgrammeStepReview {
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id])
+  enrollmentId String
+  enrollment   ProgrammeEnrollment @relation(fields: [enrollmentId], references: [id])
+  stepCode     String // PRODUCT | BREATHING | MUSIC
+  decision     String // KEEP | REMOVE | ADJUST
+  note         String?
+  createdAt    DateTime            @default(now())
 }
 
 model RoutineStepDef {
