@@ -5,3 +5,10 @@ dist-esm/
 .env
 *.db
 *.db-journal
+
+# Local AIOS/Rex agent tooling — machine-specific, session-local state.
+# Kept on the developer's machine, never version-controlled.
+.aios/
+.contextdb-enable
+.claude/settings.local.json
+.gemini/
