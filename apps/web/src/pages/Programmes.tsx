@@ -3,17 +3,16 @@ import { t, getLocale } from "../i18n";
 import { api } from "../api/client";
 import BottomNav from "../components/BottomNav";
 import PageHeader from "../components/PageHeader";
-import { STEP_REVIEW_DECISIONS, type StepReviewDecision } from "@asclepios/shared";
+import { STEP_REVIEW_DECISIONS, PROGRAMME_COMPLETION_CHOICES, type StepReviewDecision, type ProgrammeCompletionChoice, type ProgrammeCompletionState } from "@asclepios/shared";
 
 interface ProgrammeSummary {
   code: string;
   lengthDays: number;
   enrolled: boolean;
   currentDay: number | null;
-  isComplete: boolean;
+  completionState: ProgrammeCompletionState | null;
   goals: string[];
   improvementAreas: string[];
-  nextProgrammeCode: string | null;
 }
 
 interface ProgrammeDay {
@@ -25,6 +24,7 @@ interface ProgrammeDay {
 
 interface ProgrammeDetail extends ProgrammeSummary {
   reviewFrequencyDays: number;
+  effectiveLengthDays: number;
   today: ProgrammeDay | null;
   progress: { done: number; total: number };
   reviewDue: boolean;
@@ -43,9 +43,15 @@ const badgeStyle = { fontSize: "0.75rem", border: "1px solid var(--color-border)
  * areas, review cadence) comes from GET /programmes[/:code] — this
  * component only resolves *codes* to display text via i18n
  * (programme.<code>.*, programme.goal.<code>, programme.day.<code>.*,
- * tag.<code>), same pattern the rest of the app already uses. Continuity
- * from the 7-Night Quick Start into the 30-Day Sleep Reset is a plain
- * re-enrol once nextProgrammeCode's programme is complete.
+ * tag.<code>), same pattern the rest of the app already uses.
+ *
+ * Fix #5 programme-continuity correction (5 Sep 2026) — replaced the old
+ * "cycle complete -> one button straight into the 30-day programme" dead
+ * end with the owner-approved completion choices (Finish/Stop, +1/+2/+3/+4
+ * weeks, Continuous/Ongoing), driven by `completionState` from the server:
+ * ACTIVE/CONTINUOUS render the normal day-to-day journey, AWAITING_CHOICE
+ * shows the choice buttons, FINISHED shows a frozen summary. No path here
+ * auto-enrols into another programme.
  */
 export default function Programmes() {
   const [summaries, setSummaries] = useState<ProgrammeSummary[]>([]);
@@ -83,6 +89,16 @@ export default function Programmes() {
   async function logDay(code: string, dayNumber: number, status: "DONE" | "SKIPPED") {
     await api.post(`/programmes/${code}/day/${dayNumber}/log`, { status });
     await loadDetail(code);
+  }
+
+  async function chooseCompletion(code: string, choice: ProgrammeCompletionChoice) {
+    setBusyCode(code);
+    try {
+      await api.post(`/programmes/${code}/complete`, { choice });
+      await loadDetail(code);
+    } finally {
+      setBusyCode(null);
+    }
   }
 
   function openReview(code: string, steps: string[], currentStepPreferences: ProgrammeDetail["currentStepPreferences"]) {
@@ -154,13 +170,19 @@ export default function Programmes() {
                 </>
               )}
 
-              {p.enrolled && detail && !detail.isComplete && (
+              {p.enrolled && detail && (detail.completionState === "ACTIVE" || detail.completionState === "CONTINUOUS") && (
                 <>
                   <p style={{ margin: 0, fontWeight: 600 }}>
-                    {t("programmes.day")} {detail.currentDay} / {detail.lengthDays}
+                    {t("programmes.day")} {detail.currentDay}
+                    {detail.completionState === "CONTINUOUS" ? "" : ` / ${detail.effectiveLengthDays}`}
                   </p>
+                  {detail.completionState === "CONTINUOUS" && (
+                    <span className="muted" style={{ ...badgeStyle, alignSelf: "flex-start" }}>
+                      {t("programmes.continuousBadge")}
+                    </span>
+                  )}
                   <div style={{ display: "flex", gap: "2px" }}>
-                    {Array.from({ length: detail.lengthDays }).map((_, i) => (
+                    {Array.from({ length: detail.completionState === "CONTINUOUS" ? detail.lengthDays : detail.effectiveLengthDays }).map((_, i) => (
                       <div
                         key={i}
                         style={{
@@ -265,14 +287,39 @@ export default function Programmes() {
                 </>
               )}
 
-              {p.enrolled && detail && detail.isComplete && (
+              {p.enrolled && detail && detail.completionState === "AWAITING_CHOICE" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px solid var(--color-border)", paddingTop: "0.6rem" }}>
+                  <strong>{t("programmes.cycleCompleteTitle")}</strong>
+                  <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+                    {t("programmes.cycleCompleteSubtitle")}
+                  </p>
+                  <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+                    {t("tonight.progressLabel")}: {detail.progress.done} / {detail.progress.total}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                    {PROGRAMME_COMPLETION_CHOICES.map((choice) => (
+                      <button
+                        key={choice}
+                        className={choice === "FINISH" ? "" : "primary"}
+                        onClick={() => chooseCompletion(p.code, choice)}
+                        disabled={busyCode === p.code}
+                      >
+                        {t(`programmes.choice.${choice}`)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {p.enrolled && detail && detail.completionState === "FINISHED" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <p style={{ margin: 0, fontWeight: 600 }}>{t("programmes.completed")}</p>
-                  {detail.nextProgrammeCode && (
-                    <button className="primary" onClick={() => enroll(detail.nextProgrammeCode!)} disabled={busyCode === detail.nextProgrammeCode}>
-                      {t("programmes.continueTo")} {t(`programme.${detail.nextProgrammeCode}.name`)}
-                    </button>
-                  )}
+                  <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+                    {t("programmes.finishedSubtitle")}
+                  </p>
+                  <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+                    {t("tonight.progressLabel")}: {detail.progress.done} / {detail.progress.total}
+                  </p>
                 </div>
               )}
             </div>
