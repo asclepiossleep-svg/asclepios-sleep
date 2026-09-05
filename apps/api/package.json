@@ -13,6 +13,7 @@
     "db:seed-catalog": "tsx prisma/seedCatalog.ts",
     "db:reset": "prisma migrate reset --force",
     "check:schema-parity": "bash scripts/check-schema-parity.sh",
+    "test:programme-flow": "tsx scripts/test-programme-flow.ts",
     "vercel-build": "npm run build --workspace=@asclepios/shared --prefix ../.. && npm run check:schema-parity && prisma generate --schema=prisma/schema.staging.prisma && prisma db push --schema=prisma/schema.staging.prisma --accept-data-loss --skip-generate && tsc -p tsconfig.json && npm run db:seed-catalog"
   },
   "dependencies": {

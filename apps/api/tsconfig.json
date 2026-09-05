@@ -8,11 +8,7 @@
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@asclepios/shared": ["../../packages/shared/dist/index.d.ts"]
-    }
+    "skipLibCheck": true
   },
   "include": ["src"]
 }
