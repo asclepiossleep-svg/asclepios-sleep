@@ -1,4 +1,4 @@
-[AI_OS_MASTER.md](https://github.com/user-attachments/files/31871658/AI_OS_MASTER.md)
+<!-- Canonical extraction of the approved master specification (Version 1.0, 5 September 2026, Internal Confidential). The source DOCX is not committed to the repo. Edit this file when the approved specification changes. -->
 **ROCKPILLAR TECHNOLOGY**
 
 **RockPillar AI Operating System**
@@ -102,7 +102,7 @@ Recommended internal structure (the exact folders may be adapted to the existing
 | **Area**           | **Purpose**                                        | **Examples**                                                     |
 |--------------------|----------------------------------------------------|------------------------------------------------------------------|
 | docs/company/      | Company operating system and governance            | AI_OS_MASTER.md, DEPARTMENT_REGISTRY.md, MATURITY_EVIDENCE.md    |
-| docs/product/      | Product constitutions/master specifications        | ASCLEPIOS_SLEEP_MASTER.md, UX_BIBLE.md                           |
+| docs/product/      | Product constitutions/master specifications        | ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md, UX_BIBLE.md              |
 | docs/intelligence/ | Research-backed intelligence design                | RESEARCH_REGISTRY.md, SCENARIO_CATALOGUE.md, RULE_VERSION_LOG.md |
 | docs/growth/       | Growth/content system                              | CONTENT_TAXONOMY.md, CHANNEL_PLAYBOOKS.md                        |
 | docs/operations/   | Commerce, fulfilment, CS and operational workflows | CS_PLAYBOOK.md, RETURNS_FLOW.md                                  |

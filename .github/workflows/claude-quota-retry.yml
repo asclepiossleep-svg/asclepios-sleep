@@ -1,0 +1,51 @@
+# Hourly retry for Claude work paused by a usage limit.
+# Carried forward from branch codex/ai-collaboration-setup. Changes:
+#   - added the `vars.CLAUDE_AUTOMATION_ENABLED != 'false'` guard so the
+#     repo kill switch also stops the retry loop;
+#   - added a concurrency group so a manual run cannot overlap the
+#     scheduled one.
+# Pairs with the "Classify Claude result" step in claude.yml.
+# See docs/ai/AI_COLLABORATION.md.
+#
+# Note: this re-pings a quota-paused issue once per hour with no maximum
+# retry count; it self-clears when the quota returns, and the kill switch
+# above is the manual stop.
+name: Retry Claude quota-paused work
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: claude-quota-retry
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    if: vars.CLAUDE_AUTOMATION_ENABLED != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-trigger paused Claude tasks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          numbers=$(gh api --method GET "repos/${REPOSITORY}/issues" \
+            -f state=open -f labels='ai:paused-quota' -f per_page=10 \
+            --jq '.[].number')
+
+          for number in ${numbers}; do
+            gh api --method POST "repos/${REPOSITORY}/issues/${number}/comments" \
+              -f body='@claude Resume this task from the latest committed checkpoint and GitHub discussion. Do not repeat completed work. Continue until the next coherent checkpoint or READY_FOR_AUDIT.'
+            gh api --method DELETE \
+              "repos/${REPOSITORY}/issues/${number}/labels/ai%3Apaused-quota" \
+              >/dev/null 2>&1 || true
+          done
