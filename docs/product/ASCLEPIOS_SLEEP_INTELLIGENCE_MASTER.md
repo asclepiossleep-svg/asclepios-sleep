@@ -1,4 +1,4 @@
-[ASCLEPIOS_SLEEP_MASTER.md](https://github.com/user-attachments/files/31871661/ASCLEPIOS_SLEEP_MASTER.md)
+<!-- Canonical extraction of the approved master specification (Version 1.0, 5 September 2026, Internal Confidential). The source DOCX is not committed to the repo. Edit this file when the approved specification changes. -->
 **ROCKPILLAR TECHNOLOGY**
 
 **Asclepios Sleep Intelligence Master Specification**
