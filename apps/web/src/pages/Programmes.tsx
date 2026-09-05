@@ -29,6 +29,7 @@ interface ProgrammeDetail extends ProgrammeSummary {
   progress: { done: number; total: number };
   reviewDue: boolean;
   reviewableSteps: string[];
+  currentStepPreferences: Record<string, { decision: StepReviewDecision; note: string | null }>;
 }
 
 const badgeStyle = { fontSize: "0.75rem", border: "1px solid var(--color-border)", borderRadius: "999px", padding: "0.15rem 0.6rem" };
@@ -84,9 +85,11 @@ export default function Programmes() {
     await loadDetail(code);
   }
 
-  function openReview(code: string, steps: string[]) {
+  function openReview(code: string, steps: string[], currentStepPreferences: ProgrammeDetail["currentStepPreferences"]) {
     setReviewOpenFor(code);
-    setDecisions(Object.fromEntries(steps.map((s) => [s, "KEEP" as StepReviewDecision])));
+    // Prefill from what's actually in effect right now rather than
+    // resetting every step to KEEP on every review.
+    setDecisions(Object.fromEntries(steps.map((s) => [s, currentStepPreferences[s]?.decision ?? ("KEEP" as StepReviewDecision)])));
   }
 
   async function submitReview(code: string) {
@@ -208,10 +211,25 @@ export default function Programmes() {
                     {t("tonight.progressLabel")}: {detail.progress.done} / {detail.progress.total}
                   </p>
 
+                  {Object.keys(detail.currentStepPreferences).length > 0 && reviewOpenFor !== p.code && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", borderTop: "1px solid var(--color-border)", paddingTop: "0.6rem" }}>
+                      <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+                        {t("programmes.inEffectLabel")}
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+                        {Object.entries(detail.currentStepPreferences).map(([step, pref]) => (
+                          <span key={step} className="muted" style={badgeStyle}>
+                            {t(`programmes.stepLabel.${step}`)}: {t(`programmes.decision.${pref.decision}`)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {detail.reviewDue && reviewOpenFor !== p.code && (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", borderTop: "1px solid var(--color-border)", paddingTop: "0.6rem" }}>
                       <span style={{ fontSize: "0.85rem" }}>{t("programmes.reviewDueBanner")}</span>
-                      <button className="primary" onClick={() => openReview(p.code, detail.reviewableSteps)}>
+                      <button className="primary" onClick={() => openReview(p.code, detail.reviewableSteps, detail.currentStepPreferences)}>
                         {t("programmes.startReview")}
                       </button>
                     </div>

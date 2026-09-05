@@ -21,6 +21,7 @@ interface TonightStep {
   mode?: "RHYTHM" | "CALM" | "BODY" | "SUPPORT";
   protocolSteps?: ProtocolStep[];
   guidance?: { title: string; bodyMarkdown: string } | null;
+  adjustmentNote?: string | null;
 }
 
 interface LibraryTrack {
@@ -106,6 +107,7 @@ function resolveTargetSleepTime(bedtimeHHMM: string, now: Date): Date {
 export default function Tonight() {
   const [steps, setSteps] = useState<TonightStep[]>([]);
   const [routineLevel, setRoutineLevel] = useState<number | null>(null);
+  const [pausedStepCodes, setPausedStepCodes] = useState<string[]>([]);
   const [stepStatus, setStepStatus] = useState<Record<string, "DONE" | "SKIPPED">>({});
   const [chosenAudio, setChosenAudio] = useState<ChosenAudio>({ kind: "SYNTH", code: SYNTH_TRACKS[0].code });
   const [libraryTracks, setLibraryTracks] = useState<LibraryTrack[]>([]);
@@ -126,9 +128,10 @@ export default function Tonight() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get<{ steps: TonightStep[]; routineLevel: number }>(`/tonight?locale=${encodeURIComponent(getLocale())}`).then((r) => {
+    api.get<{ steps: TonightStep[]; routineLevel: number; pausedStepCodes?: string[] }>(`/tonight?locale=${encodeURIComponent(getLocale())}`).then((r) => {
       setSteps(r.steps);
       setRoutineLevel(r.routineLevel);
+      setPausedStepCodes(r.pausedStepCodes ?? []);
     });
     // 31 Aug 2026 — real Music Library tracks are now selectable here too,
     // not just the built-in synthesized presets (correction point #4).
@@ -285,6 +288,11 @@ export default function Tonight() {
             {t("tonight.progressLabel")}: {steps.filter((s) => !!stepStatus[s.stepInstanceId]).length} / {steps.length}
           </p>
         )}
+        {pausedStepCodes.map((code) => (
+          <p key={code} className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+            {t(`programmes.stepLabel.${code}`)} — {t("tonight.pausedViaReview")}
+          </p>
+        ))}
         {steps.map((step) => {
           const status = stepStatus[step.stepInstanceId];
           return (
@@ -334,6 +342,12 @@ export default function Tonight() {
               {step.guidance && (
                 <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
                   <strong>{step.guidance.title}</strong> — {step.guidance.bodyMarkdown}
+                </p>
+              )}
+              {step.adjustmentNote != null && (
+                <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+                  <strong>{t("tonight.adjustedViaReview")}</strong>
+                  {step.adjustmentNote ? `: ${step.adjustmentNote}` : ""}
                 </p>
               )}
               {step.stepCode === "PRODUCT" && openProtocolFor === step.stepInstanceId && !!step.protocolSteps?.length && (
