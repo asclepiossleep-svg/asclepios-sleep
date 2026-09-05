@@ -15,17 +15,52 @@ import { t } from "../i18n";
  * full-screen NowPlaying view (design moodboard's Sleep Player screen) —
  * hidden on that screen itself so it doesn't duplicate its own controls.
  */
+// Mobile readability audit (5 Sep 2026) — the pages that also render
+// BottomNav (see BottomNav.tsx's own comment for the underlying bug this
+// bar shared with it). This bar is rendered once, globally, outside any
+// page's own layout, so it can't reserve flow space the way BottomNav's
+// spacer does — it has to know whether the current route already has a
+// fixed tab bar to stack above instead of on top of.
+const BOTTOM_NAV_ROUTES = new Set(["/home", "/tonight", "/review", "/settings", "/programmes", "/music", "/learn"]);
+
+function PauseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="5" y="4" width="3.2" height="12" rx="1" fill="currentColor" />
+      <rect x="11.8" y="4" width="3.2" height="12" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M6 4.2v11.6a.8.8 0 0 0 1.22.68l9.3-5.8a.8.8 0 0 0 0-1.36l-9.3-5.8A.8.8 0 0 0 6 4.2Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="4.5" y="4.5" width="11" height="11" rx="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
 export default function MusicPlayerBar() {
   const { track, playing } = useMusicPlayer();
   const location = useLocation();
   const navigate = useNavigate();
   if (!track || location.pathname === "/music/now-playing") return null;
 
+  const stacksAboveBottomNav = BOTTOM_NAV_ROUTES.has(location.pathname);
+
   return (
     <div
       style={{
-        position: "sticky",
-        bottom: 0,
+        position: "fixed",
+        bottom: stacksAboveBottomNav ? "calc(4.25rem + env(safe-area-inset-bottom, 0px))" : "env(safe-area-inset-bottom, 0px)",
         left: 0,
         right: 0,
         zIndex: 5,
@@ -56,11 +91,19 @@ export default function MusicPlayerBar() {
           {track.artist && <span className="muted" style={{ fontSize: "0.75rem" }}>{track.artist}</span>}
         </div>
       </button>
-      <button onClick={() => (playing ? pause() : resume())} aria-label={playing ? t("player.pause") : t("player.play")}>
-        {playing ? "⏸" : "▶️"}
+      <button
+        onClick={() => (playing ? pause() : resume())}
+        aria-label={playing ? t("player.pause") : t("player.play")}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: "var(--touch-target-min)", minHeight: "var(--touch-target-min)" }}
+      >
+        {playing ? <PauseIcon /> : <PlayIcon />}
       </button>
-      <button onClick={stop} aria-label={t("music.stop")}>
-        ⏹
+      <button
+        onClick={stop}
+        aria-label={t("music.stop")}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: "var(--touch-target-min)", minHeight: "var(--touch-target-min)" }}
+      >
+        <StopIcon />
       </button>
     </div>
   );

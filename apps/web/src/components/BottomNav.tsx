@@ -59,43 +59,58 @@ const ITEMS = [
 
 export default function BottomNav() {
   return (
-    <nav
-      style={{
-        position: "sticky",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        display: "flex",
-        justifyContent: "space-around",
-        background: "var(--color-surface-veil)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        borderTop: "1px solid var(--color-border)",
-        padding: "0.5rem 0",
-        marginTop: "1rem",
-      }}
-    >
-      {ITEMS.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          style={({ isActive }) => ({
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "0.15rem",
-            fontSize: "0.75rem",
-            textDecoration: "none",
-            color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
-            minWidth: "var(--touch-target-min)",
-            minHeight: "var(--touch-target-min)",
-            justifyContent: "center",
-          })}
-        >
-          <item.Icon />
-          <span>{t(item.key)}</span>
-        </NavLink>
-      ))}
-    </nav>
+    <>
+      {/* Mobile readability audit (5 Sep 2026) — the nav below is `position:
+          fixed` (viewport-pinned, not document-flow), so this spacer is what
+          actually reserves room for it at the end of each page's scrollable
+          content. Without it, the fixed bar permanently overlapped whatever
+          card/button happened to land last (Tonight's wake-alarm toggle,
+          Review's disclaimer text, etc.) on any screen taller than one
+          viewport — `position: sticky` alone did this too, since a sticky
+          last-child engages the moment content exceeds the viewport, not
+          only once truly scrolled to the bottom. Height matches the nav's
+          own content box (padding + icon + label) plus the safe-area inset
+          it also reserves below. */}
+      <div aria-hidden="true" style={{ height: "calc(4.25rem + env(safe-area-inset-bottom, 0px))" }} />
+      <nav
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 5,
+          display: "flex",
+          justifyContent: "space-around",
+          background: "var(--color-surface-veil)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          borderTop: "1px solid var(--color-border)",
+          padding: "0.5rem 0",
+          paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
+        {ITEMS.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            style={({ isActive }) => ({
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "0.15rem",
+              fontSize: "0.75rem",
+              textDecoration: "none",
+              color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+              minWidth: "var(--touch-target-min)",
+              minHeight: "var(--touch-target-min)",
+              justifyContent: "center",
+            })}
+          >
+            <item.Icon />
+            <span>{t(item.key)}</span>
+          </NavLink>
+        ))}
+      </nav>
+    </>
   );
 }

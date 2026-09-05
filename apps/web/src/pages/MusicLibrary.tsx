@@ -124,7 +124,7 @@ export default function MusicLibrary() {
                 }}
               >
                 <strong style={{ fontSize: "0.85rem" }}>{t(`tonight.track.${track.code}`)}</strong>
-                {!selectingForTonight && <span style={{ fontSize: "0.7rem" }} className="muted">{t("music.ambienceSelectOnly")}</span>}
+                {!selectingForTonight && <span style={{ fontSize: "0.8rem" }} className="muted">{t("music.ambienceSelectOnly")}</span>}
               </button>
             );
           })}
@@ -162,11 +162,22 @@ export default function MusicLibrary() {
                     textAlign: "left",
                   }}
                 >
-                  <strong style={{ fontSize: "0.85rem" }}>
-                    {!selectingForTonight && isCurrent && (playing ? "▶️ " : "⏸ ")}
+                  <strong style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    {!selectingForTonight && isCurrent && (
+                      <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+                        {playing ? (
+                          <>
+                            <rect x="5" y="4" width="3.2" height="12" rx="1" fill="currentColor" />
+                            <rect x="11.8" y="4" width="3.2" height="12" rx="1" fill="currentColor" />
+                          </>
+                        ) : (
+                          <path d="M6 4.2v11.6a.8.8 0 0 0 1.22.68l9.3-5.8a.8.8 0 0 0 0-1.36l-9.3-5.8A.8.8 0 0 0 6 4.2Z" fill="currentColor" />
+                        )}
+                      </svg>
+                    )}
                     {tr.title}
                   </strong>
-                  {tr.artist && <span style={{ fontSize: "0.7rem", opacity: 0.9 }}>{tr.artist}</span>}
+                  {tr.artist && <span style={{ fontSize: "0.8rem", opacity: 0.9 }}>{tr.artist}</span>}
                 </button>
               );
             })}

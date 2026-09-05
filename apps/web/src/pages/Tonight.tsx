@@ -303,7 +303,7 @@ export default function Tonight() {
                   {step.mode && (
                     <span
                       className="muted"
-                      style={{ marginLeft: "0.5rem", fontSize: "0.7rem", border: "1px solid var(--color-border)", borderRadius: "999px", padding: "0.05rem 0.5rem" }}
+                      style={{ marginLeft: "0.5rem", fontSize: "0.8rem", border: "1px solid var(--color-border)", borderRadius: "999px", padding: "0.05rem 0.5rem" }}
                     >
                       {t(`mode.${step.mode}`)}
                     </span>
@@ -313,7 +313,7 @@ export default function Tonight() {
                       className="muted"
                       style={{
                         marginLeft: "0.5rem",
-                        fontSize: "0.7rem",
+                        fontSize: "0.8rem",
                         color: status === "DONE" ? "var(--color-primary)" : "var(--color-danger)",
                         fontWeight: 600,
                       }}
@@ -383,11 +383,31 @@ export default function Tonight() {
           </p>
           <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }}>{audioLabel}</p>
           <div style={{ display: "flex", gap: "0.5rem" }}>
-            <Link to="/music?selectFor=tonight" className="primary" style={{ textDecoration: "none" }}>
-              🎵 {t("tonight.chooseMusic")}
+            <Link
+              to="/music?selectFor=tonight"
+              className="primary"
+              style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M7.5 15.3a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2Zm0 0V5.6l8-1.6v8.2m-8-4.9 8-1.6m0 6.5a2.1 2.1 0 1 1-4.2 0 2.1 2.1 0 0 1 4.2 0Z"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {t("tonight.chooseMusic")}
             </Link>
-            <button onClick={chooseOff} style={chosenAudio.kind === "OFF" ? { borderColor: "var(--color-primary)" } : {}}>
-              🔇 {t("tonight.track.OFF")}
+            <button
+              onClick={chooseOff}
+              style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", ...(chosenAudio.kind === "OFF" ? { borderColor: "var(--color-primary)" } : {}) }}
+            >
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 12.5V7.5h3l4-3.2v11.4l-4-3.2H4Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+                <path d="M13 6.5 17 13.5M17 6.5l-4 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              {t("tonight.track.OFF")}
             </button>
           </div>
         </div>
