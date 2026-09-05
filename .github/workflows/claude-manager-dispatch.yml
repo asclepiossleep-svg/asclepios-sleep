@@ -73,7 +73,7 @@ jobs:
           # in the loop, which is required for autonomous operation.
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 30
+            --max-turns 80
             --allowedTools "Bash(gh:*),WebFetch,Bash(git:*)"
           prompt: |
             You are the implementation agent for the Asclepios Sleep repo
