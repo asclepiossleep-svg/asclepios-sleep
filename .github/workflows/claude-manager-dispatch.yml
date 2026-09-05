@@ -38,7 +38,7 @@ jobs:
     # (anthropics/claude-code-action#1177) — this job-level timeout is the
     # backstop that actually always works, per Anthropic's own "Manage
     # costs" guidance.
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: write
       issues: write
@@ -71,9 +71,14 @@ jobs:
           # pipeline can click, so the agent could not even read the
           # triggering issue. This allowlist lets it act without a human
           # in the loop, which is required for autonomous operation.
+          # Turn budget (5 Sep 2026) — raised to 150 after #5.6 (a genuinely
+          # new feature: schema + API + frontend) hit the 80-turn cap
+          # mid-task with nothing committed. Prompt below now also requires
+          # incremental commits per sub-piece so a future turn-cap hit still
+          # leaves completed work saved on main instead of losing everything.
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 80
+            --max-turns 150
             --dangerously-skip-permissions
           prompt: |
             You are the implementation agent for the Asclepios Sleep repo
@@ -86,11 +91,19 @@ jobs:
             verbatim.
 
             Implement the smallest correct, complete change that satisfies
-            the request in one pass — avoid partial/fragmented commits for
-            the same task. Run any available build/typecheck steps. Commit
-            your changes to main with a clear message. Reply in this issue
-            thread with: what you changed, the commit SHA(s), and
-            build/test status.
+            the request. If the task is large enough to naturally break into
+            multiple independent sub-pieces (e.g. schema, then API, then
+            frontend, then seed data), commit each sub-piece to main as soon
+            as it is complete and passes its own build/typecheck — do not
+            wait until the entire task is done to make your first commit.
+            This ensures that if you run out of turns partway through, the
+            completed sub-pieces are still saved rather than lost. For small
+            single-piece tasks, one commit at the end is still fine. Run any
+            available build/typecheck steps before each commit. Reply in
+            this issue thread with: what you changed, the commit SHA(s), and
+            build/test status — and if you ran out of turns before
+            finishing, say exactly what remains so the next run can pick up
+            from there.
 
             Only stop and ask a clarifying question in the thread instead of
             implementing if the request is a genuine product decision, a
