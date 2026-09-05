@@ -12,10 +12,3 @@ dist-esm/
 .contextdb-enable
 .claude/settings.local.json
 .gemini/
-
-# AIOS-generated agent-guidance stubs (43-byte pointers to .aios/context-db).
-# Not real project docs — do not commit; replace with a genuine brief if
-# a project-level CLAUDE.md/AGENTS.md/GEMINI.md is ever wanted.
-/CLAUDE.md
-/AGENTS.md
-/GEMINI.md
