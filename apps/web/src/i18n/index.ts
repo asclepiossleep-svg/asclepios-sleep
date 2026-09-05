@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from "react";
 import en from "./en.json";
 import zhHK from "./zh-HK.json";
 import zhCN from "./zh-CN.json";
@@ -28,14 +29,35 @@ export const SUPPORTED_LOCALES: { code: string; label: string }[] = [
 
 let currentLocale = "en";
 
+// Language persistence (5 Sep 2026) — `t()` reads a plain module variable,
+// not React state, so a locale change made after login (Settings) never
+// used to reach screens that were already mounted; only Login.tsx's own
+// local `useState` mirror made *that one page* re-render. Listeners let
+// App.tsx force a full remount of the routed app on change instead of
+// threading a locale prop/hook through every t()-calling component.
+const listeners = new Set<() => void>();
+
 export function setLocale(locale: string) {
-  currentLocale = RESOURCES[locale] ? locale : "en";
+  const next = RESOURCES[locale] ? locale : "en";
+  if (next === currentLocale) return;
+  currentLocale = next;
+  listeners.forEach((fn) => fn());
 }
 
 export function getLocale() {
   return currentLocale;
 }
 
+export function subscribeLocale(fn: () => void) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 export function t(key: string): string {
   return RESOURCES[currentLocale]?.[key] ?? RESOURCES.en[key] ?? key;
+}
+
+/** Re-renders the calling component whenever setLocale() changes the active locale. */
+export function useLocale(): string {
+  return useSyncExternalStore(subscribeLocale, getLocale);
 }

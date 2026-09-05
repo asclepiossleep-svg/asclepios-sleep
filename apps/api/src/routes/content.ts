@@ -22,14 +22,30 @@ router.get("/", async (req: AuthedRequest, res) => {
   const locale = (req.query.locale as string) || "zh-HK";
   const category = req.query.category as string | undefined;
 
-  const items = await prisma.contentItem.findMany({
+  // Language persistence audit (5 Sep 2026) — library rows are seeded per
+  // locale as separate `<baseCode>_<locale>` rows (demoSeed.ts's
+  // seedContentLibrary), same convention contentResolver.ts already falls
+  // back on for single-item lookups (Tonight guidance, Programme day
+  // content). Not every locale has every article seeded yet (zh-CN has
+  // none) — without this, a locale with gaps got a silently empty library
+  // instead of the English article, unlike every other content surface.
+  const candidates = await prisma.contentItem.findMany({
     where: {
       active: true,
-      locale,
+      locale: { in: locale === "en" ? ["en"] : [locale, "en"] },
       category: category ?? { not: null },
     },
     orderBy: [{ category: "asc" }, { title: "asc" }],
   });
+
+  const byBaseCode = new Map<string, (typeof candidates)[number]>();
+  for (const item of candidates) {
+    const suffix = `_${item.locale}`;
+    const baseCode = item.code.endsWith(suffix) ? item.code.slice(0, -suffix.length) : item.code;
+    const existing = byBaseCode.get(baseCode);
+    if (!existing || item.locale === locale) byBaseCode.set(baseCode, item);
+  }
+  const items = [...byBaseCode.values()].sort((a, b) => (a.category ?? "").localeCompare(b.category ?? "") || a.title.localeCompare(b.title));
 
   const [ownsAnyProduct, hasProgramme] = await Promise.all([
     prisma.productOwnership.count({ where: { userId: req.userId! } }).then((n: number) => n > 0),

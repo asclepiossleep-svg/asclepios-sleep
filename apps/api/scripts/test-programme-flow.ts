@@ -303,7 +303,45 @@ async function main() {
     const tonightAgain = await api("GET", "/tonight?locale=en");
     check("GET /tonight still responds 200 after all review changes", tonightAgain.status === 200);
 
-    // --- 16. Auth persistence audit: device revocation must actually work ---
+    // --- 16. Language persistence audit (5 Sep 2026) -------------------------
+    // Full key parity across all three shipped locales — a missing key in
+    // one file falls back to the raw key string at render time (i18n's
+    // t()), so this is the deterministic way to catch that without a
+    // browser: no per-key allowlist to keep updating by hand.
+    const enKeys = Object.keys(en).sort();
+    const zhHKKeys = Object.keys(zhHK).sort();
+    const zhCNKeys = Object.keys(zhCN).sort();
+    check("zh-HK has exactly the same key set as en (no missing/raw-key leaks)", JSON.stringify(zhHKKeys) === JSON.stringify(enKeys));
+    check("zh-CN has exactly the same key set as en (no missing/raw-key leaks)", JSON.stringify(zhCNKeys) === JSON.stringify(enKeys));
+    checkTranslated("settings.language");
+
+    // Settings can now change locale post-login (previously only possible
+    // pre-login on Login.tsx, and only for a brand-new registration — an
+    // existing account had no way to change it at all). Must actually
+    // persist to the account, not just flip client-side state.
+    const beforeLocale = await api("GET", "/preferences");
+    check("account starts with its seeded locale", beforeLocale.json.locale === "en");
+    const localeChange = await api("PATCH", "/preferences", { locale: "zh-HK" });
+    check("PATCH /preferences accepts a supported locale", localeChange.status === 200 && localeChange.json.locale === "zh-HK");
+    const afterLocale = await api("GET", "/preferences");
+    check("changed locale is actually persisted on the account, not just echoed back", afterLocale.json.locale === "zh-HK");
+    const badLocale = await api("PATCH", "/preferences", { locale: "fr" });
+    check("PATCH /preferences rejects an unsupported locale (400)", badLocale.status === 400 && badLocale.json.error === "unknown_locale");
+    const stillGoodLocale = await api("GET", "/preferences");
+    check("a rejected locale change leaves the previous saved locale untouched", stillGoodLocale.json.locale === "zh-HK");
+
+    // Sleep Answer Library (GET /content): zh-CN has no seeded rows at all
+    // (demoSeed.ts only seeds en/zh-HK) — must fall back to the English
+    // article per item rather than silently returning an empty library.
+    const libraryEn = await api("GET", "/content?category=UNDERSTAND&locale=en");
+    const libraryZhCN = await api("GET", "/content?category=UNDERSTAND&locale=zh-CN");
+    check("GET /content?locale=en returns library items", libraryEn.json.items.length > 0);
+    check(
+      "GET /content?locale=zh-CN falls back to the English article instead of returning an empty library",
+      libraryZhCN.json.items.length === libraryEn.json.items.length,
+    );
+
+    // --- 17. Auth persistence audit: device revocation must actually work ---
     // A token minted before this fix carries no deviceSessionId at all —
     // must keep working exactly as before (no forced logout of pre-existing
     // sessions), so this checks the backward-compatible path too.

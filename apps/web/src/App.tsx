@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useSession } from "./state/session";
+import { useLocale } from "./i18n";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Wallpaper from "./pages/Wallpaper";
@@ -62,11 +63,19 @@ function RootRedirect() {
 
 export default function App() {
   const { user } = useSession();
+  const locale = useLocale();
   useAutoTheme();
   useUserThemeColor(user?.themeColor);
 
+  // Language persistence (5 Sep 2026) — `t()` reads a plain module variable
+  // (apps/web/src/i18n), not React state, so screens already mounted when
+  // Settings changes the language wouldn't otherwise pick up new strings
+  // until they next re-rendered for an unrelated reason. Keying the whole
+  // routed subtree (plus the always-mounted MusicPlayerBar) on the active
+  // locale forces every t()-calling component to remount and re-read it the
+  // moment it changes, so "updates immediately" is actually true app-wide.
   return (
-    <>
+    <Fragment key={locale}>
       {/* App-wide wallpaper (29 Aug 2026) — rendered once, behind every
           route. Login isn't affected (it renders its own hero and this
           layer is a no-op — null — until user.wallpaper.imageUrl exists,
@@ -211,6 +220,6 @@ export default function App() {
           different page instead of stopping the moment MusicLibrary
           unmounts. No-ops (renders null) until a track is playing. */}
       <MusicPlayerBar />
-    </>
+    </Fragment>
   );
 }

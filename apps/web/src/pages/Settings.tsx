@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../state/session";
-import { t } from "../i18n";
+import { t, setLocale, SUPPORTED_LOCALES, useLocale } from "../i18n";
 import BottomNav from "../components/BottomNav";
 import PageHeader from "../components/PageHeader";
 
@@ -41,6 +41,7 @@ const TIMEZONES = getTimezones();
 
 export default function Settings() {
   const { user, updateUser, logout } = useSession();
+  const locale = useLocale();
   const [timezone, setTimezone] = useState(user?.timezone ?? "Europe/London");
   const [name, setName] = useState(user?.displayName ?? "");
   const [saved, setSaved] = useState(false);
@@ -52,6 +53,19 @@ export default function Settings() {
     const res = await api.patch<{ timezone: string }>("/preferences", { timezone: next });
     updateUser({ timezone: res.timezone });
     setSaved(true);
+  }
+
+  // Language persistence (5 Sep 2026) — previously the only place to set
+  // locale was the pre-login Login page's selector; there was no way to
+  // change it once signed in short of logging out and registering again in
+  // another language. setLocale() flips the whole app (App.tsx remounts on
+  // it) immediately; the PATCH persists it to the account so it survives
+  // refresh/reopen/logout-login/PWA relaunch on any device, the same way
+  // timezone already does above.
+  async function changeLanguage(next: string) {
+    setLocale(next);
+    const res = await api.patch<{ locale: string }>("/preferences", { locale: next });
+    updateUser({ locale: res.locale });
   }
 
   // 31 Aug 2026 — Edmund's feedback: the app never asked for a name and
@@ -86,6 +100,22 @@ export default function Settings() {
           {t("settings.save")}
         </button>
         {nameSaved && <p className="muted">{t("settings.saved")}</p>}
+      </div>
+
+      <div className="card">
+        <label htmlFor="language">{t("settings.language")}</label>
+        <select
+          id="language"
+          value={locale}
+          onChange={(e) => changeLanguage(e.target.value)}
+          style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", marginTop: "0.5rem" }}
+        >
+          {SUPPORTED_LOCALES.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="card">
