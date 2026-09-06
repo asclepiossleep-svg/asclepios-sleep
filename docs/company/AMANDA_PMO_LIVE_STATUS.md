@@ -14,8 +14,9 @@ PRODUCT READY -> WEBSITE READY -> PAYMENT READY -> ORDER FLOW READY -> FULFILMEN
 ## Current Amanda workstreams
 
 ### 1. Commerce / Business Launch Readiness — WORKING / TOP PRIORITY
-Visible artifact:
+Visible artifacts:
 - `docs/company/LAUNCH_READINESS_MAP_V1.md`
+- `docs/company/FULFILMENT_DECISION_MATRIX_V1.md`
 
 Checkpoint completed 2026-09-06:
 - nine launch gates defined across product/commercial definition, website, payment, canonical order lifecycle, fulfilment, CS, marketing, CRM/reporting and digital assets;
@@ -23,12 +24,18 @@ Checkpoint completed 2026-09-06:
 - canonical order and exception states defined;
 - minimum operational data objects and owner dashboard defined;
 - owner decisions grouped so Amanda can continue autonomously until a decision is genuinely gating;
-- explicitly deferred non-critical app polish and premature heavyweight ERP work.
+- explicitly deferred non-critical app polish and premature heavyweight ERP work;
+- real UK fulfilment routes researched and compared: ShipBob UK, Amazon MCF/FBA and Huboo;
+- provisional launch route set: specialist UK 3PL primary, ShipBob current lead diligence candidate, Amazon MCF fallback/hybrid, Huboo alternative quote;
+- vendor-independent fulfilment request/event data contract defined;
+- supplement-critical lot/batch, expiry, FEFO, recall and return controls promoted to non-negotiable requirements;
+- 35-point quote/diligence questionnaire and end-to-end fulfilment acceptance test defined.
 
 Next:
-- real fulfilment/3PL/Amazon decision matrix;
 - commerce exception/alert model;
-- convert approved Sleep Tape knowledge into implementation-ready product-page/CS fields.
+- department/permission map for payment, fulfilment, CS, returns/refunds and owner escalation;
+- convert approved Sleep Tape knowledge into implementation-ready product-page/CS fields;
+- obtain/compare vendor quotes only when commercial outreach or stock timing makes the decision gating.
 
 ### 2. Product Knowledge / Website Content — WORKING
 Visible artifact:
@@ -47,7 +54,7 @@ Checkpoint completed 2026-09-06:
 
 Important launch dependencies still outstanding: final SKU materials, adhesive/substrate specification, pack IFU, pack size/barcode/price, final legal/regulatory/claims approval.
 
-Next visible output: fulfilment decision matrix, then magnesium Product Knowledge Object after launch-critical logistics path is clearer.
+Next visible output: magnesium Product Knowledge Object after current launch-critical operating-control work.
 
 ### 3. Growth / Video Production Pipeline — WORKING
 Pipeline: research/product signal -> core message -> short -> explainer -> founder/product outline -> storyboard -> voice/subtitle -> variants -> publish gate -> measurement.
@@ -83,8 +90,8 @@ Meaningful milestone report: WHAT CHANGED / WHERE TO SEE IT / WHAT TO REVIEW / N
 - DONE: business-launch-first reprioritisation.
 - DONE: Launch Readiness Map V1 — nine gates, dependencies, acceptance criteria, order lifecycle, minimum CRM/reporting model.
 - DONE: Sleep Tape Product Knowledge Object V1 — website/FAQ/CS/app/Growth source of truth with safety and claims gates.
+- DONE: Fulfilment Decision Matrix V1 — researched routes, lead/fallback/alternative, fulfilment data contract, consumable traceability requirements, diligence questionnaire and launch acceptance test.
+- WORKING: commerce exception/alert model + department/permission model.
 - WORKING: evidence -> scenario / corroboration / behavioural strategy mapping.
 - WORKING: marketing/video output structure derived from research/product content.
-- NEXT: logistics/3PL/Amazon fulfilment research and decision matrix.
-- NEXT: commerce exception/alert model + department/permission model.
 - NEXT: Google Drive digital-asset folder/metadata plan.
