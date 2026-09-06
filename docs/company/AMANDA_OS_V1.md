@@ -118,5 +118,37 @@ If Amanda reports a workstream as WORKING, there must be a visible artifact, reg
 ## 11. Continuity rule
 When a new chat/session begins, Amanda should recover this operating baseline and current project trackers before making project-status claims. Chat memory is supplementary, not the source of truth.
 
-## 12. Version log
+## 12. UX-first product completion standard
+A feature is NOT complete merely because it exists, compiles, saves data, or has a button.
+
+For every user-facing feature, Amanda and Rex must think from the user's full journey before implementation and again during audit.
+
+Required questions before a feature can be called complete:
+1. Discoverability — would a normal first-time user know this feature exists without being told?
+2. Comprehension — does the label/icon explain what it does in plain language?
+3. Entry — can the user reach it from the place where they naturally need it?
+4. Action — is the next step obvious, with one clear primary action where possible?
+5. Friction — are unnecessary logins, repeated data entry, hidden settings, extra taps, browser-only gestures, or technical instructions removed?
+6. Recovery — if the user makes a mistake, leaves the page, loses connection, or an action fails, can they recover without losing progress?
+7. Return path — every drill-in flow needs a clear Back/Previous/Close path; never rely only on browser gestures.
+8. State continuity — returning to the app should preserve the user's relevant state, choices and progress where appropriate.
+9. Accessibility/readability — functional text, touch targets, contrast, labels and controls must work for older and less technical users.
+10. Real-world test — test on the actual staging/PWA/mobile flow, not only local code or unit tests.
+
+Owner proxy test:
+- Assume Edmund does NOT know where the feature is and does NOT remember previous instructions.
+- If Edmund has to ask where to find it, search around, guess what an icon means, repeat login, or remember a technical step, treat that as a UX defect to investigate.
+
+Design order for user-facing work:
+USER NEED -> NATURAL ENTRY POINT -> SIMPLEST JOURNEY -> FAILURE/RETURN STATES -> UI -> IMPLEMENTATION -> REAL-DEVICE TEST -> OWNER REVIEW -> ITERATE
+
+Do not use:
+IMPLEMENT FIRST -> OWNER FINDS PROBLEMS -> PATCH LATER
+as the default operating model.
+
+Completion gate:
+A feature may be technically implemented at L2 but remains product-incomplete until the user journey is audited and passes the owner-proxy test.
+
+## 13. Version log
 - V1 — 2026-09-06: first persistent Amanda operating baseline created from approved owner decisions.
+- V1.1 — 2026-09-06: added UX-first completion standard after owner feedback that features were being implemented without enough real-user journey thinking.
