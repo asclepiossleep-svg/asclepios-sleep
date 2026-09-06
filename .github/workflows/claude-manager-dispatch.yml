@@ -49,7 +49,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@v1
+      - name: Prepare persistent feature branch
+        id: branch
+        env:
+          ITEM_NUMBER: ${{ github.event.issue.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="claude/manager-issue-${ITEM_NUMBER}"
+          git fetch origin
+          if git show-ref --verify --quiet "refs/remotes/origin/${branch}"; then
+            git checkout -B "${branch}" "origin/${branch}"
+          else
+            git checkout -b "${branch}"
+          fi
+          git config user.name "claude[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude Manager
+        id: claude
+        continue-on-error: true
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Debug (2 Sep 2026) — temporary, to see the real error behind an
@@ -75,11 +96,11 @@ jobs:
           # new feature: schema + API + frontend) hit the 80-turn cap
           # mid-task with nothing committed. Prompt below now also requires
           # incremental commits per sub-piece so a future turn-cap hit still
-          # leaves completed work saved on main instead of losing everything.
-          claude_args: |
+          # leaves completed work saved on a feature branch instead of losing it.
+          claude_args: >-
             --model claude-sonnet-5
             --max-turns 150
-            --dangerously-skip-permissions
+            --allowedTools "Bash(npm install),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(git status),Bash(git diff),Bash(git log),Bash(git add:*),Bash(git commit:*),Edit,Write,Read,Glob,Grep"
           prompt: |
             You are the implementation agent for the Asclepios Sleep repo
             (asclepiossleep-svg/asclepios-sleep), continuing the Fix #5
@@ -91,22 +112,64 @@ jobs:
             verbatim.
 
             Implement the smallest correct, complete change that satisfies
-            the request. If the task is large enough to naturally break into
-            multiple independent sub-pieces (e.g. schema, then API, then
-            frontend, then seed data), commit each sub-piece to main as soon
-            as it is complete and passes its own build/typecheck — do not
-            wait until the entire task is done to make your first commit.
-            This ensures that if you run out of turns partway through, the
-            completed sub-pieces are still saved rather than lost. For small
-            single-piece tasks, one commit at the end is still fine. Run any
-            available build/typecheck steps before each commit. Reply in
-            this issue thread with: what you changed, the commit SHA(s), and
-            build/test status — and if you ran out of turns before
-            finishing, say exactly what remains so the next run can pick up
-            from there.
+            the request. Work only on the feature branch prepared for this
+            issue by the GitHub action. Never commit or push directly to main.
+            If the task is large enough to naturally break into multiple
+            independent sub-pieces (e.g. schema, then API, then frontend,
+            then seed data), commit and push each sub-piece to that feature
+            branch as soon as it is complete and passes its own build/typecheck
+            — do not wait until the entire task is done to make your first
+            checkpoint. This ensures that if you run out of turns partway
+            through, completed work remains safely reviewable.
+
+            Do not push, open, edit, close, review, approve, or merge pull
+            requests yourself. The workflow will validate and push the branch,
+            then open or update the pull request after your run. In your final
+            response report what changed, commit SHA(s), build/test status,
+            and exactly what remains if the turn limit is reached. Never
+            commit to main.
 
             Only stop and ask a clarifying question in the thread instead of
             implementing if the request is a genuine product decision, a
             destructive database/schema migration, a paid external
             service/licensing decision, or cannot be resolved from the
             existing repository and requirements.
+
+      - name: Validate and push feature-branch checkpoints
+        id: push
+        if: always()
+        shell: bash
+        run: .github/scripts/manager-dispatch-guard.sh main origin
+
+      - name: Open or update pull request
+        id: pr
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
+          ITEM_NUMBER: ${{ github.event.issue.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$(gh pr list --head "${BRANCH}" --base main --state open --json url --jq '.[0].url // empty')"
+          if [ -z "${url}" ]; then
+            url="$(gh pr create               --head "${BRANCH}"               --base main               --title "chore: manager work for issue #${ITEM_NUMBER}"               --body "Automated feature-branch checkpoint for #${ITEM_NUMBER}. Human review and merge required; this workflow never auto-merges.")"
+          fi
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+
+      - name: Report checkpoint
+        if: always() && steps.push.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ITEM_NUMBER: ${{ github.event.issue.number }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+          CLAUDE_RESULT: ${{ steps.claude.outputs.conclusion }}
+        shell: bash
+        run: |
+          gh issue comment "${ITEM_NUMBER}" --body "Manager checkpoint saved on \`${BRANCH}\`. Pull request: ${PR_URL}. Claude result: \`${CLAUDE_RESULT:-unknown}\`. Human review and merge required."
+
+      - name: Preserve failed Claude status
+        if: steps.claude.outputs.conclusion != 'success'
+        shell: bash
+        run: exit 1
