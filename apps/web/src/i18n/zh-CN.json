@@ -115,6 +115,7 @@
   "checkin.noPendingSession": "找不到待完成的睡眠记录，请从 Tonight 页面重新开始。",
   "review.title": "7 日回顾",
   "review.crunching": "正在分析过去 7 天…",
+  "review.loadError": "加载回顾失败——可能是网络问题,点击下方重试。",
   "review.adherence": "依从程度",
   "review.responseTrend": "反应趋势",
   "review.routineCompletion": "程序完成率",
@@ -300,6 +301,7 @@
   "programmes.continuousBadge": "持续进行中——未设结束日期",
   "programmes.finishedSubtitle": "你已完成这个计划，进度会保留在下方。",
   "nav.home": "主页",
+  "nav.back": "返回",
   "nav.tonight": "今晚",
   "nav.review": "回顾",
   "nav.settings": "设置"

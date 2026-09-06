@@ -45,11 +45,31 @@ function actionLabel(code: string): string {
 export default function Review() {
   const [result, setResult] = useState<ReviewResult | null>(null);
   const [trend, setTrend] = useState<ProgressTrend | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
 
-  useEffect(() => {
-    api.post<ReviewResult>("/review/7-day").then(setResult);
-    api.get<ProgressTrend>("/review/trend").then(setTrend);
-  }, []);
+  function load() {
+    setLoadFailed(false);
+    setResult(null);
+    api.post<ReviewResult>("/review/7-day").then(setResult).catch(() => setLoadFailed(true));
+    api.get<ProgressTrend>("/review/trend").then(setTrend).catch(() => {});
+  }
+
+  useEffect(load, []);
+
+  if (loadFailed) {
+    return (
+      <div className="screen">
+        <PageHeader title={t("review.title")} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", alignItems: "flex-start" }}>
+          <p className="muted">{t("review.loadError")}</p>
+          <button className="muted" onClick={load}>
+            {t("setup.retry")}
+          </button>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
 
   if (!result) {
     return (

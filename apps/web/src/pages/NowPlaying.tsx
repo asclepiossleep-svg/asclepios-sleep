@@ -72,10 +72,25 @@ export default function NowPlaying() {
         }}
       />
 
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1, padding: "1.25rem 1.5rem", maxWidth: 480, margin: "0 auto", width: "100%" }}>
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          padding: "1.25rem 1.5rem",
+          // Bottom CTA is pinned via flex, not normal scroll flow, so it
+          // needs its own home-indicator safe-area padding — same pattern
+          // as SleepPlayer's primary CTA.
+          paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))",
+          maxWidth: 480,
+          margin: "0 auto",
+          width: "100%",
+        }}
+      >
         <button
           onClick={() => navigate(-1)}
-          aria-label={t("nav.home")}
+          aria-label={t("nav.back")}
           style={{ alignSelf: "flex-start", background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 44, height: 44, borderRadius: "50%", fontSize: "1.3rem" }}
         >
           ‹

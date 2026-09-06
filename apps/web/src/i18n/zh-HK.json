@@ -115,6 +115,7 @@
   "checkin.noPendingSession": "搵唔到待完成嘅睡眠紀錄，請由 Tonight 頁面重新開始。",
   "review.title": "7 日回顧",
   "review.crunching": "分析緊過去 7 日…",
+  "review.loadError": "載入唔到回顧,可能係網絡問題,撳下面粒掣再試。",
   "review.adherence": "依從程度",
   "review.responseTrend": "反應趨勢",
   "review.routineCompletion": "程序完成率",
@@ -300,6 +301,7 @@
   "programmes.continuousBadge": "持續進行中——無設定完結日",
   "programmes.finishedSubtitle": "你已經完成呢個課程，你嘅進度會保留喺下面。",
   "nav.home": "主頁",
+  "nav.back": "返回",
   "nav.tonight": "今晚",
   "nav.review": "回顧",
   "nav.settings": "設定"
