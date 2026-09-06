@@ -160,6 +160,18 @@ First end-to-end audit of the three workflows above, performed against
   explicit human review before merge (`AGENTS.md` §7). No agent,
   including Claude, merges its own pull request.
 
+## Automatic PR creation verified
+
+**2026-09-06** — Confirmed end-to-end from an `@claude`-triggered issue
+(asclepiossleep-svg/asclepios-sleep#12) that `claude.yml`'s `--allowedTools`
+grants Claude `Bash(gh pr create:*)` plus the read-only `Bash(gh pr
+view:*)` and `Bash(gh pr checks:*)`, and nothing beyond that set — no `gh
+pr merge`, `gh pr close`, `gh pr edit`, `gh pr review`, unrestricted `gh
+api`, or arbitrary shell. Claude may create pull requests on its own task
+branch and report their URL and check results, but may **never approve or
+merge** a pull request; merging stays a separate, human-gated step per the
+normal task flow above.
+
 ## Adding another project
 
 Each repository needs its own workflow files and authentication because the
