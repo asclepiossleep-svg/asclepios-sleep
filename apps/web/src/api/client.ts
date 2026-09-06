@@ -50,13 +50,29 @@ export function setSessionToken(token: string | null) {
 // SessionProvider.
 export const SESSION_EXPIRED_EVENT = "asclepios:session-expired";
 
+// Timezone Auto/Manual (6 Sep 2026) — sent on every request so the API's
+// requireAuth middleware can keep an Auto-mode user's stored timezone in
+// sync with the device's *current* IANA zone (travel/DST included), without
+// every page needing its own "detect and PATCH /preferences" logic. Reading
+// this fresh per-request (not once at module load) is what makes it follow
+// an actual timezone change without a full app reload.
+function currentDeviceTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
+  const deviceTimeZone = currentDeviceTimeZone();
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(deviceTimeZone ? { "X-Client-Timezone": deviceTimeZone } : {}),
       ...(options.headers ?? {}),
     },
   });

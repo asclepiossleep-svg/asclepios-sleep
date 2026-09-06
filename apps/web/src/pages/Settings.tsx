@@ -43,15 +43,35 @@ export default function Settings() {
   const { user, updateUser, logout } = useSession();
   const locale = useLocale();
   const [timezone, setTimezone] = useState(user?.timezone ?? "Europe/London");
+  // Timezone Auto/Manual (6 Sep 2026) — defaults to "AUTO" to match the
+  // schema default; an account created before this feature exists (or a
+  // still-loading session) never appears stuck on a phantom "MANUAL".
+  const [timezoneMode, setTimezoneMode] = useState(user?.timezoneMode ?? "AUTO");
   const [name, setName] = useState(user?.displayName ?? "");
   const [saved, setSaved] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
 
+  // Timezone Auto/Manual (6 Sep 2026) — switching to Automatic hands the
+  // effective timezone back to api/client.ts's per-request device sync
+  // (requireAuth on the API side); this call's own request already carries
+  // that header, so the switch takes effect immediately, not on some later
+  // request. Switching to Manual keeps whatever zone was already in effect
+  // as the starting point, editable via the dropdown below.
+  async function setMode(nextMode: "AUTO" | "MANUAL") {
+    setTimezoneMode(nextMode);
+    setSaved(false);
+    const res = await api.patch<{ timezone: string; timezoneMode: string }>("/preferences", { timezoneMode: nextMode });
+    setTimezone(res.timezone);
+    updateUser({ timezone: res.timezone, timezoneMode: res.timezoneMode });
+    setSaved(true);
+  }
+
   async function saveTimezone(next: string) {
     setTimezone(next);
     setSaved(false);
-    const res = await api.patch<{ timezone: string }>("/preferences", { timezone: next });
-    updateUser({ timezone: res.timezone });
+    const res = await api.patch<{ timezone: string; timezoneMode: string }>("/preferences", { timezone: next });
+    updateUser({ timezone: res.timezone, timezoneMode: res.timezoneMode });
+    setTimezoneMode(res.timezoneMode);
     setSaved(true);
   }
 
@@ -120,9 +140,33 @@ export default function Settings() {
 
       <div className="card">
         <label htmlFor="timezone">{t("settings.timezone")}</label>
+        <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+          <button
+            type="button"
+            className={timezoneMode === "AUTO" ? "primary" : ""}
+            aria-pressed={timezoneMode === "AUTO"}
+            onClick={() => setMode("AUTO")}
+            style={{ flex: 1, padding: "0.75rem", fontSize: "1rem" }}
+          >
+            {t("settings.timezoneAuto")}
+          </button>
+          <button
+            type="button"
+            className={timezoneMode === "MANUAL" ? "primary" : ""}
+            aria-pressed={timezoneMode === "MANUAL"}
+            onClick={() => setMode("MANUAL")}
+            style={{ flex: 1, padding: "0.75rem", fontSize: "1rem" }}
+          >
+            {t("settings.timezoneManual")}
+          </button>
+        </div>
+        <p className="muted" style={{ marginTop: "0.5rem" }}>
+          {timezoneMode === "AUTO" ? t("settings.timezoneAutoHint") : t("settings.timezoneManualHint")}
+        </p>
         <select
           id="timezone"
           value={timezone}
+          disabled={timezoneMode === "AUTO"}
           onChange={(e) => saveTimezone(e.target.value)}
           style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", marginTop: "0.5rem" }}
         >

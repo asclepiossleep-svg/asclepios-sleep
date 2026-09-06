@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../db";
+import { isValidTimeZone } from "../domain/decision/dateKey";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
@@ -47,7 +48,33 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
   }
   req.userId = payload.sub;
   req.userRole = payload.role;
+  await syncAutoTimezone(req.userId, req.headers["x-client-timezone"]);
   next();
+}
+
+/**
+ * Timezone Auto/Manual (6 Sep 2026) — the single place "Auto follows the
+ * device, including travel" actually happens. apps/web's api/client.ts sends
+ * the browser's current IANA zone on every authenticated request; every
+ * day-boundary call site (dateKey.ts, programmeContinuity.ts, tonight.ts,
+ * programmes.ts) reads `User.timezone` fresh from the DB, so keeping that
+ * column in sync here — before `next()` — is enough to make Auto mode take
+ * effect immediately everywhere, with no other route needing to know this
+ * exists. A single conditional `updateMany` (not a read-then-write) keeps
+ * this a no-op query when the mode is MANUAL or the zone hasn't changed, and
+ * is wrapped so a DB hiccup here can never fail an otherwise-valid request.
+ */
+async function syncAutoTimezone(userId: string, headerValue: string | string[] | undefined) {
+  const clientTimeZone = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  if (!clientTimeZone || !isValidTimeZone(clientTimeZone)) return;
+  try {
+    await prisma.user.updateMany({
+      where: { id: userId, timezoneMode: "AUTO", NOT: { timezone: clientTimeZone } },
+      data: { timezone: clientTimeZone },
+    });
+  } catch {
+    // Never let this side-effect turn a valid request into a 500.
+  }
 }
 
 export function requireAdmin(req: AuthedRequest, res: Response, next: NextFunction) {

@@ -36,6 +36,20 @@ model User {
   email       String   @unique
   displayName String?
   locale      String   @default("en") // en | zh-HK | zh-TW | zh-CN ...
+  // Timezone Auto/Manual (6 Sep 2026, per audit) — `timezone` used to be a
+  // single concrete IANA zone with no record of how it got there: seeded
+  // once from the browser at signup, then frozen forever unless someone
+  // happened to open Settings and pick a new one by hand. That meant
+  // "Auto" didn't really exist — travelling across zones never changed
+  // anything. `timezoneMode` makes the behavior explicit: AUTO means
+  // `timezone` is kept in sync with the device's current IANA zone on every
+  // authenticated request (see middleware/auth.ts's requireAuth), so it
+  // follows travel/DST automatically; MANUAL means `timezone` is a user
+  // choice that requireAuth must never overwrite. `timezone` itself stays
+  // the single field every day-boundary call site already reads (dateKey.ts,
+  // programmeContinuity.ts, tonight.ts, programmes.ts) — this only changes
+  // how it gets kept up to date, not who reads it.
+  timezoneMode String  @default("AUTO") // AUTO | MANUAL
   timezone    String   @default("Europe/London")
   role        String   @default("MEMBER") // MEMBER | ADMIN | THERAPIST
   isDemo      Boolean  @default(false)
