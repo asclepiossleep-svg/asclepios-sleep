@@ -33,30 +33,54 @@ export default function Assessment() {
   const [question, setQuestion] = useState<Question | null>(null);
   const [done, setDone] = useState(false);
   const [topFocusAreas, setTopFocusAreas] = useState<FocusArea[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [answerError, setAnswerError] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    api.post<{ id: string }>("/assessment/start", { type: "INITIAL" }).then((a) => setAssessmentId(a.id));
-  }, []);
+  function start() {
+    setLoadFailed(false);
+    api
+      .post<{ id: string }>("/assessment/start", { type: "INITIAL" })
+      .then((a) => setAssessmentId(a.id))
+      .catch(() => setLoadFailed(true));
+  }
+
+  useEffect(start, []);
 
   useEffect(() => {
     if (assessmentId) loadNext(assessmentId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessmentId]);
 
   async function loadNext(id: string) {
-    const res = await api.get<{ done: boolean; question?: Question; topFocusAreas?: FocusArea[] }>(`/assessment/${id}/next`);
-    if (res.done) {
-      setTopFocusAreas(res.topFocusAreas ?? []);
-      setDone(true);
-    } else {
-      setQuestion(res.question ?? null);
+    setLoadFailed(false);
+    try {
+      const res = await api.get<{ done: boolean; question?: Question; topFocusAreas?: FocusArea[] }>(`/assessment/${id}/next`);
+      if (res.done) {
+        setTopFocusAreas(res.topFocusAreas ?? []);
+        setDone(true);
+      } else {
+        setQuestion(res.question ?? null);
+      }
+    } catch {
+      setLoadFailed(true);
     }
+  }
+
+  function retry() {
+    if (assessmentId) loadNext(assessmentId);
+    else start();
   }
 
   async function answer(optionId: string) {
     if (!assessmentId || !question) return;
-    await api.post(`/assessment/${assessmentId}/answer`, { questionId: question.id, answerOptionId: optionId });
-    loadNext(assessmentId);
+    setAnswerError(false);
+    try {
+      await api.post(`/assessment/${assessmentId}/answer`, { questionId: question.id, answerOptionId: optionId });
+      loadNext(assessmentId);
+    } catch {
+      setAnswerError(true);
+    }
   }
 
   if (done) {
@@ -85,6 +109,17 @@ export default function Assessment() {
     );
   }
 
+  if (loadFailed) {
+    return (
+      <div className="screen">
+        <p className="muted">{t("assessment.loadError")}</p>
+        <button className="muted" onClick={retry}>
+          {t("setup.retry")}
+        </button>
+      </div>
+    );
+  }
+
   if (!question) {
     return (
       <div className="screen">
@@ -96,6 +131,7 @@ export default function Assessment() {
   return (
     <div className="screen">
       <h1>{question.text}</h1>
+      {answerError && <p style={{ color: "var(--color-danger)" }}>{t("assessment.answerError")}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {question.answerOptions.map((o) => (
           <button key={o.id} className="primary" onClick={() => answer(o.id)}>

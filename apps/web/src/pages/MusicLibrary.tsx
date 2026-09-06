@@ -44,13 +44,14 @@ const CATEGORY_ORDER = ["SLEEP_SOUNDS", "MUSIC", "SOUND_HEALING", "MEDITATION"];
 export default function MusicLibrary() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [selectError, setSelectError] = useState(false);
   const { track: nowPlaying, playing } = useMusicPlayer();
   const { user, updateUser } = useSession();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const selectingForTonight = searchParams.get("selectFor") === "tonight";
 
-  useEffect(() => {
+  function load() {
     setStatus("loading");
     api
       .get<{ tracks: Track[] }>("/music/tracks")
@@ -59,16 +60,19 @@ export default function MusicLibrary() {
         setStatus("ready");
       })
       .catch(() => setStatus("error"));
-  }, []);
+  }
+
+  useEffect(load, []);
 
   function selectPreference(preferredSleepAudioId: string) {
+    setSelectError(false);
     api
       .patch<{ preferredSleepAudioId: string | null; audioMuted: boolean }>("/preferences", { preferredSleepAudioId, audioMuted: false })
       .then((res) => {
         updateUser({ preferredSleepAudioId: res.preferredSleepAudioId, audioMuted: res.audioMuted });
         navigate("/tonight");
       })
-      .catch(() => {});
+      .catch(() => setSelectError(true));
   }
 
   function play(track: Track) {
@@ -131,8 +135,17 @@ export default function MusicLibrary() {
         </div>
       </div>
 
+      {selectError && <p style={{ color: "var(--color-danger)" }}>{t("music.selectError")}</p>}
+
       {status === "loading" && <p className="muted">{t("setup.loading")}</p>}
-      {status === "error" && <p className="muted">{t("setup.wallpaper.loadError")}</p>}
+      {status === "error" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start" }}>
+          <p className="muted">{t("music.loadError")}</p>
+          <button className="muted" onClick={load}>
+            {t("setup.retry")}
+          </button>
+        </div>
+      )}
       {status === "ready" && tracks.length === 0 && <p className="muted">{t("library.empty")}</p>}
 
       {grouped.map((g) => (

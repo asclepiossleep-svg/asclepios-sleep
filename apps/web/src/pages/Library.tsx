@@ -24,10 +24,17 @@ export default function Library() {
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<ContentCategory>(CONTENT_CATEGORIES[0]);
   const [openCode, setOpenCode] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
 
-  useEffect(() => {
-    api.get<{ items: LibraryItem[] }>(`/content?locale=${encodeURIComponent(getLocale())}`).then((r) => setItems(r.items));
-  }, []);
+  function load() {
+    setLoadFailed(false);
+    api
+      .get<{ items: LibraryItem[] }>(`/content?locale=${encodeURIComponent(getLocale())}`)
+      .then((r) => setItems(r.items))
+      .catch(() => setLoadFailed(true));
+  }
+
+  useEffect(load, []);
 
   const visible = items.filter((i) => i.category === activeCategory);
 
@@ -50,7 +57,16 @@ export default function Library() {
         ))}
       </div>
 
-      {visible.length === 0 && items.length > 0 && <p className="muted">{t("library.empty")}</p>}
+      {loadFailed && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start" }}>
+          <p className="muted">{t("library.loadError")}</p>
+          <button className="muted" onClick={load}>
+            {t("setup.retry")}
+          </button>
+        </div>
+      )}
+
+      {!loadFailed && visible.length === 0 && items.length > 0 && <p className="muted">{t("library.empty")}</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
         {visible.map((item) => {
