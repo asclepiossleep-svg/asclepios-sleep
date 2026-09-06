@@ -79,11 +79,24 @@ router.patch("/", async (req: AuthedRequest, res) => {
   }
 
   // Resolve what actually gets written for mode + zone together, rather than
-  // as two independent optional fields, so "switch to Automatic" can never
-  // leave a stale Manual zone racing against the next request's device sync,
-  // and "pick a zone" (with no explicit mode) always means Manual.
+  // as two independent optional fields, so "pick a zone" (with no explicit
+  // mode) always means Manual.
   const nextTimezoneMode = timezoneMode ?? (timezone !== undefined ? "MANUAL" : undefined);
-  const nextTimezone = nextTimezoneMode === "AUTO" ? undefined : timezone;
+
+  // Audit correction (6 Sep 2026) — switching to Automatic used to leave the
+  // old Manual zone in the response/DB untouched until *some later* request
+  // happened to carry a bounded timezone-sync signal, so the UI could show a
+  // stale zone right after the user just chose Automatic. This request's own
+  // `X-Client-Timezone` header (apps/web sends it on every call) is the
+  // device's current zone right now, so an explicit switch to AUTO resolves
+  // and persists it immediately and atomically in this same write, instead
+  // of waiting for a separate sync point.
+  const requestDeviceTimeZone = (() => {
+    const header = req.headers["x-client-timezone"];
+    const value = Array.isArray(header) ? header[0] : header;
+    return value && isValidTimeZone(value) ? value : undefined;
+  })();
+  const nextTimezone = nextTimezoneMode === "AUTO" ? requestDeviceTimeZone : timezone;
 
   const user = await prisma.user.update({
     where: { id: req.userId! },

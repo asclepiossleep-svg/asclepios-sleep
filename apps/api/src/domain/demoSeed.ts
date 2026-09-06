@@ -794,7 +794,9 @@ export async function reseedDemoUser(email: string) {
 
   let user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    user = await prisma.user.create({ data: { email, isDemo: true, demoScenario: account.label } });
+    user = await prisma.user.create({
+      data: { email, isDemo: true, demoScenario: account.label, timezoneMode: "AUTO" },
+    });
     await prisma.authIdentity.create({ data: { userId: user.id, provider: "PASSWORD" } });
   }
   await wipeUserTransactionalData(user.id);
