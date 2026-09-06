@@ -124,21 +124,35 @@ export default function Tonight() {
   const [wakeStyle, setWakeStyle] = useState<WakeStyle>("NORMAL");
 
   const [openProtocolFor, setOpenProtocolFor] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [stepErrorFor, setStepErrorFor] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState(false);
+  const [startBusy, setStartBusy] = useState(false);
+  const [startError, setStartError] = useState(false);
   const { user, logout, updateUser } = useSession();
   const navigate = useNavigate();
 
+  function loadPlan() {
+    setLoadFailed(false);
+    api
+      .get<{ steps: TonightStep[]; routineLevel: number; pausedStepCodes?: string[] }>(`/tonight?locale=${encodeURIComponent(getLocale())}`)
+      .then((r) => {
+        setSteps(r.steps);
+        setRoutineLevel(r.routineLevel);
+        setPausedStepCodes(r.pausedStepCodes ?? []);
+      })
+      .catch(() => setLoadFailed(true));
+  }
+
   useEffect(() => {
-    api.get<{ steps: TonightStep[]; routineLevel: number; pausedStepCodes?: string[] }>(`/tonight?locale=${encodeURIComponent(getLocale())}`).then((r) => {
-      setSteps(r.steps);
-      setRoutineLevel(r.routineLevel);
-      setPausedStepCodes(r.pausedStepCodes ?? []);
-    });
+    loadPlan();
     // 31 Aug 2026 — real Music Library tracks are now selectable here too,
     // not just the built-in synthesized presets (correction point #4).
     api
       .get<{ tracks: LibraryTrack[] }>("/music/tracks")
       .then((r) => setLibraryTracks(r.tracks.filter((tr) => !!tr.audioUrl)))
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Apply the persisted choice once (not on every user change) so picking a
@@ -165,20 +179,25 @@ export default function Tonight() {
     if (real) setChosenAudio({ kind: "REAL", id: real.id, title: real.title });
   }, [user, libraryTracks]);
 
-  function persistAudioChoice(next: ChosenAudio) {
+  function persistAudioChoice(previous: ChosenAudio, next: ChosenAudio) {
     const preferredSleepAudioId = next.kind === "OFF" ? null : next.kind === "SYNTH" ? next.code : next.id;
+    setAudioError(false);
     api
       .patch<{ preferredSleepAudioId: string | null; audioMuted: boolean }>("/preferences", {
         preferredSleepAudioId,
         audioMuted: next.kind === "OFF",
       })
       .then((res) => updateUser({ preferredSleepAudioId: res.preferredSleepAudioId, audioMuted: res.audioMuted }))
-      .catch(() => {});
+      .catch(() => {
+        setChosenAudio(previous);
+        setAudioError(true);
+      });
   }
 
   function chooseOff() {
+    const previous = chosenAudio;
     setChosenAudio({ kind: "OFF" });
-    persistAudioChoice({ kind: "OFF" });
+    persistAudioChoice(previous, { kind: "OFF" });
   }
 
   // Fix #5.2 (2 Sep 2026) — replaces the old wall of duration buttons with
@@ -238,31 +257,50 @@ export default function Tonight() {
   }, []);
 
   async function mark(step: TonightStep, status: "DONE" | "SKIPPED") {
+    const previous = stepStatus[step.stepInstanceId];
     setStepStatus((s) => ({ ...s, [step.stepInstanceId]: status }));
-    await api.post("/tonight/log-step", { stepCode: step.stepCode, status, productId: step.productId, actionInstanceId: step.actionInstanceId });
+    setStepErrorFor(null);
+    try {
+      await api.post("/tonight/log-step", { stepCode: step.stepCode, status, productId: step.productId, actionInstanceId: step.actionInstanceId });
+    } catch {
+      setStepStatus((s) => {
+        const next = { ...s };
+        if (previous) next[step.stepInstanceId] = previous;
+        else delete next[step.stepInstanceId];
+        return next;
+      });
+      setStepErrorFor(step.stepInstanceId);
+    }
   }
 
   async function startSleep() {
-    const targetSleepTime = resolveTargetSleepTime(bedtime, new Date());
-    // A8 fix — wake time is resolved relative to bedtime, not "now", so it
-    // can never land before or the wrong number of days from the session's
-    // actual bedtime (see nextOccurrenceAfter's doc comment above).
-    const wakeTimeDate = wakeAlarmEnabled ? nextOccurrenceAfter(wakeTime, targetSleepTime) : null;
-    const sleepAudioId = chosenAudio.kind === "OFF" ? null : chosenAudio.kind === "SYNTH" ? chosenAudio.code : chosenAudio.id;
+    setStartError(false);
+    setStartBusy(true);
+    try {
+      const targetSleepTime = resolveTargetSleepTime(bedtime, new Date());
+      // A8 fix — wake time is resolved relative to bedtime, not "now", so it
+      // can never land before or the wrong number of days from the session's
+      // actual bedtime (see nextOccurrenceAfter's doc comment above).
+      const wakeTimeDate = wakeAlarmEnabled ? nextOccurrenceAfter(wakeTime, targetSleepTime) : null;
+      const sleepAudioId = chosenAudio.kind === "OFF" ? null : chosenAudio.kind === "SYNTH" ? chosenAudio.code : chosenAudio.id;
 
-    const res = await api.post<{ session: any }>("/sleep-session/start", {
-      targetSleepTime: targetSleepTime.toISOString(),
-      wakeTime: wakeTimeDate ? wakeTimeDate.toISOString() : undefined,
-      sleepAudioId,
-      sleepAudioDurationMode: durationMode,
-      presetLabel: durationMode === "FIXED" ? presetLabel : undefined,
-      customSeconds: durationMode === "CUSTOM" ? customMinutes * 60 : undefined,
-      wallpaperId: user?.wallpaperId ?? "WALL_MOON_LAKE_04",
-      wakeStyle: wakeAlarmEnabled ? wakeStyle : "NORMAL",
-      snoozeMinutes: 10,
-      timezone: user?.timezone,
-    });
-    navigate(`/player/${res.session.id}`, { state: { session: res.session } });
+      const res = await api.post<{ session: any }>("/sleep-session/start", {
+        targetSleepTime: targetSleepTime.toISOString(),
+        wakeTime: wakeTimeDate ? wakeTimeDate.toISOString() : undefined,
+        sleepAudioId,
+        sleepAudioDurationMode: durationMode,
+        presetLabel: durationMode === "FIXED" ? presetLabel : undefined,
+        customSeconds: durationMode === "CUSTOM" ? customMinutes * 60 : undefined,
+        wallpaperId: user?.wallpaperId ?? "WALL_MOON_LAKE_04",
+        wakeStyle: wakeAlarmEnabled ? wakeStyle : "NORMAL",
+        snoozeMinutes: 10,
+        timezone: user?.timezone,
+      });
+      navigate(`/player/${res.session.id}`, { state: { session: res.session } });
+    } catch {
+      setStartError(true);
+      setStartBusy(false);
+    }
   }
 
   const audioLabel =
@@ -282,7 +320,15 @@ export default function Tonight() {
       />
 
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        {steps.length === 0 && <p className="muted">{t("tonight.loadingPlan")}</p>}
+        {loadFailed && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start" }}>
+            <p className="muted">{t("tonight.loadError")}</p>
+            <button className="muted" onClick={loadPlan}>
+              {t("setup.retry")}
+            </button>
+          </div>
+        )}
+        {!loadFailed && steps.length === 0 && <p className="muted">{t("tonight.loadingPlan")}</p>}
         {steps.length > 0 && (
           <p className="muted" style={{ margin: 0, fontSize: "0.85rem" }}>
             {t("tonight.progressLabel")}: {steps.filter((s) => !!stepStatus[s.stepInstanceId]).length} / {steps.length}
@@ -339,6 +385,9 @@ export default function Tonight() {
                   </button>
                 </div>
               </div>
+              {stepErrorFor === step.stepInstanceId && (
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--color-danger)" }}>{t("tonight.stepError")}</p>
+              )}
               {step.guidance && (
                 <p className="muted" style={{ margin: 0, fontSize: "0.8rem" }}>
                   <strong>{step.guidance.title}</strong> — {step.guidance.bodyMarkdown}
@@ -382,6 +431,7 @@ export default function Tonight() {
             {t("tonight.trackLabel")}
           </p>
           <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }}>{audioLabel}</p>
+          {audioError && <p style={{ margin: "0 0 0.5rem", fontSize: "0.85rem", color: "var(--color-danger)" }}>{t("tonight.audioSaveError")}</p>}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <Link
               to="/music?selectFor=tonight"
@@ -527,7 +577,8 @@ export default function Tonight() {
         )}
       </div>
 
-      <button className="primary" onClick={startSleep}>
+      {startError && <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-danger)" }}>{t("tonight.startError")}</p>}
+      <button className="primary" onClick={startSleep} disabled={startBusy}>
         {t("tonight.startSleep")}
       </button>
 
