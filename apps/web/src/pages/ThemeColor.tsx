@@ -50,7 +50,11 @@ export default function ThemeColor() {
 
   return (
     <div className="screen">
-      <PageHeader title={t(isSetup ? "setup.theme.title" : "theme.title")} subtitle={isSetup ? t("setup.theme.subtitle") : undefined} />
+      <PageHeader
+        title={t(isSetup ? "setup.theme.title" : "theme.title")}
+        subtitle={isSetup ? t("setup.theme.subtitle") : undefined}
+        backTo={isSetup ? undefined : "/settings"}
+      />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
         {THEME_COLORS.map((c) => (

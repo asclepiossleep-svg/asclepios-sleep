@@ -71,7 +71,11 @@ export default function Wallpaper() {
 
   return (
     <div className="screen">
-      <PageHeader title={t(isSetup ? "setup.wallpaper.title" : "wallpaper.title")} subtitle={isSetup ? t("setup.wallpaper.subtitle") : undefined} />
+      <PageHeader
+        title={t(isSetup ? "setup.wallpaper.title" : "wallpaper.title")}
+        subtitle={isSetup ? t("setup.wallpaper.subtitle") : undefined}
+        backTo={isSetup ? undefined : "/settings"}
+      />
 
       {status === "loading" && <p className="muted">{t("setup.loading")}</p>}
 

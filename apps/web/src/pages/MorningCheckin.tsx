@@ -79,7 +79,7 @@ export default function MorningCheckin() {
 
   return (
     <div className="screen">
-      <PageHeader title={t("checkin.title")} />
+      <PageHeader title={t("checkin.title")} backTo="/home" />
 
       <div className="card">
         <p>{t("checkin.sleepRating")}</p>

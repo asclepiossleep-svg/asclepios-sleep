@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import BackButton from "./BackButton";
 
 /**
  * App-wide wallpaper (29 Aug 2026) — every page's title/subtitle used to sit
@@ -11,10 +12,30 @@ import { ReactNode } from "react";
  * .card, just tighter. When there's no wallpaper (body without
  * .has-wallpaper), tokens.css strips the veil back to nothing, so this
  * renders identically to the old bare <h1>/<p className="muted"> pair.
+ *
+ * Go Back audit (6 Sep 2026) — `onBack`/`backTo` are opt-in: the persistent
+ * bottom-nav screens (Home, Tonight, Review, Settings, ...) already have a
+ * return path and must not grow a redundant back arrow, so only the
+ * drill-in screens that pass one of these props get it.
  */
-export default function PageHeader({ title, subtitle }: { title: ReactNode; subtitle?: ReactNode }) {
+export default function PageHeader({
+  title,
+  subtitle,
+  onBack,
+  backTo,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  onBack?: boolean;
+  backTo?: string;
+}) {
   return (
-    <div className="page-header">
+    <div className="page-header" style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+      {(onBack || backTo) && (
+        <div>
+          <BackButton to={backTo} />
+        </div>
+      )}
       <h1>{title}</h1>
       {subtitle && <p className="muted">{subtitle}</p>}
     </div>

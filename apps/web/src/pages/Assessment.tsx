@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { t } from "../i18n";
+import BackButton from "../components/BackButton";
 
 interface AnswerOption {
   id: string;
@@ -112,6 +113,7 @@ export default function Assessment() {
   if (loadFailed) {
     return (
       <div className="screen">
+        <BackButton to="/home" />
         <p className="muted">{t("assessment.loadError")}</p>
         <button className="muted" onClick={retry}>
           {t("setup.retry")}
@@ -123,6 +125,7 @@ export default function Assessment() {
   if (!question) {
     return (
       <div className="screen">
+        <BackButton to="/home" />
         <p className="muted">{t("assessment.loading")}</p>
       </div>
     );
@@ -130,6 +133,7 @@ export default function Assessment() {
 
   return (
     <div className="screen">
+      <BackButton to="/home" />
       <h1>{question.text}</h1>
       {answerError && <p style={{ color: "var(--color-danger)" }}>{t("assessment.answerError")}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
