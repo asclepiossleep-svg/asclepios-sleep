@@ -26,10 +26,8 @@ Checkpoint completed 2026-09-06:
 - fulfilment routes/data contract, consumable traceability requirements, diligence questionnaire and acceptance tests defined;
 - commerce exception severity P0-P3, operational triggers/actions/owners/escalations and role permissions defined;
 - canonical vendor-independent commerce data model defined across customer/consent, product/SKU, order/payment, inventory, fulfilment, return, CS, exceptions, attribution and activation;
-- existing Prisma schema reconciled against the canonical model: User, ConsentRecord, Product, ProductOwnership, Membership, Entitlement, ActivationCode, AuditLog and AnalyticsEvent are explicitly reused rather than duplicated;
-- minimum missing transactional layer scoped: Order/OrderItem/OrderEvent, Payment/Refund, InventoryPosition/Lot, Fulfilment/Shipment, Return, CSCase and CommerceException;
-- implementation divided into small C1-C6 slices, keeping provider adapters last and preventing premature ERP/provider lock-in;
-- ten pre-provider tests defined including duplicate webhook/idempotency, stranded paid order, no fulfilment on failed payment, historical price snapshots, refund replay, inventory oversell and lot-recall traceability.
+- existing Prisma schema reconciled against the canonical model and missing transactional layer scoped;
+- implementation divided into C1-C6 slices and pre-provider tests defined.
 
 Next:
 - prepare precise Rex engineering ticket for commerce C1 only when implementation capacity is appropriate;
@@ -44,24 +42,23 @@ Visible artifacts:
 
 Checkpoint:
 - Sleep Tape canonical product truth, suitability/safety screen, claims policy, website copy, FAQ/CS matrix, Intelligence bridge and Growth atom exist;
-- Sleep Tape knowledge translated into concrete existing-Product fields plus provider/CMS-neutral product-page, FAQ, CS, app/Intelligence and activation fields;
-- magnesium pre-formulation Product Knowledge Object now exists with explicit non-treatment positioning, safety/caution framework, GREEN/AMBER/RED claim gates, product-page architecture, FAQ, CS matrix, Intelligence bridge, Growth atom, supplier QA checklist and implementation YAML;
-- magnesium final formula, elemental magnesium, other ingredients, directions, pack/barcode/price and UK claim/label review remain deliberately PENDING rather than guessed;
-- mandatory safety/claims publication rules remain implementation requirements across products.
+- Sleep Tape knowledge translated into implementation fields;
+- magnesium pre-formulation Product Knowledge Object exists with explicit non-treatment positioning, safety/caution framework and pending formula/label facts.
 
 Important launch dependencies: final Sleep Tape SKU/material/adhesive specification, pack IFU/count/barcode/price; final magnesium form(s), elemental magnesium/dose, full ingredients, label/pack/price; stock/shipping/returns rules; final legal/regulatory/claims approval.
 
 Next visible output:
 - populate magnesium formulation fields from approved supplier/product catalogue when available;
-- prepare probiotic/gut-brain Product Knowledge Object using the same controlled structure, provided sufficient source facts exist;
-- otherwise advance digital-asset structure or launch CS/marketing assets without inventing product facts.
+- prepare probiotic/gut-brain Product Knowledge Object when sufficient source facts exist;
+- otherwise continue unblocked launch assets/CS/marketing work without inventing product facts.
 
 ### 3. Growth / Video Production Pipeline — WORKING
 Pipeline: research/product signal -> core message -> short -> explainer -> founder/product outline -> storyboard -> voice/subtitle -> variants -> publish gate -> measurement.
 Checkpoint:
 - Sleep Tape master marketing atom exists using “Use a cue, not a cure.”
-- Magnesium pre-formulation marketing atom now exists using “Know what you’re taking — and don’t make one supplement carry the whole sleep plan.”
-Next visible output: production-ready short/explainer/storyboard package after product-specific claims gates are locked.
+- Magnesium pre-formulation marketing atom exists.
+- digital asset governance now defines immutable asset IDs, status/version control, claims/rights gates and channel/publication traceability for future media production.
+Next visible output: production-ready media briefs/scripts tied to canonical asset IDs once product-specific claims gates are sufficiently locked.
 
 ### 4. Sleep Intelligence V1 — WORKING
 Visible artifacts:
@@ -69,18 +66,35 @@ Visible artifacts:
 - `docs/product/SLEEP_INTELLIGENCE_RESEARCH_REGISTRY_V1.md`
 Current step: evidence -> question -> signal/tag -> confidence -> strategy -> action -> outcome mapping, with safety/corroboration gates.
 Checkpoint:
-- Sleep Tape recommendation logic defined; snoring alone cannot trigger recommendation; obstruction/OSA red flags suppress product recommendation and route to safety/clinical guidance.
-- Magnesium recommendation boundary now defined at product-object level: do not surface merely for poor sleep; suppress for unresolved renal/medication/adverse-reaction/over-dose/formula-incomplete signals; track bounded subjective outcomes without inferring deficiency.
+- Sleep Tape recommendation logic defined with safety suppression rules.
+- Magnesium recommendation boundary defined without inferring deficiency or over-claiming.
 
 ### 5. Amanda OS V1 — WORKING
 Visible artifact:
 - `docs/company/AMANDA_OS_V1.md`
-Commerce permission/exception layer, canonical reporting map and existing-schema delta are inspectable.
+Commerce permission/exception layer, canonical reporting map, existing-schema delta and asset-governance layer are inspectable.
 Next: decision-log format after launch handoff work.
 
-### 6. Google Drive / Digital Asset Structure — QUEUED / NEEDS SETUP
-Target: Research / Product / Marketing / Video / Audio-Voice / Brand Assets / Published / Archive.
-Rule: GitHub for structured/versioned text and specs; Drive/object storage for production media; database for dynamic operational/user data.
+### 6. Digital Asset Structure — WORKING / CHECKPOINT COMPLETE
+Visible artifacts:
+- `docs/company/DIGITAL_ASSET_STRUCTURE_METADATA_PLAN_V1.md`
+- `docs/company/DIGITAL_ASSET_REGISTRY_SCHEMA_V1.md`
+
+Checkpoint completed 2026-09-06:
+- canonical Asclepios and separate RockPillar asset roots defined;
+- Research/Product/Brand/Website-App/Marketing/Video/Audio/CS/Operations/Published/Archive folder logic defined;
+- product/SKU and campaign/media substructures defined;
+- mandatory metadata, immutable asset IDs, controlled status/version/rights/claims fields and publication gates defined;
+- EN/ZH-HK/ZH-CN localisation controls defined;
+- HOT/WARM/COLD archive and minimum access model defined;
+- launch can begin with a lightweight registry rather than a heavyweight DAM;
+- exact registry schema, controlled enums, sample Sleep Tape/magnesium rows, validation rules and minimum launch views defined;
+- custom DAM implementation explicitly deferred until volume/workflow complexity justifies it.
+
+Next:
+- use planned asset IDs in new marketing/video briefs and Rex media implementation tickets;
+- create actual shared Drive folders/registry only when the approved shared Drive/account destination is available;
+- do not block launch work on physical folder creation.
 
 ## Rex work — monitored separately
 Rex implementation should follow business-readiness priority: commerce/product pages and customer reliability before non-critical cosmetic app polish. Amanda prepares thinking-heavy strategy/research/content first to reduce Rex token use.
@@ -99,9 +113,11 @@ Meaningful milestone report: WHAT CHANGED / WHERE TO SEE IT / WHAT TO REVIEW / N
 - DONE: Commerce Exception / Alert / Permission Model V1.
 - DONE: Canonical Commerce Data & Reporting Map V1.
 - DONE: existing Prisma commerce-schema reconciliation + scoped engineering delta.
-- DONE: Sleep Tape implementation field map for website/CS/app/activation.
+- DONE: Sleep Tape implementation field map.
 - DONE: Magnesium Product Knowledge Object V1 pre-formulation checkpoint.
+- DONE: Digital Asset Structure & Metadata Plan V1.
+- DONE: Digital Asset Registry Schema V1.
 - WORKING: product-knowledge completion from verified supplier facts.
 - WORKING: evidence -> scenario / corroboration / behavioural strategy mapping.
 - WORKING: marketing/video output structure derived from research/product content.
-- NEXT: probiotic product object if source facts are sufficient; otherwise Google Drive digital-asset folder/metadata plan.
+- NEXT: launch CS knowledge/operating package or probiotic product object when verified facts are sufficient.
