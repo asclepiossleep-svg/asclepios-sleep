@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../db";
+import { isValidTimeZone } from "../domain/decision/dateKey";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
@@ -47,7 +48,57 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
   }
   req.userId = payload.sub;
   req.userRole = payload.role;
+  // Timezone Auto/Manual (6 Sep 2026, per audit correction) — only sync at a
+  // bounded point the client explicitly marks as "app open/resume" (see
+  // syncAutoTimezone's comment below), never on every authenticated request.
+  if (req.headers["x-client-timezone-sync"]) {
+    await syncAutoTimezone(req.userId, req.headers["x-client-timezone"]);
+  }
   next();
+}
+
+/**
+ * Timezone Auto/Manual (6 Sep 2026) — the single place "Auto follows the
+ * device, including travel" actually happens. Every day-boundary call site
+ * (dateKey.ts, programmeContinuity.ts, tonight.ts, programmes.ts) reads
+ * `User.timezone` fresh from the DB, so keeping that column in sync here is
+ * enough to make Auto mode take effect everywhere, with no other route
+ * needing to know this exists. A single conditional `updateMany` (not a
+ * read-then-write) keeps this a no-op query when the mode is MANUAL or the
+ * zone hasn't changed, and it's wrapped so a DB hiccup here can never fail
+ * an otherwise-valid request — but the failure is logged, not silently lost.
+ *
+ * Audit correction (6 Sep 2026) — this used to run on *every* authenticated
+ * request, which was both an unconditional DB round trip on the hot path of
+ * the whole app for a Settings feature, and undefined for two devices in
+ * different zones: whichever device happened to make the most recent API
+ * call (including background/idle polling) would silently move the account's
+ * one shared `timezone`/night-boundary for every device. requireAuth now
+ * only calls this when the request explicitly carries `X-Client-Timezone-Sync`
+ * — apps/web's api/client.ts sends that only at genuine app-open/resume
+ * moments (initial load, tab regaining visibility), not on routine API
+ * traffic. That bounds the write to real "I just started using this device"
+ * events instead of every request, and confines the multi-device race to the
+ * much narrower window of two devices being actively (re)opened at the same
+ * moment, rather than any two requests racing. True per-device-session night
+ * identity (so a second device can never move the first device's active
+ * night at all) would need request-scoped timezone resolution threaded
+ * through every day-boundary call site — a larger architecture change than
+ * this pass, left as a known follow-up rather than a silent gap.
+ */
+async function syncAutoTimezone(userId: string, headerValue: string | string[] | undefined) {
+  const clientTimeZone = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  if (!clientTimeZone || !isValidTimeZone(clientTimeZone)) return;
+  try {
+    await prisma.user.updateMany({
+      where: { id: userId, timezoneMode: "AUTO", NOT: { timezone: clientTimeZone } },
+      data: { timezone: clientTimeZone },
+    });
+  } catch (err) {
+    // Never let this side-effect turn a valid request into a 500 — but do
+    // surface it, unlike the fully-silent swallow this replaced.
+    console.error("syncAutoTimezone failed", err);
+  }
 }
 
 export function requireAdmin(req: AuthedRequest, res: Response, next: NextFunction) {

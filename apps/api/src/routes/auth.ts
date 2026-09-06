@@ -78,6 +78,11 @@ router.post("/otp/verify", async (req, res) => {
         email,
         locale: locale ?? "en",
         timezone: timezone ?? "Europe/London",
+        // Timezone Auto/Manual (6 Sep 2026, per audit) — the schema default
+        // is MANUAL so pre-existing rows are never silently reinterpreted;
+        // a genuinely new account still starts on Auto (follow the device),
+        // set explicitly here rather than relying on that default.
+        timezoneMode: "AUTO",
         ...(trimmedName ? { displayName: trimmedName } : {}),
       },
     });
@@ -128,6 +133,7 @@ router.post("/password/register", async (req, res) => {
       email,
       locale: locale ?? "en",
       timezone: timezone ?? "Europe/London",
+      timezoneMode: "AUTO", // Timezone Auto/Manual (6 Sep 2026) — see otp/verify's comment above.
       ...(trimmedName ? { displayName: trimmedName } : {}),
     },
   });
@@ -184,7 +190,9 @@ router.post("/social/:provider", async (req, res) => {
   } else {
     user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      user = await prisma.user.create({ data: { email, locale: locale ?? "en", timezone: timezone ?? "Europe/London" } });
+      user = await prisma.user.create({
+        data: { email, locale: locale ?? "en", timezone: timezone ?? "Europe/London", timezoneMode: "AUTO" },
+      });
       await prisma.membership.create({ data: { userId: user.id, tier: "FREE" } });
     }
     identity = await prisma.authIdentity.create({ data: { userId: user.id, provider, providerUserId } });

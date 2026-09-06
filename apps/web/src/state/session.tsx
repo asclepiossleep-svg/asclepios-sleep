@@ -13,6 +13,10 @@ interface SessionUser {
   role: string;
   locale: string;
   timezone: string;
+  // Timezone Auto/Manual (6 Sep 2026) — "AUTO" | "MANUAL". Populated from
+  // GET /auth/session on login/refresh and from GET/PATCH /preferences,
+  // same pattern as `timezone` itself.
+  timezoneMode?: string;
   // 31 Aug 2026 — Edmund's feedback: greet people by their actual name, not
   // their email prefix. Set on Register (Login.tsx) or later from Settings;
   // null/undefined for anyone who hasn't set one yet.

@@ -21,3 +21,20 @@ export function localDateKey(date: Date, timeZone: string): string {
     return date.toISOString().slice(0, 10);
   }
 }
+
+/**
+ * Timezone Auto/Manual (6 Sep 2026) — both the Settings "Manual" picker and
+ * requireAuth's per-request Auto-mode sync (middleware/auth.ts) need to
+ * reject a string that isn't a real IANA zone before it ever reaches
+ * `User.timezone`; previously nothing validated it at all, so a typo or a
+ * bad client value would only surface later as a silent UTC fallback deep
+ * inside `localDateKey`.
+ */
+export function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-CA", { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}

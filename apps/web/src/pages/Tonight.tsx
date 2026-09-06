@@ -260,7 +260,6 @@ export default function Tonight() {
       wallpaperId: user?.wallpaperId ?? "WALL_MOON_LAKE_04",
       wakeStyle: wakeAlarmEnabled ? wakeStyle : "NORMAL",
       snoozeMinutes: 10,
-      timezone: user?.timezone,
     });
     navigate(`/player/${res.session.id}`, { state: { session: res.session } });
   }

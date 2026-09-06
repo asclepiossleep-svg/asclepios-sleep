@@ -28,11 +28,18 @@ router.post("/start", async (req: AuthedRequest, res) => {
     wakeAudioId?: string;
     wakeStyle?: "GENTLE" | "NORMAL" | "STRONG";
     snoozeMinutes?: number;
-    timezone?: string;
   };
 
   const durationSeconds = resolveDurationSeconds(body.sleepAudioDurationMode, body.presetLabel, body.customSeconds);
   const windDownStart = new Date();
+
+  // Timezone Auto/Manual (6 Sep 2026) — this used to trust a client-supplied
+  // `timezone` field (Tonight.tsx echoed back its in-memory `user.timezone`,
+  // which is only as fresh as the last session-state update). Now that
+  // requireAuth keeps `User.timezone` itself in sync for Auto-mode users on
+  // every request, reading it fresh here is both simpler and correct even
+  // if the client's copy is stale.
+  const userRecord = await prisma.user.findUnique({ where: { id: req.userId! }, select: { timezone: true } });
 
   const session = await prisma.sleepSession.create({
     data: {
@@ -48,7 +55,7 @@ router.post("/start", async (req: AuthedRequest, res) => {
       wakeAudioId: body.wakeAudioId,
       wakeStyle: body.wakeStyle ?? "NORMAL",
       snoozeMinutes: body.snoozeMinutes ?? 10,
-      timezone: body.timezone ?? "Europe/London",
+      timezone: userRecord?.timezone ?? "Europe/London",
       status: "ACTIVE",
     },
   });

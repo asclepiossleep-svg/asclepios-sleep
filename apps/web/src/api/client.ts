@@ -50,13 +50,48 @@ export function setSessionToken(token: string | null) {
 // SessionProvider.
 export const SESSION_EXPIRED_EVENT = "asclepios:session-expired";
 
+// Timezone Auto/Manual (6 Sep 2026) — sent on every request so an explicit
+// PATCH /preferences switching to Auto (see Settings.tsx) can resolve the
+// device's zone immediately in that same request, and so requireAuth has it
+// available whenever a sync is actually due (see the sync flag below).
+// Reading this fresh per-request (not once at module load) is what makes it
+// reflect an actual timezone change without a full app reload.
+function currentDeviceTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
+// Timezone Auto/Manual audit correction (6 Sep 2026) — the API used to sync
+// an Auto-mode user's timezone on *every* authenticated request, which was
+// an unconditional DB write on the app's hot path and undefined for two
+// devices in different zones (whichever device's request landed last would
+// silently move the account's shared night boundary). Auto-follow now only
+// fires at a bounded "app open/resume" point: this flag starts true (first
+// request after a fresh load/reopen) and is set again whenever the tab
+// regains visibility after being hidden — not on routine API traffic in
+// between. It's consumed (cleared) by the very next request that reads it.
+let pendingTimezoneSync = true;
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pendingTimezoneSync = true;
+  });
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
+  const deviceTimeZone = currentDeviceTimeZone();
+  const shouldSyncTimezone = pendingTimezoneSync;
+  pendingTimezoneSync = false;
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(deviceTimeZone ? { "X-Client-Timezone": deviceTimeZone } : {}),
+      ...(shouldSyncTimezone ? { "X-Client-Timezone-Sync": "1" } : {}),
       ...(options.headers ?? {}),
     },
   });
