@@ -116,8 +116,8 @@ jobs:
             issue by the GitHub action. Never commit or push directly to main.
             If the task is large enough to naturally break into multiple
             independent sub-pieces (e.g. schema, then API, then frontend,
-            then seed data), commit and push each sub-piece to that feature
-            branch as soon as it is complete and passes its own build/typecheck
+            then seed data), commit each sub-piece to that feature branch as
+            soon as it is complete and passes its own build/typecheck
             — do not wait until the entire task is done to make your first
             checkpoint. This ensures that if you run out of turns partway
             through, completed work remains safely reviewable.
@@ -139,7 +139,7 @@ jobs:
         id: push
         if: always()
         shell: bash
-        run: .github/scripts/manager-dispatch-guard.sh main origin
+        run: bash .github/scripts/manager-dispatch-guard.sh main origin
 
       - name: Open or update pull request
         id: pr
