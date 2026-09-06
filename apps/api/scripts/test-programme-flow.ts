@@ -341,14 +341,21 @@ async function main() {
       libraryZhCN.json.items.length === libraryEn.json.items.length,
     );
 
-    // --- 17. Timezone Auto/Manual (6 Sep 2026) -------------------------------
-    // Deterministic — no wall-clock dependence, just fixed IANA zone strings
-    // sent as the X-Client-Timezone header apps/web's api/client.ts now sends
-    // on every request, and read by requireAuth (middleware/auth.ts).
-    async function apiTz(method: string, urlPath: string, timezoneHeader?: string, body?: unknown) {
+    // --- 17. Timezone Auto/Manual (6 Sep 2026, audit-corrected) --------------
+    // Deterministic — no wall-clock dependence, just fixed IANA zone strings.
+    // `X-Client-Timezone` is the device's reported zone (apps/web sends it on
+    // every request); `X-Client-Timezone-Sync` is the bounded "app just
+    // opened/resumed" signal (apps/web sends it only at app-open/tab-resume,
+    // never on routine API traffic) that gates whether requireAuth actually
+    // writes it — the audit's fix for the original "writes on every request,
+    // undefined for two devices" defect.
+    async function apiTz(method: string, urlPath: string, opts: { timezone?: string; sync?: boolean } = {}, body?: unknown) {
+      const headers: Record<string, string> = { ...authHeaders };
+      if (opts.timezone) headers["X-Client-Timezone"] = opts.timezone;
+      if (opts.sync) headers["X-Client-Timezone-Sync"] = "1";
       const r = await fetch(`${base}${urlPath}`, {
         method,
-        headers: { ...authHeaders, ...(timezoneHeader ? { "X-Client-Timezone": timezoneHeader } : {}) },
+        headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,
       });
       const json = await r.json().catch(() => null);
@@ -359,24 +366,48 @@ async function main() {
     check("isValidTimeZone accepts a real IANA zone", isValidTimeZone("Asia/Hong_Kong") === true);
     check("isValidTimeZone rejects a garbage string", isValidTimeZone("Not/AZone") === false);
 
+    // Legacy preservation: this test user was created directly via
+    // prisma.user.create with no explicit timezoneMode, the same row shape
+    // as every account that existed before this column did. It must default
+    // to MANUAL, never be silently reinterpreted as AUTO.
     const tzDefault = await api("GET", "/preferences");
-    check("account defaults to timezoneMode AUTO", tzDefault.json.timezoneMode === "AUTO");
+    check("a directly-created (legacy-shaped) account defaults to timezoneMode MANUAL", tzDefault.json.timezoneMode === "MANUAL");
 
-    await apiTz("GET", "/preferences", "America/New_York");
-    const tzAfterFirstDevice = await api("GET", "/preferences");
-    check("AUTO mode follows the device's reported timezone", tzAfterFirstDevice.json.timezone === "America/New_York");
+    // A genuinely new signup, by contrast, gets AUTO explicitly.
+    const newAccountEmail = `tz-new-account-${Date.now()}@asclepios.test`;
+    const registerRes = await fetch(`${base}/auth/password/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: newAccountEmail, password: "testpass123" }),
+    });
+    const registerJson = await registerRes.json();
+    check("a brand-new account (via /auth/password/register) defaults to timezoneMode AUTO", registerJson.user?.timezoneMode === "AUTO");
 
-    // Travel: a later request reporting a *different* zone must move it
-    // again — proves this isn't a one-shot capture like the old signup-time
-    // detection, but keeps following the device.
-    await apiTz("GET", "/preferences", "Asia/Tokyo");
-    const tzAfterTravel = await api("GET", "/preferences");
-    check("AUTO mode follows a travel-style device timezone change", tzAfterTravel.json.timezone === "Asia/Tokyo");
+    // Opt the test user into Auto. No device header on this call, so no zone
+    // resolves yet from it — checked separately from the atomic-switch case
+    // further down.
+    await api("PATCH", "/preferences", { timezoneMode: "AUTO" });
+
+    // A request carrying the device header but NOT the bounded sync signal
+    // must not write anything.
+    await apiTz("GET", "/preferences", { timezone: "America/New_York" });
+    const tzUnsynced = await api("GET", "/preferences");
+    check("AUTO mode does not follow the device without the bounded sync signal", tzUnsynced.json.timezone !== "America/New_York");
+
+    // A request that DOES carry the sync signal follows the device.
+    const tzAfterFirstDevice = await apiTz("GET", "/preferences", { timezone: "America/New_York", sync: true });
+    check("AUTO mode follows the device's reported timezone at a bounded sync point", tzAfterFirstDevice.json.timezone === "America/New_York");
+
+    // Travel: a later synced request reporting a *different* zone must move
+    // it again — proves this isn't a one-shot capture, but keeps following
+    // the device across sync points.
+    const tzAfterTravel = await apiTz("GET", "/preferences", { timezone: "Asia/Tokyo", sync: true });
+    check("AUTO mode follows a travel-style device timezone change at the next sync point", tzAfterTravel.json.timezone === "Asia/Tokyo");
 
     // Tonight's plannedDate must use the same Auto-resolved zone live, not a
     // stale copy — Pacific/Kiritimati (UTC+14) is deliberately extreme so a
     // same-day-in-most-zones instant reliably lands on tomorrow's date there.
-    await apiTz("GET", "/tonight?locale=en", "Pacific/Kiritimati");
+    await apiTz("GET", "/tonight?locale=en", { timezone: "Pacific/Kiritimati", sync: true });
     const kiritimatiPlannedDate = (await prisma.plannedAction.findFirst({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -390,10 +421,10 @@ async function main() {
     const toManual = await api("PATCH", "/preferences", { timezoneMode: "MANUAL", timezone: "Europe/Paris" });
     check("switching to MANUAL persists the chosen zone", toManual.status === 200 && toManual.json.timezone === "Europe/Paris" && toManual.json.timezoneMode === "MANUAL");
 
-    // ...and a device timezone reported afterwards must NOT override it.
-    await apiTz("GET", "/preferences", "Asia/Singapore");
-    const tzStillManual = await api("GET", "/preferences");
-    check("MANUAL mode ignores the device's reported timezone", tzStillManual.json.timezone === "Europe/Paris");
+    // ...and a device timezone reported afterwards, even at a sync point,
+    // must NOT override it.
+    const tzStillManual = await apiTz("GET", "/preferences", { timezone: "Asia/Singapore", sync: true });
+    check("MANUAL mode ignores the device's reported timezone even at a sync point", tzStillManual.json.timezone === "Europe/Paris");
 
     // Picking a zone the old way (no explicit timezoneMode) is treated as an
     // implicit switch to Manual — matches what the pre-existing single
@@ -409,12 +440,16 @@ async function main() {
     const stillMadrid = await api("GET", "/preferences");
     check("a rejected timezone update leaves the previous saved zone untouched", stillMadrid.json.timezone === "Europe/Madrid");
 
-    // Re-enabling Automatic hands control straight back to the device sync —
-    // the very next header-bearing request updates it again.
-    await api("PATCH", "/preferences", { timezoneMode: "AUTO" });
-    await apiTz("GET", "/preferences", "Australia/Sydney");
-    const tzBackToAuto = await api("GET", "/preferences");
-    check("re-enabling AUTO resumes following the device on the next request", tzBackToAuto.json.timezone === "Australia/Sydney" && tzBackToAuto.json.timezoneMode === "AUTO");
+    // Re-enabling Automatic must resolve and persist the device's current
+    // zone immediately and atomically in the same PATCH request — not wait
+    // for some later bounded sync point (the audit's "MANUAL -> AUTO must be
+    // immediate" fix). No sync header needed here: this is a direct,
+    // explicit user action, not passive middleware sync.
+    const backToAutoAtomic = await apiTz("PATCH", "/preferences", { timezone: "Australia/Sydney" }, { timezoneMode: "AUTO" });
+    check(
+      "switching MANUAL -> AUTO resolves and persists the device zone immediately in the same request",
+      backToAutoAtomic.json.timezone === "Australia/Sydney" && backToAutoAtomic.json.timezoneMode === "AUTO",
+    );
 
     // --- 18. Auth persistence audit: device revocation must actually work ---
     // A token minted before this fix carries no deviceSessionId at all —
