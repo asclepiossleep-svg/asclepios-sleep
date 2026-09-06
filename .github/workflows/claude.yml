@@ -11,7 +11,13 @@
 #   - actions/checkout@v6 -> @v4 (v6 does not exist);
 #   - added the `vars.CLAUDE_AUTOMATION_ENABLED != 'false'` guard so the
 #     repo's existing kill switch (see claude-manager-dispatch.yml) also
-#     pauses this workflow.
+#     pauses this workflow;
+#   - added `Bash(gh pr create:*)` plus read-only `Bash(gh pr view:*)` and
+#     `Bash(gh pr checks:*)` to --allowedTools so Claude can open the pull
+#     request itself and report its URL + check results. It still cannot
+#     merge, close, edit, review/approve a PR, delete branches, or run
+#     `gh api` / arbitrary shell — those have no allow rule and are denied
+#     (this workflow does not use --dangerously-skip-permissions).
 # Every other line is preserved as authored.
 name: Claude Code
 
@@ -65,7 +71,7 @@ jobs:
             actions: read
           claude_args: >-
             --max-turns 12
-            --allowedTools "Bash(npm install),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(git status),Bash(git diff),Bash(git log),Edit,Write,Read,Glob,Grep"
+            --allowedTools "Bash(npm install),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(git status),Bash(git diff),Bash(git log),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Edit,Write,Read,Glob,Grep"
 
       - name: Classify Claude result
         if: always()
