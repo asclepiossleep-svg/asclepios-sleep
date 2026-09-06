@@ -116,8 +116,20 @@ jobs:
             summary=$(tr '\n' ' ' < "${EXECUTION_FILE}" | tail -c 12000)
           fi
 
+          # Classify deterministic execution limits before scanning for quota
+          # language. The execution JSON can contain issue/prompt text, so a
+          # broad quota match alone can otherwise mislabel error_max_turns.
           if printf '%s' "${summary}" | grep -Eiq \
-            'usage limit|rate.?limit|quota|credit balance|resets? at|too many requests|429'; then
+            '"subtype"[[:space:]]*:[[:space:]]*"error_max_turns"|Reached maximum number of turns'; then
+            remove_label "ai%3Apaused-quota"
+            gh api --method POST "repos/${REPOSITORY}/issues/${ITEM_NUMBER}/labels" \
+              --input - <<'JSON'
+          {"labels":["ai:blocked"]}
+          JSON
+            gh api --method POST "repos/${REPOSITORY}/issues/${ITEM_NUMBER}/comments" \
+              -f body="[AI-STATUS] BLOCKED-MAX-TURNS — Claude reached the configured turn ceiling. Do not quota-retry this item; resume from its checkpoint after increasing/confirming the turn limit. [Workflow run](${RUN_URL})"
+          elif printf '%s' "${summary}" | grep -Eiq \
+            'usage limit|rate.?limit|credit balance|resets? at|too many requests|HTTP[^0-9]*429'; then
             remove_label "ai%3Ablocked"
             gh api --method POST "repos/${REPOSITORY}/issues/${ITEM_NUMBER}/labels" \
               --input - <<'JSON'
