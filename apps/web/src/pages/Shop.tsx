@@ -7,6 +7,7 @@ type PreviewStep = "product" | "cart" | "checkout" | "complete";
 
 export default function Shop() {
   const [step, setStep] = useState<PreviewStep>("product");
+  const [suitabilityConfirmed, setSuitabilityConfirmed] = useState(false);
 
   return (
     <main className="screen">
@@ -63,10 +64,20 @@ export default function Shop() {
           <h2>{t("shop.checkoutTitle")}</h2>
           <p>{t("shop.checkoutSafety")}</p>
           <label style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
-            <input type="checkbox" required style={{ width: 24, height: 24, marginTop: 4 }} />
+            <input
+              type="checkbox"
+              checked={suitabilityConfirmed}
+              onChange={(event) => setSuitabilityConfirmed(event.target.checked)}
+              style={{ width: 24, height: 24, marginTop: 4 }}
+            />
             <span>{t("shop.suitabilityConfirm")}</span>
           </label>
-          <button className="primary" onClick={() => setStep("complete")} style={{ marginTop: "1rem" }}>
+          <button
+            className="primary"
+            disabled={!suitabilityConfirmed}
+            onClick={() => setStep("complete")}
+            style={{ marginTop: "1rem" }}
+          >
             {t("shop.finishPreview")}
           </button>
           <button onClick={() => setStep("cart")} style={{ marginLeft: "0.5rem" }}>
