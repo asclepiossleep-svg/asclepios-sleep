@@ -103,6 +103,85 @@ it works across machines and after a session ends.
 - Avoid agent loops: only an explicit `@claude` mention triggers Claude,
   and only the GitHub Actions bot may trigger automated retries.
 
+## End-to-end verification
+
+First end-to-end audit of the three workflows above, performed against
+`main` from an `@claude`-triggered issue (asclepiossleep-svg/asclepios-sleep#8).
+
+- **Repository owner-only trigger.** Each workflow gates on the triggering
+  actor before doing anything else. `claude-manager-dispatch.yml` checks
+  the issue/comment author's login (`github.event.issue.user.login` /
+  `github.event.comment.user.login`) equals `asclepiossleep-svg`, plus a
+  `[MANAGER]`/`[AUDIT]` marker in the title, body, or label.
+  `claude.yml` checks `github.actor == github.repository_owner` (or the
+  `github-actions[bot]` service account posting a scheduled retry), plus an
+  `@claude` mention or an issue assignment. The two checks use different
+  mechanics (a hardcoded login string vs. the dynamic
+  `repository_owner` comparison) but both resolve to "only the repo owner
+  can spend the linked Anthropic budget or gain write access" — this is
+  the security boundary for triggers on this **public** repository.
+- **`CLAUDE_AUTOMATION_ENABLED` kill switch.** All three workflows —
+  `claude-manager-dispatch.yml`, `claude.yml`, and
+  `claude-quota-retry.yml` — include `vars.CLAUDE_AUTOMATION_ENABLED !=
+  'false'` in their job-level `if:` condition. Setting the repo Actions
+  variable to `false` pauses every automated Claude run, including the
+  hourly quota-retry loop, without editing a workflow file or touching a
+  secret. Any other value (or the variable being unset) leaves automation
+  enabled.
+- **Quota pause and retry behaviour.** `claude.yml`'s "Classify Claude
+  result" step inspects the run's execution output after a non-success
+  conclusion. Output matching usage/rate-limit patterns (`usage limit`,
+  `rate limit`, `quota`, `credit balance`, `429`, etc.) gets the
+  `ai:paused-quota` label and an `[AI-STATUS] PAUSED-QUOTA` comment;
+  anything else gets `ai:blocked` and an `[AI-STATUS] BLOCKED` comment for
+  the PM agent to diagnose manually — unrecognised failures are not
+  retried blindly. `claude-quota-retry.yml` runs hourly (`17 * * * *`),
+  re-pings every open issue labelled `ai:paused-quota` with a `@claude
+  Resume...` comment referencing the latest checkpoint, then clears the
+  label. There is no maximum retry count; a concurrency group prevents a
+  manual dispatch from overlapping the scheduled run.
+- **Pull-request approval boundary.** The workflows grant Claude
+  `contents: write`, `pull-requests: write`, and `issues: write`. In
+  `claude.yml`, the tool allow-list (`--allowedTools` in `claude_args`,
+  accumulated with `claude-code-action`'s own scoped defaults) lets Claude
+  create the branch and commits, **open** a pull request
+  (`Bash(gh pr create:*)`), and read that PR and its checks back
+  (`Bash(gh pr view:*)`, `Bash(gh pr checks:*)` — both read-only). It is
+  **not** granted `gh pr merge`, `gh pr close`, `gh pr edit`,
+  `gh pr review`, unrestricted `gh api`, or arbitrary shell — those have
+  no allow rule and are denied (the workflow does not use
+  `--dangerously-skip-permissions`). `claude-code-action` additionally
+  cannot submit a formal GitHub PR review or approve a PR, and its system
+  prompt forbids force-pushing, rebasing, and pushing outside its own
+  branch. Merging stays a separate, human-gated step: per the normal task
+  flow above, the PM agent or Edmund reviews the diff and evidence and
+  merges only after required checks pass; schema, auth/authorization,
+  payment, and other destructive-change categories additionally require
+  explicit human review before merge (`AGENTS.md` §7). No agent,
+  including Claude, merges its own pull request.
+
+## Automatic PR creation verified
+
+**2026-09-06** — Confirmed end-to-end from an `@claude`-triggered issue
+(asclepiossleep-svg/asclepios-sleep#12) that Claude opened a pull request
+automatically. Within `claude.yml`'s `--allowedTools`, the explicit `gh pr`
+allow-list contains only three subcommands: `Bash(gh pr create:*)` plus
+the read-only `Bash(gh pr view:*)` and `Bash(gh pr checks:*)` — no `gh pr
+merge`, `gh pr close`, `gh pr edit`, `gh pr review`, or unrestricted `gh
+api`. (The full `--allowedTools` set also includes scoped git/npm commands
+and the Edit/Write/Read/Glob/Grep tools needed for implementation work;
+this note describes the `gh pr` surface only, not the complete allow-list.)
+Claude may create pull requests on its own task branch and report their
+URL and check results, but may **never approve or merge** a pull request;
+merging stays a separate, human-gated step per the normal task flow above.
+
+This run verifies **automatic PR creation only**. It is not a fresh
+sign-off of the manager-dispatch security boundary, quota-retry
+delivery/capping, failure classification, or the overall three-workflow
+system described in the "End-to-end verification" section above — those
+were audited separately (issue #8) and remain subject to their own
+hotfix/audit work, not re-verified by this note.
+
 ## Adding another project
 
 Each repository needs its own workflow files and authentication because the
