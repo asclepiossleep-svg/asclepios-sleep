@@ -18,25 +18,21 @@ Visible artifacts:
 - `docs/company/LAUNCH_READINESS_MAP_V1.md`
 - `docs/company/FULFILMENT_DECISION_MATRIX_V1.md`
 - `docs/company/COMMERCE_EXCEPTION_ALERT_PERMISSION_MODEL_V1.md`
+- `docs/company/CANONICAL_COMMERCE_DATA_REPORTING_MAP_V1.md`
 
 Checkpoint completed 2026-09-06:
 - nine launch gates defined across product/commercial definition, website, payment, canonical order lifecycle, fulfilment, CS, marketing, CRM/reporting and digital assets;
-- each gate separates BUILD NOW vs external/owner dependency vs launch acceptance gate;
-- canonical order and exception states defined;
-- minimum operational data objects and owner dashboard defined;
-- owner decisions grouped so Amanda can continue autonomously until a decision is genuinely gating;
-- explicitly deferred non-critical app polish and premature heavyweight ERP work;
-- real UK fulfilment routes researched and compared: ShipBob UK, Amazon MCF/FBA and Huboo;
-- provisional launch route set: specialist UK 3PL primary, ShipBob current lead diligence candidate, Amazon MCF fallback/hybrid, Huboo alternative quote;
-- vendor-independent fulfilment request/event data contract defined;
-- supplement-critical lot/batch, expiry, FEFO, recall and return controls promoted to non-negotiable requirements;
-- 35-point quote/diligence questionnaire and end-to-end fulfilment acceptance test defined;
-- commerce exception severity P0-P3, operational triggers/actions/owners/escalations, immutable exception object and role-based permission boundaries defined;
-- owner dashboard converted to exception-first model with money/order/stock/customer/growth panels;
-- bounded retry/idempotency, no-double-refund, no-auto-claim/no-auto-spend safety rules and eight launch acceptance tests defined.
+- fulfilment routes/data contract, consumable traceability requirements, diligence questionnaire and acceptance tests defined;
+- commerce exception severity P0-P3, operational triggers/actions/owners/escalations and role permissions defined;
+- canonical vendor-independent commerce data model now defined across Customer/Consent, SKU, Order/Item/Event, Payment/Refund, Inventory, Fulfilment/Shipment, Return, CSCase, Exception, Campaign/Creative and Activation/Membership;
+- payment, fulfilment and orchestration states explicitly separated so paid-but-not-queued and similar stranded states are detectable;
+- idempotency/reconciliation boundaries and deterministic daily exception checks defined;
+- owner dashboard fields mapped to Money / Orders / Stock / Customers / Growth;
+- provider portability and minimum data export contract defined;
+- engineering sequence and synthetic end-to-end acceptance gate defined without forcing premature ERP lock-in.
 
 Next:
-- map exception model into canonical CRM/order/reporting fields;
+- reconcile canonical map against existing repository commerce/order schema and produce a scoped engineering delta rather than duplicate models;
 - convert approved Sleep Tape knowledge into implementation-ready product-page/CS fields;
 - obtain/compare vendor quotes only when commercial outreach or stock timing makes the decision gating.
 
@@ -62,8 +58,8 @@ Checkpoint: Sleep Tape recommendation logic defined; snoring alone cannot trigge
 ### 5. Amanda OS V1 — WORKING
 Visible artifact:
 - `docs/company/AMANDA_OS_V1.md`
-- commerce permission/exception layer now inspectable in `COMMERCE_EXCEPTION_ALERT_PERMISSION_MODEL_V1.md`.
-Next: canonical CRM/order/report field map + decision-log format.
+- commerce permission/exception layer and canonical commerce/reporting map now inspectable.
+Next: existing-schema delta + decision-log format.
 
 ### 6. Google Drive / Digital Asset Structure — QUEUED / NEEDS SETUP
 Target: Research / Product / Marketing / Video / Audio-Voice / Brand Assets / Published / Archive.
@@ -84,7 +80,8 @@ Meaningful milestone report: WHAT CHANGED / WHERE TO SEE IT / WHAT TO REVIEW / N
 - DONE: Sleep Tape Product Knowledge Object V1.
 - DONE: Fulfilment Decision Matrix V1.
 - DONE: Commerce Exception / Alert / Permission Model V1.
-- WORKING: canonical CRM/order/report field map.
+- DONE: Canonical Commerce Data & Reporting Map V1.
+- WORKING: existing commerce/order schema reconciliation -> engineering delta.
 - WORKING: evidence -> scenario / corroboration / behavioural strategy mapping.
 - WORKING: marketing/video output structure derived from research/product content.
 - NEXT: Google Drive digital-asset folder/metadata plan.
