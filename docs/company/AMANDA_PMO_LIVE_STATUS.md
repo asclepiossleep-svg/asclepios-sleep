@@ -26,23 +26,40 @@ Checkpoint completed 2026-09-06:
 - explicitly deferred non-critical app polish and premature heavyweight ERP work.
 
 Next:
-- canonical Product Knowledge Object V1 for Sleep Tape;
 - real fulfilment/3PL/Amazon decision matrix;
-- commerce exception/alert model.
+- commerce exception/alert model;
+- convert approved Sleep Tape knowledge into implementation-ready product-page/CS fields.
 
 ### 2. Product Knowledge / Website Content — WORKING
-Scope: convert Sleep Tape / magnesium / gut-brain concepts into structured reusable product objects for website, FAQ, app guidance, CS and marketing.
-Next visible output: Sleep Tape Product Knowledge Object V1.
+Visible artifact:
+- `docs/product/SLEEP_TAPE_PRODUCT_KNOWLEDGE_OBJECT_V1.md`
+
+Checkpoint completed 2026-09-06:
+- canonical role and customer-problem framing defined;
+- suitability / do-not-use / stop-use screen defined;
+- evidence boundary and GREEN / AMBER / RED claims policy established;
+- website hero/source copy and mandatory near-CTA safety insert drafted;
+- FAQ master and CS response matrix created;
+- Sleep Intelligence recommendation/corroboration bridge created;
+- first Growth/video content atom created;
+- supplier QA/material substantiation checklist created;
+- implementation YAML object created so website/app/CS can share one source of truth.
+
+Important launch dependencies still outstanding: final SKU materials, adhesive/substrate specification, pack IFU, pack size/barcode/price, final legal/regulatory/claims approval.
+
+Next visible output: fulfilment decision matrix, then magnesium Product Knowledge Object after launch-critical logistics path is clearer.
 
 ### 3. Growth / Video Production Pipeline — WORKING
 Pipeline: research/product signal -> core message -> short -> explainer -> founder/product outline -> storyboard -> voice/subtitle -> variants -> publish gate -> measurement.
-Next visible output: first reusable script/storyboard package linked to product/evidence content.
+Checkpoint: first Sleep Tape master marketing atom now exists inside the canonical Product Knowledge Object using the positioning “Use a cue, not a cure.”
+Next visible output: production-ready short/explainer/storyboard package after claims gate is locked.
 
 ### 4. Sleep Intelligence V1 — WORKING
 Visible artifacts:
 - `docs/product/ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md`
 - `docs/product/SLEEP_INTELLIGENCE_RESEARCH_REGISTRY_V1.md`
 Current step: evidence -> question -> signal/tag -> confidence -> strategy -> action -> outcome mapping, with safety/corroboration gates.
+Checkpoint: Sleep Tape now has concrete recommendation logic: mouth-opening concern + comfortable nasal breathing + no red flags can surface it as an optional routine aid; snoring alone cannot trigger recommendation; obstruction/OSA red flags suppress product recommendation and route to safety/clinical guidance.
 
 ### 5. Amanda OS V1 — WORKING
 Visible artifact:
@@ -65,7 +82,7 @@ Meaningful milestone report: WHAT CHANGED / WHERE TO SEE IT / WHAT TO REVIEW / N
 - DONE: Amanda live PMO tracker.
 - DONE: business-launch-first reprioritisation.
 - DONE: Launch Readiness Map V1 — nine gates, dependencies, acceptance criteria, order lifecycle, minimum CRM/reporting model.
-- WORKING: Sleep Tape product knowledge object and website-ready content structure.
+- DONE: Sleep Tape Product Knowledge Object V1 — website/FAQ/CS/app/Growth source of truth with safety and claims gates.
 - WORKING: evidence -> scenario / corroboration / behavioural strategy mapping.
 - WORKING: marketing/video output structure derived from research/product content.
 - NEXT: logistics/3PL/Amazon fulfilment research and decision matrix.
