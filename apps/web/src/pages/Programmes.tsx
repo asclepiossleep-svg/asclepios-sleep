@@ -59,6 +59,7 @@ export default function Programmes() {
   const [busyCode, setBusyCode] = useState<string | null>(null);
   const [reviewOpenFor, setReviewOpenFor] = useState<string | null>(null);
   const [decisions, setDecisions] = useState<Record<string, StepReviewDecision>>({});
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -78,24 +79,35 @@ export default function Programmes() {
 
   async function enroll(code: string) {
     setBusyCode(code);
+    setErrorCode(null);
     try {
       await api.post(`/programmes/${code}/enroll`, {});
       await load();
+    } catch {
+      setErrorCode(code);
     } finally {
       setBusyCode(null);
     }
   }
 
   async function logDay(code: string, dayNumber: number, status: "DONE" | "SKIPPED") {
-    await api.post(`/programmes/${code}/day/${dayNumber}/log`, { status });
-    await loadDetail(code);
+    setErrorCode(null);
+    try {
+      await api.post(`/programmes/${code}/day/${dayNumber}/log`, { status });
+      await loadDetail(code);
+    } catch {
+      setErrorCode(code);
+    }
   }
 
   async function chooseCompletion(code: string, choice: ProgrammeCompletionChoice) {
     setBusyCode(code);
+    setErrorCode(null);
     try {
       await api.post(`/programmes/${code}/complete`, { choice });
       await loadDetail(code);
+    } catch {
+      setErrorCode(code);
     } finally {
       setBusyCode(null);
     }
@@ -109,10 +121,15 @@ export default function Programmes() {
   }
 
   async function submitReview(code: string) {
+    setErrorCode(null);
     const decisionList = Object.entries(decisions).map(([stepCode, decision]) => ({ stepCode, decision }));
-    await api.post(`/programmes/${code}/review`, { decisions: decisionList });
-    setReviewOpenFor(null);
-    await loadDetail(code);
+    try {
+      await api.post(`/programmes/${code}/review`, { decisions: decisionList });
+      setReviewOpenFor(null);
+      await loadDetail(code);
+    } catch {
+      setErrorCode(code);
+    }
   }
 
   return (
@@ -130,6 +147,10 @@ export default function Programmes() {
                   {t(`programme.${p.code}.description`)}
                 </p>
               </div>
+
+              {errorCode === p.code && (
+                <p style={{ color: "var(--color-danger)", fontSize: "0.85rem", margin: 0 }}>{t("programmes.actionError")}</p>
+              )}
 
               {!p.enrolled && (
                 <>

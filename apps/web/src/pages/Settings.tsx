@@ -46,13 +46,23 @@ export default function Settings() {
   const [name, setName] = useState(user?.displayName ?? "");
   const [saved, setSaved] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
+  const [timezoneError, setTimezoneError] = useState(false);
+  const [languageError, setLanguageError] = useState(false);
+  const [nameError, setNameError] = useState(false);
 
   async function saveTimezone(next: string) {
+    const previous = timezone;
     setTimezone(next);
     setSaved(false);
-    const res = await api.patch<{ timezone: string }>("/preferences", { timezone: next });
-    updateUser({ timezone: res.timezone });
-    setSaved(true);
+    setTimezoneError(false);
+    try {
+      const res = await api.patch<{ timezone: string }>("/preferences", { timezone: next });
+      updateUser({ timezone: res.timezone });
+      setSaved(true);
+    } catch {
+      setTimezone(previous);
+      setTimezoneError(true);
+    }
   }
 
   // Language persistence (5 Sep 2026) — previously the only place to set
@@ -63,9 +73,16 @@ export default function Settings() {
   // refresh/reopen/logout-login/PWA relaunch on any device, the same way
   // timezone already does above.
   async function changeLanguage(next: string) {
+    const previous = locale;
     setLocale(next);
-    const res = await api.patch<{ locale: string }>("/preferences", { locale: next });
-    updateUser({ locale: res.locale });
+    setLanguageError(false);
+    try {
+      const res = await api.patch<{ locale: string }>("/preferences", { locale: next });
+      updateUser({ locale: res.locale });
+    } catch {
+      setLocale(previous);
+      setLanguageError(true);
+    }
   }
 
   // 31 Aug 2026 — Edmund's feedback: the app never asked for a name and
@@ -74,9 +91,14 @@ export default function Settings() {
   // clears it back to the email-prefix fallback on Home.
   async function saveName() {
     setNameSaved(false);
-    const res = await api.patch<{ displayName: string | null }>("/preferences", { displayName: name });
-    updateUser({ displayName: res.displayName });
-    setNameSaved(true);
+    setNameError(false);
+    try {
+      const res = await api.patch<{ displayName: string | null }>("/preferences", { displayName: name });
+      updateUser({ displayName: res.displayName });
+      setNameSaved(true);
+    } catch {
+      setNameError(true);
+    }
   }
 
   return (
@@ -100,6 +122,7 @@ export default function Settings() {
           {t("settings.save")}
         </button>
         {nameSaved && <p className="muted">{t("settings.saved")}</p>}
+        {nameError && <p style={{ color: "var(--color-danger)", fontSize: "0.9rem" }}>{t("settings.saveError")}</p>}
       </div>
 
       <div className="card">
@@ -116,6 +139,7 @@ export default function Settings() {
             </option>
           ))}
         </select>
+        {languageError && <p style={{ color: "var(--color-danger)", fontSize: "0.9rem" }}>{t("settings.saveError")}</p>}
       </div>
 
       <div className="card">
@@ -133,6 +157,7 @@ export default function Settings() {
           ))}
         </select>
         {saved && <p className="muted">{t("settings.saved")}</p>}
+        {timezoneError && <p style={{ color: "var(--color-danger)", fontSize: "0.9rem" }}>{t("settings.saveError")}</p>}
       </div>
 
       <Link to="/wallpaper" className="card" style={{ textDecoration: "none", color: "var(--color-text)" }}>
