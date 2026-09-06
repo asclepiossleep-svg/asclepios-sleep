@@ -103,53 +103,79 @@ it works across machines and after a session ends.
 - Avoid agent loops: only an explicit `@claude` mention triggers Claude,
   and only the GitHub Actions bot may trigger automated retries.
 
-## End-to-end verification
+## Partial E2E checkpoint
 
-First end-to-end audit of the three workflows above, performed against
-`main` from an `@claude`-triggered issue (asclepiossleep-svg/asclepios-sleep#8).
+The first live run of the three workflows above, from an
+`@claude`-triggered issue (asclepiossleep-svg/asclepios-sleep#8), did
+**not** complete end-to-end. This section separates what was directly
+observed on that run from what is only inferred by reading the workflow
+files — do not treat source inspection alone as verification.
 
-- **Repository owner-only trigger.** Each workflow gates on the triggering
-  actor before doing anything else. `claude-manager-dispatch.yml` checks
-  the issue/comment author's login (`github.event.issue.user.login` /
-  `github.event.comment.user.login`) equals `asclepiossleep-svg`, plus a
-  `[MANAGER]`/`[AUDIT]` marker in the title, body, or label.
-  `claude.yml` checks `github.actor == github.repository_owner` (or the
-  `github-actions[bot]` service account posting a scheduled retry), plus an
-  `@claude` mention or an issue assignment. The two checks use different
-  mechanics (a hardcoded login string vs. the dynamic
-  `repository_owner` comparison) but both resolve to "only the repo owner
-  can spend the linked Anthropic budget or gain write access" — this is
-  the security boundary for triggers on this **public** repository.
-- **`CLAUDE_AUTOMATION_ENABLED` kill switch.** All three workflows —
-  `claude-manager-dispatch.yml`, `claude.yml`, and
-  `claude-quota-retry.yml` — include `vars.CLAUDE_AUTOMATION_ENABLED !=
-  'false'` in their job-level `if:` condition. Setting the repo Actions
-  variable to `false` pauses every automated Claude run, including the
-  hourly quota-retry loop, without editing a workflow file or touching a
-  secret. Any other value (or the variable being unset) leaves automation
-  enabled.
-- **Quota pause and retry behaviour.** `claude.yml`'s "Classify Claude
-  result" step inspects the run's execution output after a non-success
-  conclusion. Output matching usage/rate-limit patterns (`usage limit`,
-  `rate limit`, `quota`, `credit balance`, `429`, etc.) gets the
-  `ai:paused-quota` label and an `[AI-STATUS] PAUSED-QUOTA` comment;
-  anything else gets `ai:blocked` and an `[AI-STATUS] BLOCKED` comment for
-  the PM agent to diagnose manually — unrecognised failures are not
-  retried blindly. `claude-quota-retry.yml` runs hourly (`17 * * * *`),
-  re-pings every open issue labelled `ai:paused-quota` with a `@claude
-  Resume...` comment referencing the latest checkpoint, then clears the
-  label. There is no maximum retry count; a concurrency group prevents a
-  manual dispatch from overlapping the scheduled run.
-- **Pull-request approval boundary.** The workflows grant Claude
-  `contents: write`, `pull-requests: write`, and `issues: write` — enough
-  to create branches, push commits, open/update pull requests, and post
-  comments — but the `claude-code-action` cannot submit a formal GitHub PR
-  review or approve a pull request. Merging is a separate, human-gated
-  step: per the normal task flow above, the PM agent or Edmund reviews the
-  diff and evidence and merges only after required checks pass; schema,
-  auth/authorization, payment, and other destructive-change categories
-  additionally require explicit human review before merge (`AGENTS.md`
-  §7). No agent, including Claude, merges its own pull request.
+**Observed on issue #8 / PR #9 (commit `dfc547f`):**
+
+- Claude read the repository instructions, created a branch, committed,
+  and pushed the documentation change.
+- The triggering `claude.yml` run did not finish successfully; the
+  "Classify Claude result" step matched a usage/rate-limit pattern in the
+  run output, so the issue was labelled `ai:paused-quota` with an
+  `[AI-STATUS] PAUSED-QUOTA` comment. Claude did not reach
+  `READY_FOR_AUDIT`.
+- Claude did not open a pull request and did not wait for or report CI
+  checks. This matches the workflow as written: `claude.yml`'s
+  `--allowedTools` list (`Bash(npm install|run build|run test|run
+  lint|run typecheck)`, `Bash(git status|diff|log)`, `Edit`, `Write`,
+  `Read`, `Glob`, `Grep`) has no `gh pr create` or PR-creation tool, so
+  automatic PR creation is currently impossible from this path, not just
+  unexercised.
+- Edmund opened PR #9 manually from the pushed branch.
+- Vercel's `asclepios-sleep-web` and `asclepios-sleep-api` preview builds
+  for PR #9 later reported green/Ready.
+
+**Configuration read from the workflow files — not yet proven by a clean
+test, and in two cases contradicted by the files themselves:**
+
+- **Trigger is not owner-only as previously stated.**
+  `claude-manager-dispatch.yml`'s `if:` accepts
+  `github.event.issue.user.login == 'asclepiossleep-svg' ||
+  github.event.comment.user.login == 'asclepiossleep-svg'`. On an
+  issue the owner opened, a `[MANAGER]`/`[AUDIT]` comment from *any other
+  account* still satisfies that OR and would run the job with
+  `contents: write` / `issues: write` / `pull-requests: write`. This gap
+  is unresolved.
+- **`CLAUDE_AUTOMATION_ENABLED` kill switch.** All three workflows include
+  `vars.CLAUDE_AUTOMATION_ENABLED != 'false'` in their job-level `if:`.
+  This is a straightforward config read (not exercised live in this run):
+  setting the repo Actions variable to `false` should pause every
+  automated Claude run, including the hourly quota-retry loop, without
+  editing a workflow file or touching a secret.
+- **Quota resume is unverified and likely non-functional as written.**
+  `claude-quota-retry.yml` posts its `@claude Resume...` comment using
+  `GH_TOKEN: ${{ github.token }}` — the default `GITHUB_TOKEN`. GitHub
+  does not start new workflow runs for events created by that token
+  (`workflow_dispatch`/`repository_dispatch` excepted), so this comment is
+  expected not to trigger `claude.yml` at all. The workflow then clears
+  `ai:paused-quota` unconditionally, whether or not a Claude run actually
+  resumed — issue #8 having the label cleared is not evidence a retry
+  worked. Do not treat the unlimited-retry (no maximum count) design as an
+  accepted default until a resume has been proven to actually dispatch a
+  Claude run.
+- **Approval boundary is not demonstrated end-to-end.** `claude.yml`
+  cannot submit or approve a PR review, and per the normal task flow a
+  human/PM merges after checks pass — but this run proves automatic PR
+  creation is missing from `claude.yml`'s allowlist, and
+  `claude-manager-dispatch.yml`'s prompt separately instructs Claude to
+  "commit each sub-piece to main as soon as it is complete," i.e.
+  direct-to-main for that workflow, not branch → PR → review. No run has
+  yet exercised branch → automatic PR → check-wait → human merge in full.
+
+**Follow-up:** the trigger, token, and prompt corrections above are
+tracked as the post-merge hotfix requested on PR #7
+(asclepiossleep-svg/asclepios-sleep#7); that hotfix, not this
+documentation change, is where they should be fixed. This section should
+only be upgraded from "partial checkpoint" to "verified" after a clean
+test proves: an untrusted commenter is rejected, the owner is accepted,
+exactly one explicit retry dispatch starts exactly one Claude run with no
+duplicate loop, automatic PR creation works, and checks are reported.
 
 ## Adding another project
 
