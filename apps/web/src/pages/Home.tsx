@@ -105,6 +105,9 @@ export default function Home() {
         <Link to="/programmes" className="card" style={{ textDecoration: "none", color: "var(--color-text)", textAlign: "center" }}>
           {t("home.cta.programmes")}
         </Link>
+        <Link to="/shop" className="card" style={{ textDecoration: "none", color: "var(--color-text)", textAlign: "center" }}>
+          {t("home.cta.shop")}
+        </Link>
         <Link to="/music" className="card" style={{ textDecoration: "none", color: "var(--color-text)", textAlign: "center" }}>
           {t("home.cta.music")}
         </Link>
