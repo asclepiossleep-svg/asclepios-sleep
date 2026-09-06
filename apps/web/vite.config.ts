@@ -8,7 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: [],
+      // PWA install/Home Screen flow (6 Sep 2026) — favicon/apple-touch-icon
+      // aren't referenced by the manifest below, only by index.html, so they
+      // need to be listed explicitly to end up in the offline precache.
+      includeAssets: ["icons/favicon-16.png", "icons/favicon-32.png", "icons/apple-touch-icon.png"],
       manifest: {
         name: "Asclepios Sleep",
         short_name: "Asclepios",
@@ -17,7 +20,11 @@ export default defineConfig({
         background_color: "#0f1420",
         display: "standalone",
         start_url: "/",
-        icons: [],
+        icons: [
+          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "/icons/icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
       },
       workbox: {
         // App-shell caching only in this scaffold; media stays on CDN and is

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../state/session";
 import { t, setLocale, SUPPORTED_LOCALES, useLocale } from "../i18n";
+import { usePwaInstall } from "../state/usePwaInstall";
 import BottomNav from "../components/BottomNav";
 import PageHeader from "../components/PageHeader";
 
@@ -42,6 +43,7 @@ const TIMEZONES = getTimezones();
 export default function Settings() {
   const { user, updateUser, logout } = useSession();
   const locale = useLocale();
+  const { isStandalone, canPromptInstall, showIosGuidance, promptInstall } = usePwaInstall();
   const [timezone, setTimezone] = useState(user?.timezone ?? "Europe/London");
   const [name, setName] = useState(user?.displayName ?? "");
   const [saved, setSaved] = useState(false);
@@ -141,6 +143,36 @@ export default function Settings() {
       <Link to="/theme" className="card" style={{ textDecoration: "none", color: "var(--color-text)" }}>
         {t("settings.theme")}
       </Link>
+
+      {/* PWA install/Home Screen flow (6 Sep 2026) — the permanent, always
+          reachable home for this (unlike Home.tsx's dismissible one-time
+          nudge), so dismissing that nudge doesn't lose the ability to
+          install later. Hidden entirely once nothing is actually actionable
+          (desktop browser with neither Android's install prompt nor iOS
+          guidance) rather than showing a dead "Install" control. */}
+      {(isStandalone || canPromptInstall || showIosGuidance) && (
+        <div className="card">
+          <label>{t("settings.installApp")}</label>
+          {isStandalone ? (
+            <p className="muted" style={{ marginTop: "0.5rem" }}>
+              {t("settings.installedAlready")}
+            </p>
+          ) : canPromptInstall ? (
+            <>
+              <p className="muted" style={{ marginTop: "0.5rem" }}>
+                {t("home.installPrompt.body")}
+              </p>
+              <button className="primary" onClick={() => promptInstall()} style={{ marginTop: "0.5rem" }}>
+                {t("home.installPrompt.install")}
+              </button>
+            </>
+          ) : (
+            <p className="muted" style={{ marginTop: "0.5rem" }}>
+              {t("home.installPrompt.iosSteps")}
+            </p>
+          )}
+        </div>
+      )}
 
       <button onClick={logout} style={{ marginTop: "auto" }}>
         {t("settings.logout")}
