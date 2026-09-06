@@ -398,6 +398,12 @@ async function main() {
     const tzAfterFirstDevice = await apiTz("GET", "/preferences", { timezone: "America/New_York", sync: true });
     check("AUTO mode follows the device's reported timezone at a bounded sync point", tzAfterFirstDevice.json.timezone === "America/New_York");
 
+    // The sync signal alone, with no X-Client-Timezone header at all (a
+    // malformed/older client), must be a no-op rather than clobbering the
+    // saved zone or throwing.
+    const tzSyncNoHeader = await apiTz("GET", "/preferences", { sync: true });
+    check("the sync signal with no timezone header leaves the saved zone untouched", tzSyncNoHeader.json.timezone === "America/New_York");
+
     // Travel: a later synced request reporting a *different* zone must move
     // it again — proves this isn't a one-shot capture, but keeps following
     // the device across sync points.
@@ -415,6 +421,22 @@ async function main() {
     check(
       "Tonight's plannedDate reflects the live Auto-resolved device timezone",
       kiritimatiPlannedDate === localDateKeyForTest(new Date(), "Pacific/Kiritimati"),
+    );
+
+    // Real DST boundary: Europe/London springs forward from GMT (UTC+0) to
+    // BST (UTC+1) at 01:00 UTC on 2027-03-28. A fixed-offset implementation
+    // (e.g. "just subtract/add N hours") would still call 2027-03-28T23:30Z
+    // the 28th locally; a real IANA-zone lookup correctly calls it the 29th,
+    // since local clocks are already an hour ahead by then. localDateKey uses
+    // Intl.DateTimeFormat against the zone name (not a stored offset), so
+    // this locks that in rather than relying on it being obviously correct.
+    check(
+      "localDateKey stays on the pre-transition day just before an instant 30 minutes before Europe/London's spring-forward",
+      localDateKeyForTest(new Date("2027-03-28T00:30:00.000Z"), "Europe/London") === "2027-03-28",
+    );
+    check(
+      "localDateKey correctly rolls to the next calendar day after Europe/London's spring-forward pushes local time past midnight",
+      localDateKeyForTest(new Date("2027-03-28T23:30:00.000Z"), "Europe/London") === "2027-03-29",
     );
 
     // Switching to Manual with an explicit zone must persist that zone...
