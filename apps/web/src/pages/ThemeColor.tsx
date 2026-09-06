@@ -15,6 +15,7 @@ import PageHeader from "../components/PageHeader";
 export default function ThemeColor() {
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const { user, updateUser } = useSession();
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,12 +28,15 @@ export default function ThemeColor() {
   async function save(next: () => void) {
     if (!selected) return next();
     setSaving(true);
+    setSaveError(false);
     try {
       const res = await api.patch<{ themeColor: string | null }>("/preferences", { themeColor: selected });
       updateUser({ themeColor: res.themeColor });
+      next();
+    } catch {
+      setSaveError(true);
     } finally {
       setSaving(false);
-      next();
     }
   }
 
@@ -69,6 +73,8 @@ export default function ThemeColor() {
           </button>
         ))}
       </div>
+
+      {saveError && <p style={{ color: "var(--color-danger)" }}>{t("theme.saveError")}</p>}
 
       {isSetup ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "auto" }}>

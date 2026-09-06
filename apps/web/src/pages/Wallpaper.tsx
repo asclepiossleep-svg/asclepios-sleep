@@ -20,6 +20,7 @@ export default function Wallpaper() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const { user, updateUser } = useSession();
   const location = useLocation();
   const navigate = useNavigate();
@@ -45,15 +46,18 @@ export default function Wallpaper() {
   async function save(next: () => void) {
     if (!selected) return next();
     setSaving(true);
+    setSaveError(false);
     try {
       const res = await api.patch<{ wallpaperId: string | null; wallpaper: { imageUrl: string | null; themeColor: string | null } | null }>(
         "/preferences",
         { wallpaperId: selected }
       );
       updateUser({ wallpaperId: res.wallpaperId, wallpaper: res.wallpaper });
+      next();
+    } catch {
+      setSaveError(true);
     } finally {
       setSaving(false);
-      next();
     }
   }
 
@@ -118,6 +122,8 @@ export default function Wallpaper() {
             </div>
           );
         })}
+
+      {saveError && <p style={{ color: "var(--color-danger)" }}>{t("wallpaper.saveError")}</p>}
 
       {isSetup ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "auto" }}>
