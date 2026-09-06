@@ -317,5 +317,11 @@
   "nav.back": "返回",
   "nav.tonight": "今晚",
   "nav.review": "回顧",
-  "nav.settings": "設定"
+  "nav.settings": "設定",
+  "pwaInstall.label": "安裝應用程式",
+  "pwaInstall.title": "將 Asclepios Sleep 加到主畫面",
+  "pwaInstall.bodyAndroid": "安裝呢個 App，每晚都可以全螢幕快速打開。",
+  "pwaInstall.bodyIos": "撳「分享」，揀「加入主畫面」，每晚都可以全螢幕快速打開。",
+  "pwaInstall.install": "安裝",
+  "pwaInstall.dismiss": "關閉"
 }

@@ -8,16 +8,25 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: [],
+      includeAssets: ["icons/favicon-16.png", "icons/favicon-32.png", "icons/apple-touch-icon.png"],
       manifest: {
         name: "Asclepios Sleep",
         short_name: "Asclepios",
         description: "Product-led sleep management: routine, sleep sound, wake, and review.",
-        theme_color: "#2b3a55",
-        background_color: "#0f1420",
+        // PWA/Home Screen audit (6 Sep 2026) — was navy (#2b3a55/#0f1420), a
+        // leftover scaffold default that doesn't match the actual day-theme
+        // palette (tokens.css --color-primary/--color-bg). Android's install
+        // sheet and splash screen read these directly, so the mismatch was
+        // visible the moment someone installed the app.
+        theme_color: "#5c7a5a",
+        background_color: "#faf6ef",
         display: "standalone",
         start_url: "/",
-        icons: [],
+        icons: [
+          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+          { src: "/icons/icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
       },
       workbox: {
         // App-shell caching only in this scaffold; media stays on CDN and is

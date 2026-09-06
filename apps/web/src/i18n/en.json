@@ -317,5 +317,11 @@
   "nav.back": "Back",
   "nav.tonight": "Tonight",
   "nav.review": "Review",
-  "nav.settings": "Settings"
+  "nav.settings": "Settings",
+  "pwaInstall.label": "Install app",
+  "pwaInstall.title": "Add Asclepios Sleep to your home screen",
+  "pwaInstall.bodyAndroid": "Install the app for quick, full-screen access every night.",
+  "pwaInstall.bodyIos": "Tap Share, then \"Add to Home Screen\", for quick, full-screen access every night.",
+  "pwaInstall.install": "Install",
+  "pwaInstall.dismiss": "Dismiss"
 }

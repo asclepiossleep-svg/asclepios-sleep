@@ -19,6 +19,7 @@ import MusicLibrary from "./pages/MusicLibrary";
 import NowPlaying from "./pages/NowPlaying";
 import AppBackground from "./components/AppBackground";
 import MusicPlayerBar from "./components/MusicPlayerBar";
+import InstallPrompt from "./components/InstallPrompt";
 
 // Doc 05 §7 — day/night theme follows local time by default; a real build
 // lets the user override this from Settings (not wired in this scaffold).
@@ -81,6 +82,11 @@ export default function App() {
           layer is a no-op — null — until user.wallpaper.imageUrl exists,
           which only happens after login; see AppBackground.tsx). */}
       <AppBackground />
+      {/* PWA/Home Screen audit (6 Sep 2026) — only offered once signed in,
+          same reasoning as MusicPlayerBar below: Login already carries its
+          own hero/copy and doesn't need install nagging competing for
+          attention before someone has a reason to trust the app. */}
+      {user && <InstallPrompt />}
       <Routes>
         <Route path="/login" element={<Login />} />
       <Route
