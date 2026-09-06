@@ -113,7 +113,7 @@ export default function Assessment() {
   if (loadFailed) {
     return (
       <div className="screen">
-        <BackButton to="/home" />
+        <BackButton />
         <p className="muted">{t("assessment.loadError")}</p>
         <button className="muted" onClick={retry}>
           {t("setup.retry")}
@@ -125,7 +125,7 @@ export default function Assessment() {
   if (!question) {
     return (
       <div className="screen">
-        <BackButton to="/home" />
+        <BackButton />
         <p className="muted">{t("assessment.loading")}</p>
       </div>
     );
@@ -133,7 +133,7 @@ export default function Assessment() {
 
   return (
     <div className="screen">
-      <BackButton to="/home" />
+      <BackButton />
       <h1>{question.text}</h1>
       {answerError && <p style={{ color: "var(--color-danger)" }}>{t("assessment.answerError")}</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
