@@ -103,6 +103,54 @@ it works across machines and after a session ends.
 - Avoid agent loops: only an explicit `@claude` mention triggers Claude,
   and only the GitHub Actions bot may trigger automated retries.
 
+## End-to-end verification
+
+First end-to-end audit of the three workflows above, performed against
+`main` from an `@claude`-triggered issue (asclepiossleep-svg/asclepios-sleep#8).
+
+- **Repository owner-only trigger.** Each workflow gates on the triggering
+  actor before doing anything else. `claude-manager-dispatch.yml` checks
+  the issue/comment author's login (`github.event.issue.user.login` /
+  `github.event.comment.user.login`) equals `asclepiossleep-svg`, plus a
+  `[MANAGER]`/`[AUDIT]` marker in the title, body, or label.
+  `claude.yml` checks `github.actor == github.repository_owner` (or the
+  `github-actions[bot]` service account posting a scheduled retry), plus an
+  `@claude` mention or an issue assignment. The two checks use different
+  mechanics (a hardcoded login string vs. the dynamic
+  `repository_owner` comparison) but both resolve to "only the repo owner
+  can spend the linked Anthropic budget or gain write access" — this is
+  the security boundary for triggers on this **public** repository.
+- **`CLAUDE_AUTOMATION_ENABLED` kill switch.** All three workflows —
+  `claude-manager-dispatch.yml`, `claude.yml`, and
+  `claude-quota-retry.yml` — include `vars.CLAUDE_AUTOMATION_ENABLED !=
+  'false'` in their job-level `if:` condition. Setting the repo Actions
+  variable to `false` pauses every automated Claude run, including the
+  hourly quota-retry loop, without editing a workflow file or touching a
+  secret. Any other value (or the variable being unset) leaves automation
+  enabled.
+- **Quota pause and retry behaviour.** `claude.yml`'s "Classify Claude
+  result" step inspects the run's execution output after a non-success
+  conclusion. Output matching usage/rate-limit patterns (`usage limit`,
+  `rate limit`, `quota`, `credit balance`, `429`, etc.) gets the
+  `ai:paused-quota` label and an `[AI-STATUS] PAUSED-QUOTA` comment;
+  anything else gets `ai:blocked` and an `[AI-STATUS] BLOCKED` comment for
+  the PM agent to diagnose manually — unrecognised failures are not
+  retried blindly. `claude-quota-retry.yml` runs hourly (`17 * * * *`),
+  re-pings every open issue labelled `ai:paused-quota` with a `@claude
+  Resume...` comment referencing the latest checkpoint, then clears the
+  label. There is no maximum retry count; a concurrency group prevents a
+  manual dispatch from overlapping the scheduled run.
+- **Pull-request approval boundary.** The workflows grant Claude
+  `contents: write`, `pull-requests: write`, and `issues: write` — enough
+  to create branches, push commits, open/update pull requests, and post
+  comments — but the `claude-code-action` cannot submit a formal GitHub PR
+  review or approve a pull request. Merging is a separate, human-gated
+  step: per the normal task flow above, the PM agent or Edmund reviews the
+  diff and evidence and merges only after required checks pass; schema,
+  auth/authorization, payment, and other destructive-change categories
+  additionally require explicit human review before merge (`AGENTS.md`
+  §7). No agent, including Claude, merges its own pull request.
+
 ## Adding another project
 
 Each repository needs its own workflow files and authentication because the
