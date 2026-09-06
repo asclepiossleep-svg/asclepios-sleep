@@ -362,7 +362,7 @@ export const DEMO_ACCOUNTS = [
   { email: "demo.multi@asclepios.test", label: "Demo Multi Product", scenario: "Owns 3 products, tonight shows only 1-3 items" },
   { email: "demo.lowadherence@asclepios.test", label: "Demo Low Adherence", scenario: "Product used 2/7 nights" },
   { email: "demo.poorresponse@asclepios.test", label: "Demo Poor Response", scenario: "Used 7/7 nights, poor outcome" },
-  { email: "demo.premium@asclepios.test", label: "Demo Premium", scenario: "28-day programme + premium media" },
+  { email: "demo.premium@asclepios.test", label: "Demo Premium", scenario: "30-day programme (day 9) + premium media" },
   { email: "demo.travel@asclepios.test", label: "Demo Travel", scenario: "HK -> UK timezone change" },
   { email: "demo.admin@asclepios.test", label: "Demo Admin", scenario: "Back-office admin access" },
 ] as const;

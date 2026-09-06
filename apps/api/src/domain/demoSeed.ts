@@ -335,10 +335,14 @@ export async function seedBaseConfig() {
     },
   });
 
-  // Pre-existing generic programme (kept as-is — not one of the two named
-  // programmes below; flagged in OWNER_RUNBOOK.md as worth a naming check
-  // with Edmund since "28-Day" is close to but not the same as "30-Day
-  // Sleep Reset").
+  // Pre-existing generic programme, kept as-is (dropping it is a data-model
+  // decision, not a UI bug fix) but nothing enrols in it any more — Fix
+  // #5.6's guided journey only ships copy/content for the two named
+  // programmes below and GET /programmes only ever lists those two, so an
+  // enrollment here would have no i18n strings or ProgrammeDay content to
+  // render. Whole-site audit (6 Sep 2026) moved demo.premium off of this
+  // (see that case below) after finding exactly that: an invisible,
+  // untranslatable enrollment.
   await prisma.programme.upsert({ where: { code: "PRG_28DAY_CORE" }, update: {}, create: { code: "PRG_28DAY_CORE", name: "28-Day Sleep Reset", lengthDays: 28, reviewFrequencyDays: 7 } });
 
   // Requirement Recovery Matrix #20/#21 — the two named programmes.
@@ -845,12 +849,28 @@ export async function reseedDemoUser(email: string) {
       break;
 
     case "demo.premium@asclepios.test":
+      // Whole-site audit (6 Sep 2026) — this used to enrol into
+      // PRG_28DAY_CORE, a leftover generic programme that Fix #5.6's guided
+      // journey never carried i18n copy for and GET /programmes excludes
+      // from the browse list (see the comment above PRG_28DAY_CORE's own
+      // seed below). The enrollment row silently existed but could never
+      // render — no ProgrammeDay content, no `programme.PRG_28DAY_CORE.*`
+      // translations, and invisible in the Programmes UI, while the demo
+      // picker's tooltip (DEMO_ACCOUNTS in packages/shared) still promised
+      // "28-day programme". Repointed at the real, supported 30-Day Sleep
+      // Reset instead. `startedAt` (not the otherwise-unread `currentDay`
+      // column — GET /:code derives the displayed day from `startedAt` via
+      // computeProgrammeDayState, see programmeContinuity.ts) is backdated
+      // 8 days so the demo actually lands mid-programme, matching the
+      // "Day 9" scenario this account has always been meant to show.
       await ensureMembership("PREMIUM");
-      await grantEntitlement(user.id, "programme.28day", "DEMO_SEED");
+      await grantEntitlement(user.id, "PROGRAMME_30DAY_RESET", "DEMO_SEED");
       await grantEntitlement(user.id, "media.premium_audio", "DEMO_SEED");
       await prisma.programmeEnrollment.deleteMany({ where: { userId: user.id } });
-      const prg = await prisma.programme.findUniqueOrThrow({ where: { code: "PRG_28DAY_CORE" } });
-      await prisma.programmeEnrollment.create({ data: { userId: user.id, programmeId: prg.id, currentDay: 9 } });
+      const prg = await prisma.programme.findUniqueOrThrow({ where: { code: "PRG_30DAY_RESET" } });
+      await prisma.programmeEnrollment.create({
+        data: { userId: user.id, programmeId: prg.id, startedAt: new Date(Date.now() - 8 * 24 * 3600 * 1000) },
+      });
       await seedNights(user.id, p03.id, 6, [4, 4, 5, 4, 5, 5, 5]);
       break;
 
