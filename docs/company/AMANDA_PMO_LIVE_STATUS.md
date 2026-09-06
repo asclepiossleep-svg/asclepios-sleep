@@ -19,29 +19,35 @@ Visible artifacts:
 - `docs/company/FULFILMENT_DECISION_MATRIX_V1.md`
 - `docs/company/COMMERCE_EXCEPTION_ALERT_PERMISSION_MODEL_V1.md`
 - `docs/company/CANONICAL_COMMERCE_DATA_REPORTING_MAP_V1.md`
+- `docs/company/COMMERCE_EXISTING_SCHEMA_DELTA_V1.md`
 
 Checkpoint completed 2026-09-06:
 - nine launch gates defined across product/commercial definition, website, payment, canonical order lifecycle, fulfilment, CS, marketing, CRM/reporting and digital assets;
 - fulfilment routes/data contract, consumable traceability requirements, diligence questionnaire and acceptance tests defined;
 - commerce exception severity P0-P3, operational triggers/actions/owners/escalations and role permissions defined;
-- canonical vendor-independent commerce data model now defined across Customer/Consent, SKU, Order/Item/Event, Payment/Refund, Inventory, Fulfilment/Shipment, Return, CSCase, Exception, Campaign/Creative and Activation/Membership;
-- payment, fulfilment and orchestration states explicitly separated so paid-but-not-queued and similar stranded states are detectable;
-- idempotency/reconciliation boundaries and deterministic daily exception checks defined;
-- owner dashboard fields mapped to Money / Orders / Stock / Customers / Growth;
-- provider portability and minimum data export contract defined;
-- engineering sequence and synthetic end-to-end acceptance gate defined without forcing premature ERP lock-in.
+- canonical vendor-independent commerce data model defined across customer/consent, product/SKU, order/payment, inventory, fulfilment, return, CS, exceptions, attribution and activation;
+- existing Prisma schema reconciled against the canonical model: User, ConsentRecord, Product, ProductOwnership, Membership, Entitlement, ActivationCode, AuditLog and AnalyticsEvent are explicitly reused rather than duplicated;
+- minimum missing transactional layer scoped: Order/OrderItem/OrderEvent, Payment/Refund, InventoryPosition/Lot, Fulfilment/Shipment, Return, CSCase and CommerceException;
+- implementation divided into small C1-C6 slices, keeping provider adapters last and preventing premature ERP/provider lock-in;
+- ten pre-provider tests defined including duplicate webhook/idempotency, stranded paid order, no fulfilment on failed payment, historical price snapshots, refund replay, inventory oversell and lot-recall traceability.
 
 Next:
-- reconcile canonical map against existing repository commerce/order schema and produce a scoped engineering delta rather than duplicate models;
-- convert approved Sleep Tape knowledge into implementation-ready product-page/CS fields;
+- prepare precise Rex engineering ticket for commerce C1 only when implementation capacity is appropriate;
+- continue launch content/CS preparation while final commercial/provider decisions remain non-gating;
 - obtain/compare vendor quotes only when commercial outreach or stock timing makes the decision gating.
 
 ### 2. Product Knowledge / Website Content — WORKING
-Visible artifact:
+Visible artifacts:
 - `docs/product/SLEEP_TAPE_PRODUCT_KNOWLEDGE_OBJECT_V1.md`
-Checkpoint: canonical product truth, suitability/safety screen, claims policy, website copy, FAQ/CS matrix, Intelligence bridge, first Growth atom and implementation YAML exist.
-Important launch dependencies: final SKU materials, adhesive/substrate specification, pack IFU, pack size/barcode/price, final legal/regulatory/claims approval.
-Next visible output: implementation-ready website/CS field map, then magnesium Product Knowledge Object.
+- `docs/product/SLEEP_TAPE_IMPLEMENTATION_FIELD_MAP_V1.md`
+Checkpoint:
+- canonical product truth, suitability/safety screen, claims policy, website copy, FAQ/CS matrix, Intelligence bridge and Growth atom exist;
+- knowledge has now been translated into concrete existing-Product fields plus provider/CMS-neutral product-page, FAQ, CS, app/Intelligence and activation fields;
+- mandatory near-CTA safety insert and GREEN/AMBER/RED publication rules are implementation requirements;
+- missing pack/material/price/tax/stock/returns/entitlement facts are explicitly nullable/draftable and must not be invented;
+- ten implementation acceptance tests defined, including coming-soon no-purchase, red-claim absence, amber publication gate and snoring-only recommendation suppression.
+Important launch dependencies: final SKU/material/adhesive specification, pack IFU/count/barcode/price, stock/shipping/returns rules and final legal/regulatory/claims approval.
+Next visible output: magnesium Product Knowledge Object after launch-critical implementation handoff is sufficiently scoped.
 
 ### 3. Growth / Video Production Pipeline — WORKING
 Pipeline: research/product signal -> core message -> short -> explainer -> founder/product outline -> storyboard -> voice/subtitle -> variants -> publish gate -> measurement.
@@ -58,8 +64,8 @@ Checkpoint: Sleep Tape recommendation logic defined; snoring alone cannot trigge
 ### 5. Amanda OS V1 — WORKING
 Visible artifact:
 - `docs/company/AMANDA_OS_V1.md`
-- commerce permission/exception layer and canonical commerce/reporting map now inspectable.
-Next: existing-schema delta + decision-log format.
+Commerce permission/exception layer, canonical reporting map and existing-schema delta are now inspectable.
+Next: decision-log format after launch handoff work.
 
 ### 6. Google Drive / Digital Asset Structure — QUEUED / NEEDS SETUP
 Target: Research / Product / Marketing / Video / Audio-Voice / Brand Assets / Published / Archive.
@@ -81,7 +87,9 @@ Meaningful milestone report: WHAT CHANGED / WHERE TO SEE IT / WHAT TO REVIEW / N
 - DONE: Fulfilment Decision Matrix V1.
 - DONE: Commerce Exception / Alert / Permission Model V1.
 - DONE: Canonical Commerce Data & Reporting Map V1.
-- WORKING: existing commerce/order schema reconciliation -> engineering delta.
+- DONE: existing Prisma commerce-schema reconciliation + scoped engineering delta.
+- DONE: Sleep Tape implementation field map for website/CS/app/activation.
+- WORKING: next launch-content/product-knowledge object.
 - WORKING: evidence -> scenario / corroboration / behavioural strategy mapping.
 - WORKING: marketing/video output structure derived from research/product content.
 - NEXT: Google Drive digital-asset folder/metadata plan.
