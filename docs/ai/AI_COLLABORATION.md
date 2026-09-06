@@ -141,15 +141,24 @@ First end-to-end audit of the three workflows above, performed against
   label. There is no maximum retry count; a concurrency group prevents a
   manual dispatch from overlapping the scheduled run.
 - **Pull-request approval boundary.** The workflows grant Claude
-  `contents: write`, `pull-requests: write`, and `issues: write` — enough
-  to create branches, push commits, open/update pull requests, and post
-  comments — but the `claude-code-action` cannot submit a formal GitHub PR
-  review or approve a pull request. Merging is a separate, human-gated
-  step: per the normal task flow above, the PM agent or Edmund reviews the
-  diff and evidence and merges only after required checks pass; schema,
-  auth/authorization, payment, and other destructive-change categories
-  additionally require explicit human review before merge (`AGENTS.md`
-  §7). No agent, including Claude, merges its own pull request.
+  `contents: write`, `pull-requests: write`, and `issues: write`. In
+  `claude.yml`, the tool allow-list (`--allowedTools` in `claude_args`,
+  accumulated with `claude-code-action`'s own scoped defaults) lets Claude
+  create the branch and commits, **open** a pull request
+  (`Bash(gh pr create:*)`), and read that PR and its checks back
+  (`Bash(gh pr view:*)`, `Bash(gh pr checks:*)` — both read-only). It is
+  **not** granted `gh pr merge`, `gh pr close`, `gh pr edit`,
+  `gh pr review`, unrestricted `gh api`, or arbitrary shell — those have
+  no allow rule and are denied (the workflow does not use
+  `--dangerously-skip-permissions`). `claude-code-action` additionally
+  cannot submit a formal GitHub PR review or approve a PR, and its system
+  prompt forbids force-pushing, rebasing, and pushing outside its own
+  branch. Merging stays a separate, human-gated step: per the normal task
+  flow above, the PM agent or Edmund reviews the diff and evidence and
+  merges only after required checks pass; schema, auth/authorization,
+  payment, and other destructive-change categories additionally require
+  explicit human review before merge (`AGENTS.md` §7). No agent,
+  including Claude, merges its own pull request.
 
 ## Adding another project
 
