@@ -17,6 +17,7 @@ PRODUCT READY -> WEBSITE READY -> PAYMENT READY -> ORDER FLOW READY -> FULFILMEN
 Visible artifacts:
 - `docs/company/LAUNCH_READINESS_MAP_V1.md`
 - `docs/company/FULFILMENT_DECISION_MATRIX_V1.md`
+- `docs/company/COMMERCE_EXCEPTION_ALERT_PERMISSION_MODEL_V1.md`
 
 Checkpoint completed 2026-09-06:
 - nine launch gates defined across product/commercial definition, website, payment, canonical order lifecycle, fulfilment, CS, marketing, CRM/reporting and digital assets;
@@ -29,36 +30,26 @@ Checkpoint completed 2026-09-06:
 - provisional launch route set: specialist UK 3PL primary, ShipBob current lead diligence candidate, Amazon MCF fallback/hybrid, Huboo alternative quote;
 - vendor-independent fulfilment request/event data contract defined;
 - supplement-critical lot/batch, expiry, FEFO, recall and return controls promoted to non-negotiable requirements;
-- 35-point quote/diligence questionnaire and end-to-end fulfilment acceptance test defined.
+- 35-point quote/diligence questionnaire and end-to-end fulfilment acceptance test defined;
+- commerce exception severity P0-P3, operational triggers/actions/owners/escalations, immutable exception object and role-based permission boundaries defined;
+- owner dashboard converted to exception-first model with money/order/stock/customer/growth panels;
+- bounded retry/idempotency, no-double-refund, no-auto-claim/no-auto-spend safety rules and eight launch acceptance tests defined.
 
 Next:
-- commerce exception/alert model;
-- department/permission map for payment, fulfilment, CS, returns/refunds and owner escalation;
+- map exception model into canonical CRM/order/reporting fields;
 - convert approved Sleep Tape knowledge into implementation-ready product-page/CS fields;
 - obtain/compare vendor quotes only when commercial outreach or stock timing makes the decision gating.
 
 ### 2. Product Knowledge / Website Content — WORKING
 Visible artifact:
 - `docs/product/SLEEP_TAPE_PRODUCT_KNOWLEDGE_OBJECT_V1.md`
-
-Checkpoint completed 2026-09-06:
-- canonical role and customer-problem framing defined;
-- suitability / do-not-use / stop-use screen defined;
-- evidence boundary and GREEN / AMBER / RED claims policy established;
-- website hero/source copy and mandatory near-CTA safety insert drafted;
-- FAQ master and CS response matrix created;
-- Sleep Intelligence recommendation/corroboration bridge created;
-- first Growth/video content atom created;
-- supplier QA/material substantiation checklist created;
-- implementation YAML object created so website/app/CS can share one source of truth.
-
-Important launch dependencies still outstanding: final SKU materials, adhesive/substrate specification, pack IFU, pack size/barcode/price, final legal/regulatory/claims approval.
-
-Next visible output: magnesium Product Knowledge Object after current launch-critical operating-control work.
+Checkpoint: canonical product truth, suitability/safety screen, claims policy, website copy, FAQ/CS matrix, Intelligence bridge, first Growth atom and implementation YAML exist.
+Important launch dependencies: final SKU materials, adhesive/substrate specification, pack IFU, pack size/barcode/price, final legal/regulatory/claims approval.
+Next visible output: implementation-ready website/CS field map, then magnesium Product Knowledge Object.
 
 ### 3. Growth / Video Production Pipeline — WORKING
 Pipeline: research/product signal -> core message -> short -> explainer -> founder/product outline -> storyboard -> voice/subtitle -> variants -> publish gate -> measurement.
-Checkpoint: first Sleep Tape master marketing atom now exists inside the canonical Product Knowledge Object using the positioning “Use a cue, not a cure.”
+Checkpoint: first Sleep Tape master marketing atom exists using “Use a cue, not a cure.”
 Next visible output: production-ready short/explainer/storyboard package after claims gate is locked.
 
 ### 4. Sleep Intelligence V1 — WORKING
@@ -66,12 +57,13 @@ Visible artifacts:
 - `docs/product/ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md`
 - `docs/product/SLEEP_INTELLIGENCE_RESEARCH_REGISTRY_V1.md`
 Current step: evidence -> question -> signal/tag -> confidence -> strategy -> action -> outcome mapping, with safety/corroboration gates.
-Checkpoint: Sleep Tape now has concrete recommendation logic: mouth-opening concern + comfortable nasal breathing + no red flags can surface it as an optional routine aid; snoring alone cannot trigger recommendation; obstruction/OSA red flags suppress product recommendation and route to safety/clinical guidance.
+Checkpoint: Sleep Tape recommendation logic defined; snoring alone cannot trigger recommendation; obstruction/OSA red flags suppress product recommendation and route to safety/clinical guidance.
 
 ### 5. Amanda OS V1 — WORKING
 Visible artifact:
 - `docs/company/AMANDA_OS_V1.md`
-Next: department/permission map + operating exception/alert model + decision-log format, aligned to commerce operations.
+- commerce permission/exception layer now inspectable in `COMMERCE_EXCEPTION_ALERT_PERMISSION_MODEL_V1.md`.
+Next: canonical CRM/order/report field map + decision-log format.
 
 ### 6. Google Drive / Digital Asset Structure — QUEUED / NEEDS SETUP
 Target: Research / Product / Marketing / Video / Audio-Voice / Brand Assets / Published / Archive.
@@ -88,10 +80,11 @@ Meaningful milestone report: WHAT CHANGED / WHERE TO SEE IT / WHAT TO REVIEW / N
 - DONE: Sleep Intelligence research-registry skeleton.
 - DONE: Amanda live PMO tracker.
 - DONE: business-launch-first reprioritisation.
-- DONE: Launch Readiness Map V1 — nine gates, dependencies, acceptance criteria, order lifecycle, minimum CRM/reporting model.
-- DONE: Sleep Tape Product Knowledge Object V1 — website/FAQ/CS/app/Growth source of truth with safety and claims gates.
-- DONE: Fulfilment Decision Matrix V1 — researched routes, lead/fallback/alternative, fulfilment data contract, consumable traceability requirements, diligence questionnaire and launch acceptance test.
-- WORKING: commerce exception/alert model + department/permission model.
+- DONE: Launch Readiness Map V1.
+- DONE: Sleep Tape Product Knowledge Object V1.
+- DONE: Fulfilment Decision Matrix V1.
+- DONE: Commerce Exception / Alert / Permission Model V1.
+- WORKING: canonical CRM/order/report field map.
 - WORKING: evidence -> scenario / corroboration / behavioural strategy mapping.
 - WORKING: marketing/video output structure derived from research/product content.
 - NEXT: Google Drive digital-asset folder/metadata plan.
