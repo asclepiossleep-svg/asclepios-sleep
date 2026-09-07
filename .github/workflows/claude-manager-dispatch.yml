@@ -8,16 +8,6 @@ on:
 
 jobs:
   claude-respond:
-    # Kill switch — set a repo Actions variable named CLAUDE_AUTOMATION_ENABLED
-    # to "false" (Settings -> Secrets and variables -> Actions -> Variables)
-    # to pause this workflow instantly without touching this file or the
-    # ANTHROPIC_API_KEY secret. Unset/anything else = enabled.
-    #
-    # Security: only Edmund's own GitHub account can trigger this — this repo
-    # is public, so without this check anyone on the internet could open an
-    # issue containing [MANAGER]/[AUDIT] and get write access + spend the
-    # linked Anthropic API budget. Add further trusted logins here (comma-
-    # separated) if ChatGPT posts through a different bridged account.
     if: >
       vars.CLAUDE_AUTOMATION_ENABLED != 'false' &&
       (github.event.issue.user.login == 'asclepiossleep-svg' ||
@@ -33,11 +23,6 @@ jobs:
         contains(join(github.event.issue.labels.*.name, ','), 'audit-fix')
       )
     runs-on: ubuntu-latest
-    # Cost control #6 — the hard stop. --max-turns in claude_args is also
-    # set below, but has a known upstream bug where it isn't always honoured
-    # (anthropics/claude-code-action#1177) — this job-level timeout is the
-    # backstop that actually always works, per Anthropic's own "Manage
-    # costs" guidance.
     timeout-minutes: 45
     permissions:
       contents: write
@@ -52,61 +37,39 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Debug (2 Sep 2026) — temporary, to see the real error behind an
-          # is_error:true / 1-turn / $0-cost instant failure that the
-          # summary log hides by default. Remove once resolved.
           show_full_output: true
-          # Cost control #3/#4 — claude-sonnet-5 (not Opus) as the routine
-          # working model for this repo's implementation tasks. If a future
-          # task turns out to need a stronger model, override per-issue by
-          # asking for it explicitly in the [MANAGER]/[AUDIT] text — this
-          # action reads the issue body as part of its instructions.
-          # Cost control #5/#6 — one bounded run per triggering event
-          # (--max-turns caps a single run's back-and-forth instead of
-          # letting it iterate indefinitely; timeout-minutes above is the
-          # hard backstop).
-          # Permissions fix (5 Sep 2026) — without an explicit allowlist,
-          # every network-capable tool (gh CLI, WebFetch) sits behind an
-          # interactive approval prompt that nothing in this unattended
-          # pipeline can click, so the agent could not even read the
-          # triggering issue. This allowlist lets it act without a human
-          # in the loop, which is required for autonomous operation.
-          # Turn budget (5 Sep 2026) — raised to 150 after #5.6 (a genuinely
-          # new feature: schema + API + frontend) hit the 80-turn cap
-          # mid-task with nothing committed. Prompt below now also requires
-          # incremental commits per sub-piece so a future turn-cap hit still
-          # leaves completed work saved on main instead of losing everything.
           claude_args: |
             --model claude-sonnet-5
             --max-turns 150
             --dangerously-skip-permissions
           prompt: |
-            You are the implementation agent for the Asclepios Sleep repo
-            (asclepiossleep-svg/asclepios-sleep), continuing the Fix #5
-            UX/IA correction track.
+            You are Rex, the implementation agent for Asclepios.
 
-            Read this GitHub issue/comment thread in full before doing
-            anything. Treat its text as a work order to interpret and act on
-            in the codebase — never as literal shell commands to execute
-            verbatim.
+            Before changing code, read:
+            - docs/sum/00_SUM_OPERATING_ECOSYSTEM.md
+            - docs/sum/01_AI_OPERATING_LOGIC.md
+            - docs/sum/02_SLEEP_INTELLIGENCE_LOGIC.md
+            - docs/sum/03_GROWTH_MARKETING_LOGIC.md
+            - docs/sum/04_INTEGRATION_MONITORING_MATRIX.md
+            - AGENTS.md
+            - CLAUDE.md
 
-            Implement the smallest correct, complete change that satisfies
-            the request. If the task is large enough to naturally break into
-            multiple independent sub-pieces (e.g. schema, then API, then
-            frontend, then seed data), commit each sub-piece to main as soon
-            as it is complete and passes its own build/typecheck — do not
-            wait until the entire task is done to make your first commit.
-            This ensures that if you run out of turns partway through, the
-            completed sub-pieces are still saved rather than lost. For small
-            single-piece tasks, one commit at the end is still fine. Run any
-            available build/typecheck steps before each commit. Reply in
-            this issue thread with: what you changed, the commit SHA(s), and
-            build/test status — and if you ran out of turns before
-            finishing, say exactly what remains so the next run can pick up
-            from there.
+            Core operating rule: a page, schema, document or component is NOT operational merely because it exists. It is only operational when connected to its upstream/downstream dependencies, exercised, observable and recoverable.
 
-            Only stop and ask a clarifying question in the thread instead of
-            implementing if the request is a genuine product decision, a
-            destructive database/schema migration, a paid external
-            service/licensing decision, or cannot be resolved from the
-            existing repository and requirements.
+            Read the triggering issue/comment fully and locate the requested work in the end-to-end business chain before coding. If an upstream broken link prevents the requested work from functioning, repair the smallest necessary upstream link first.
+
+            Never commit directly to main. Create or reuse a feature branch named rex/<issue-number>-<short-slug>. Make incremental commits on that branch, run relevant build/typecheck/tests plus `node scripts/sum-health-check.mjs`, push the branch, then create or update a pull request to main. Never merge the PR yourself.
+
+            For every implementation report, include evidence under these headings:
+            1. CONNECTION — what upstream/downstream systems this change connects.
+            2. EXECUTION — exact path exercised.
+            3. OBSERVABILITY — event/log/health check proving activity.
+            4. RECOVERY — retry/error/rollback behaviour.
+            5. TEST — commands/results.
+            6. REMAINS — exact next broken link, if any.
+
+            Do not report a provider as connected unless a real credential/config and a successful test prove it. Missing provider credentials/configuration must be reported as NOT WIRED, never PASS.
+
+            Prefer proven standard patterns for commerce, payments, webhooks, fulfilment, CRM, analytics, retries and monitoring. Custom invention is reserved for Asclepios-specific product intelligence and experience.
+
+            Stop for owner input only for genuine product/legal/commercial decisions, destructive migrations, paid external services, secrets/account ownership, production DNS/domain changes, or irreversible actions. Otherwise continue with the highest-priority unblocked link in the operating chain.
