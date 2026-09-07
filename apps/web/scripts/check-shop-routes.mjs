@@ -1,8 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import { createServer } from "vite";
+import { build } from "vite";
 
 const root = new URL("../", import.meta.url);
 const localePaths = [
@@ -25,15 +26,27 @@ const expectedSurfaces = [
   ["/shop/help", "shop.surface.help"],
 ];
 
-const server = await createServer({
-  root: new URL(".", root).pathname,
-  appType: "custom",
-  logLevel: "error",
-  server: { middlewareMode: true },
+const rootPath = fileURLToPath(root);
+const testOutDir = ".shop-route-test";
+
+await build({
+  configFile: false,
+  root: rootPath,
+  logLevel: "silent",
+  build: {
+    ssr: "src/pages/Shop.tsx",
+    outDir: testOutDir,
+    emptyOutDir: true,
+    rollupOptions: {
+      output: { entryFileNames: "shop.mjs" },
+    },
+  },
 });
 
 try {
-  const { default: Shop } = await server.ssrLoadModule("/src/pages/Shop.tsx");
+  const bundleUrl = pathToFileURL(fileURLToPath(new URL(`${testOutDir}/shop.mjs`, root)));
+  bundleUrl.searchParams.set("test", String(Date.now()));
+  const { default: Shop } = await import(bundleUrl.href);
 
   function render(pathname) {
     return renderToStaticMarkup(
@@ -73,7 +86,7 @@ try {
     throw new Error("Unknown /shop/* route incorrectly rendered catalogue navigation");
   }
 } finally {
-  await server.close();
+  rmSync(new URL(testOutDir, root), { recursive: true, force: true });
 }
 
 const referenceKeys = Object.keys(locales[0][1]).sort();
