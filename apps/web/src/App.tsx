@@ -154,7 +154,7 @@ export default function App() {
           </RequireAuth>
         }
       />
-      <Route path="/shop" element={<Shop />} />
+      <Route path="/shop/*" element={<Shop />} />
       <Route
         path="/assessment"
         element={
