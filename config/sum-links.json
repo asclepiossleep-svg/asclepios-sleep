@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "states": ["ABSENT","PRESENT","WIRED","EXERCISED","MONITORED","RECOVERABLE","OPERATIONAL","DEGRADED","FAILED","RECOVERING","UNKNOWN"],
+  "links": [
+    {"id":"public_front_door","from":"internet","to":"public_web","criticality":"P0","expectedProbe":"public_url","currentState":"ABSENT"},
+    {"id":"public_to_catalogue","from":"public_web","to":"shopify_catalogue","criticality":"P0","expectedProbe":"product_list_nonempty","currentState":"ABSENT"},
+    {"id":"catalogue_to_cart","from":"shopify_catalogue","to":"cart","criticality":"P0","expectedProbe":"add_to_cart","currentState":"ABSENT"},
+    {"id":"cart_to_checkout","from":"cart","to":"checkout","criticality":"P0","expectedProbe":"checkout_reachable","currentState":"ABSENT"},
+    {"id":"checkout_to_payment","from":"checkout","to":"payment","criticality":"P0","expectedProbe":"test_payment","currentState":"ABSENT"},
+    {"id":"payment_to_order","from":"payment","to":"canonical_order","criticality":"P0","expectedProbe":"signed_webhook_and_idempotency","currentState":"ABSENT"},
+    {"id":"order_to_fulfilment","from":"canonical_order","to":"fulfilment_provider","criticality":"P0","expectedProbe":"test_fulfilment_acceptance","currentState":"ABSENT"},
+    {"id":"fulfilment_to_tracking","from":"fulfilment_provider","to":"tracking","criticality":"P1","expectedProbe":"tracking_event","currentState":"ABSENT"},
+    {"id":"order_to_activation","from":"canonical_order","to":"activation_code","criticality":"P0","expectedProbe":"qualifying_order_issues_code","currentState":"PRESENT"},
+    {"id":"activation_to_entitlement","from":"activation_code","to":"entitlement","criticality":"P0","expectedProbe":"activation_grants_entitlement","currentState":"PRESENT"},
+    {"id":"entitlement_to_member_app","from":"entitlement","to":"member_app","criticality":"P0","expectedProbe":"protected_access","currentState":"PRESENT"},
+    {"id":"assessment_to_tonight","from":"assessment","to":"tonight_engine","criticality":"P0","expectedProbe":"decision_output","currentState":"WIRED"},
+    {"id":"tonight_to_checkin","from":"tonight_engine","to":"morning_checkin","criticality":"P1","expectedProbe":"session_feedback","currentState":"WIRED"},
+    {"id":"checkin_to_review","from":"morning_checkin","to":"review_engine","criticality":"P1","expectedProbe":"seven_day_review","currentState":"WIRED"},
+    {"id":"events_to_analytics","from":"business_events","to":"analytics","criticality":"P1","expectedProbe":"event_persisted_queryable","currentState":"PRESENT"},
+    {"id":"exceptions_to_monitoring","from":"failures","to":"monitoring","criticality":"P0","expectedProbe":"synthetic_failure_visible","currentState":"PRESENT"},
+    {"id":"rex_to_repo","from":"rex","to":"github_pr","criticality":"P1","expectedProbe":"issue_to_branch_to_pr","currentState":"WIRED"}
+  ]
+}
