@@ -2,7 +2,7 @@
   "version": 1,
   "states": ["ABSENT","PRESENT","WIRED","EXERCISED","MONITORED","RECOVERABLE","OPERATIONAL","DEGRADED","FAILED","RECOVERING","UNKNOWN"],
   "links": [
-    {"id":"public_front_door","from":"internet","to":"public_web","criticality":"P0","expectedProbe":"public_url","currentState":"PRESENT","evidence":"PublicHome is connected to root route on SUM feature branch; deployment not yet exercised."},
+    {"id":"public_front_door","from":"internet","to":"public_web","criticality":"P0","expectedProbe":"public_url","currentState":"WIRED","evidence":"PublicHome is connected to the root route and the latest GitHub commit reports Vercel web deployment success; an actual HTTP preview probe is still required before EXERCISED."},
     {"id":"launch_catalogue_to_shopify","from":"verified_phase1_catalogue","to":"shopify_catalogue","criticality":"P0","expectedProbe":"three_draft_products_queryable","currentState":"EXERCISED","evidence":"Three Asclepios Phase 1 draft products were created and re-queried via connected Shopify Admin API on 2026-09-07; not published or purchasable."},
     {"id":"public_to_catalogue","from":"public_web","to":"shopify_catalogue","criticality":"P0","expectedProbe":"product_list_nonempty","currentState":"ABSENT","evidence":"Public shell currently renders safe static launch cards; Shopify Storefront connection not yet wired."},
     {"id":"catalogue_to_cart","from":"shopify_catalogue","to":"cart","criticality":"P0","expectedProbe":"add_to_cart","currentState":"ABSENT"},
