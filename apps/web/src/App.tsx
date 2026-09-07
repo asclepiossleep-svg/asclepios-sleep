@@ -14,6 +14,7 @@ import MorningCheckin from "./pages/MorningCheckin";
 import Review from "./pages/Review";
 import Library from "./pages/Library";
 import Programmes from "./pages/Programmes";
+import Shop from "./pages/Shop";
 import Admin from "./pages/Admin";
 import MusicLibrary from "./pages/MusicLibrary";
 import NowPlaying from "./pages/NowPlaying";
@@ -153,6 +154,7 @@ export default function App() {
           </RequireAuth>
         }
       />
+      <Route path="/shop/*" element={<Shop />} />
       <Route
         path="/assessment"
         element={

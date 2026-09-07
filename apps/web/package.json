@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run build --workspace=@asclepios/shared --prefix ../.. && tsc -b --force && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:shop-routes": "node scripts/check-shop-routes.mjs",
+    "prebuild": "npm run test:shop-routes"
   },
   "dependencies": {
     "@asclepios/shared": "0.1.0",

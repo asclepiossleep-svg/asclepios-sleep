@@ -323,5 +323,21 @@
   "pwaInstall.bodyAndroid": "Install the app for quick, full-screen access every night.",
   "pwaInstall.bodyIos": "Tap Share, then \"Add to Home Screen\", for quick, full-screen access every night.",
   "pwaInstall.install": "Install",
-  "pwaInstall.dismiss": "Dismiss"
+  "pwaInstall.dismiss": "Dismiss",
+  "home.cta.shop": "Shop",
+  "shop.title": "Shop",
+  "shop.subtitle": "Products and purchasing are coming soon.",
+  "shop.previewBadge": "Coming soon",
+  "shop.previewNotice": "Purchasing is not currently available.",
+  "shop.productCategory": "Asclepios Sleep shop",
+  "shop.pendingCommercials": "No product identity, price, stock, delivery date or launch claim is approved yet.",
+  "shop.checkoutSafety": "No order, payment or reservation can be created on this page.",
+  "shop.surface.product": "Product information — coming soon",
+  "shop.surface.cart": "Cart — coming soon",
+  "shop.surface.checkout": "Checkout — coming soon",
+  "shop.surface.order": "Order status — coming soon",
+  "shop.surface.help": "Shop help — coming soon",
+  "shop.notFound": "This shop page is not available.",
+  "shop.back": "Back to shop",
+  "shop.home": "Back to home"
 }

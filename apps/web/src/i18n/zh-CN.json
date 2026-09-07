@@ -323,5 +323,21 @@
   "pwaInstall.bodyAndroid": "安装此应用，每晚都能全屏快速打开。",
   "pwaInstall.bodyIos": "点击「分享」，选择「添加到主屏幕」，每晚都能全屏快速打开。",
   "pwaInstall.install": "安装",
-  "pwaInstall.dismiss": "关闭"
+  "pwaInstall.dismiss": "关闭",
+  "home.cta.shop": "商店",
+  "shop.title": "商店",
+  "shop.subtitle": "产品及网上购买功能即将推出。",
+  "shop.previewBadge": "即将推出",
+  "shop.previewNotice": "目前暂未开放购买。",
+  "shop.productCategory": "Asclepios Sleep 商店",
+  "shop.pendingCommercials": "产品身份、价格、库存、配送日期及上线信息尚未获得最终确认。",
+  "shop.checkoutSafety": "此页面目前不会创建订单、付款或预留商品。",
+  "shop.surface.product": "产品信息 — 即将推出",
+  "shop.surface.cart": "购物车 — 即将推出",
+  "shop.surface.checkout": "结账 — 即将推出",
+  "shop.surface.order": "订单状态 — 即将推出",
+  "shop.surface.help": "商店帮助 — 即将推出",
+  "shop.notFound": "该商店页面暂未提供。",
+  "shop.back": "返回商店",
+  "shop.home": "返回主页"
 }
