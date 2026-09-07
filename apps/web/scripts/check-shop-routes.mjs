@@ -1,41 +1,82 @@
 import { readFileSync } from "node:fs";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
+import { createServer } from "vite";
 
 const root = new URL("../", import.meta.url);
-const shop = readFileSync(new URL("src/pages/Shop.tsx", root), "utf8");
 const localePaths = [
   ["en", new URL("src/i18n/en.json", root)],
   ["zh-HK", new URL("src/i18n/zh-HK.json", root)],
   ["zh-CN", new URL("src/i18n/zh-CN.json", root)],
 ];
-
-const expectedRoutes = [
-  "/shop",
-  "/shop/product",
-  "/shop/cart",
-  "/shop/checkout",
-  "/shop/order",
-  "/shop/help",
-];
-
-for (const route of expectedRoutes) {
-  if (!shop.includes(`"${route}"`)) {
-    throw new Error(`Missing addressable commerce route: ${route}`);
-  }
-}
-
-if (!shop.includes('surfaceByPath[pathname] ?? "unknown"')) {
-  throw new Error("Unknown /shop/* routes must resolve to an explicit unknown state");
-}
-if (!shop.includes('t("shop.notFound")')) {
-  throw new Error("Unknown shop route must render translated not-found copy");
-}
-
 const locales = localePaths.map(([name, url]) => [
   name,
   JSON.parse(readFileSync(url, "utf8")),
 ]);
-const referenceKeys = Object.keys(locales[0][1]).sort();
+const [english] = locales[0].slice(1);
 
+const expectedSurfaces = [
+  ["/shop", "shop.previewBadge"],
+  ["/shop/product", "shop.surface.product"],
+  ["/shop/cart", "shop.surface.cart"],
+  ["/shop/checkout", "shop.surface.checkout"],
+  ["/shop/order", "shop.surface.order"],
+  ["/shop/help", "shop.surface.help"],
+];
+
+const server = await createServer({
+  root: new URL(".", root).pathname,
+  appType: "custom",
+  logLevel: "error",
+  server: { middlewareMode: true },
+});
+
+try {
+  const { default: Shop } = await server.ssrLoadModule("/src/pages/Shop.tsx");
+
+  function render(pathname) {
+    return renderToStaticMarkup(
+      React.createElement(
+        MemoryRouter,
+        { initialEntries: [pathname] },
+        React.createElement(Shop),
+      ),
+    );
+  }
+
+  for (const [pathname, headingKey] of expectedSurfaces) {
+    const html = render(pathname);
+    const expectedHeading = english[headingKey];
+
+    if (!html.includes(expectedHeading)) {
+      throw new Error(`${pathname} did not render its matching neutral heading: ${expectedHeading}`);
+    }
+    if (!html.includes(english["shop.previewNotice"])) {
+      throw new Error(`${pathname} did not render purchasing-unavailable copy`);
+    }
+
+    if (pathname === "/shop") {
+      if (!html.includes("<nav")) {
+        throw new Error("/shop did not render catalogue navigation");
+      }
+    } else if (!html.includes('href="/shop"')) {
+      throw new Error(`${pathname} did not provide a return link to /shop`);
+    }
+  }
+
+  const unknownHtml = render("/shop/not-a-real-surface");
+  if (!unknownHtml.includes(english["shop.notFound"])) {
+    throw new Error("Unknown /shop/* route did not render unavailable state");
+  }
+  if (unknownHtml.includes("<nav")) {
+    throw new Error("Unknown /shop/* route incorrectly rendered catalogue navigation");
+  }
+} finally {
+  await server.close();
+}
+
+const referenceKeys = Object.keys(locales[0][1]).sort();
 for (const [name, values] of locales) {
   const keys = Object.keys(values).sort();
   if (JSON.stringify(keys) !== JSON.stringify(referenceKeys)) {
@@ -75,4 +116,4 @@ for (const [name, values] of locales) {
   }
 }
 
-console.log("Shop route and neutral-copy contract verified for EN, zh-HK and zh-CN.");
+console.log("Rendered shop route behavior and neutral copy verified for EN, zh-HK and zh-CN.");
