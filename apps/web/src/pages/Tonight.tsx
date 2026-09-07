@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../state/session";
+import { useActiveSleepSession } from "../state/activeSession";
 import { t, getLocale } from "../i18n";
 import BottomNav from "../components/BottomNav";
 import PageHeader from "../components/PageHeader";
@@ -131,6 +132,13 @@ export default function Tonight() {
   const [startError, setStartError] = useState(false);
   const { user, logout, updateUser } = useSession();
   const navigate = useNavigate();
+  // P0 continuity requirement (6 Sep 2026) — Start Sleep had no guard
+  // against an already-running session: tapping it again (after navigating
+  // away and back mid-session) silently created a second ACTIVE
+  // SleepSession row, orphaning the first one nothing pointed at any more.
+  // Surface it as a resume banner instead, same non-forced pattern as
+  // Home's, and disable Start Sleep while one is running.
+  const { session: activeSession } = useActiveSleepSession(true);
 
   function loadPlan() {
     setLoadFailed(false);
@@ -274,6 +282,10 @@ export default function Tonight() {
   }
 
   async function startSleep() {
+    if (activeSession) {
+      navigate(`/player/${activeSession.id}`);
+      return;
+    }
     setStartError(false);
     setStartBusy(true);
     try {
@@ -318,6 +330,15 @@ export default function Tonight() {
           ) : undefined
         }
       />
+
+      {activeSession && (
+        <div className="card" style={{ borderColor: "var(--color-accent)" }}>
+          <p>{t("session.inProgress")}</p>
+          <button className="primary" onClick={() => navigate(`/player/${activeSession.id}`)}>
+            {t("session.resume")}
+          </button>
+        </div>
+      )}
 
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {loadFailed && (

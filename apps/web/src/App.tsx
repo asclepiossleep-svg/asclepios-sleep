@@ -1,6 +1,7 @@
 import { Fragment, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useSession } from "./state/session";
+import { useActiveSleepSession } from "./state/activeSession";
 import { useLocale } from "./i18n";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -56,10 +57,17 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   return children;
 }
 
+// P0 continuity requirement (6 Sep 2026 owner directive) — cold entry
+// (refresh, browser restart, PWA relaunch) must resume an in-progress sleep
+// session rather than reset to Home/first step. Only decide the logged-in
+// target once the active-session check has actually resolved, so a slow
+// network doesn't cause a Home flash before redirecting to the player.
 function RootRedirect() {
   const { user, loading } = useSession();
-  if (loading) return null;
-  return <Navigate to={user ? "/home" : "/login"} replace />;
+  const { session, loaded } = useActiveSleepSession(!!user);
+  if (loading || (!!user && !loaded)) return null;
+  const target = session ? `/player/${session.id}` : "/home";
+  return <Navigate to={user ? target : "/login"} replace />;
 }
 
 export default function App() {

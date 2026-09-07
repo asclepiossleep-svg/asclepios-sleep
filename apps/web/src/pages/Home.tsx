@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSession } from "../state/session";
+import { useActiveSleepSession } from "../state/activeSession";
 import { t } from "../i18n";
 import { api } from "../api/client";
 import BottomNav from "../components/BottomNav";
@@ -29,6 +30,12 @@ export default function Home() {
   const navigate = useNavigate();
   const setupIncomplete = !user?.wallpaperId;
   const [nudge, setNudge] = useState<TodayNudge | null>(null);
+  // P0 continuity requirement (6 Sep 2026) — RootRedirect already resumes an
+  // in-progress sleep session by default on cold entry; this banner covers
+  // the case where the user deliberately navigates to Home anyway (e.g. via
+  // BottomNav) while a session is still running, so they can find their way
+  // back without being forced there.
+  const { session: activeSession } = useActiveSleepSession(true);
 
   useEffect(() => {
     let dismissedToday = false;
@@ -70,6 +77,15 @@ export default function Home() {
         <div className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
           <p style={{ margin: 0 }}>{nudge.code === "FOCUS_TAG" ? `${t("home.nudge.focusTag")} ${t(`tag.${nudge.tag}`)}` : t(`home.nudge.${nudge.code}`)}</p>
           <button onClick={dismissNudge}>{t("home.nudge.dismiss")}</button>
+        </div>
+      )}
+
+      {activeSession && (
+        <div className="card" style={{ borderColor: "var(--color-accent)" }}>
+          <p>{t("session.inProgress")}</p>
+          <button className="primary" onClick={() => navigate(`/player/${activeSession.id}`)}>
+            {t("session.resume")}
+          </button>
         </div>
       )}
 

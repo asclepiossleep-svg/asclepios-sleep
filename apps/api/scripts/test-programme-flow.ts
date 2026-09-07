@@ -341,6 +341,41 @@ async function main() {
       libraryZhCN.json.items.length === libraryEn.json.items.length,
     );
 
+    // --- 16b. Sleep session resume audit (P0 continuity, 6 Sep 2026) --------
+    // Cold entry (refresh/relaunch) must resume an in-progress session
+    // instead of dropping the user on Home. GET /sleep-session/active is the
+    // lookup that makes that possible; this proves it tracks the real
+    // ACTIVE -> WOKEN -> ENDED lifecycle rather than just "does one exist".
+    const noActiveYet = await api("GET", "/sleep-session/active");
+    check("GET /sleep-session/active returns null before any session exists", noActiveYet.json.session === null);
+
+    const started = await api("POST", "/sleep-session/start", {
+      sleepAudioId: null,
+      sleepAudioDurationMode: "FIXED",
+      presetLabel: "1 hr",
+    });
+    check("POST /sleep-session/start succeeds", started.status === 200 && started.json.session.status === "ACTIVE");
+    const sleepSessionId: string = started.json.session.id;
+    check("started session carries a windDownStart anchor for elapsed-time resume math", !!started.json.session.windDownStart);
+
+    const activeWhileSleeping = await api("GET", "/sleep-session/active");
+    check("GET /sleep-session/active finds the just-started ACTIVE session", activeWhileSleeping.json.session?.id === sleepSessionId);
+
+    const fetchedById = await api("GET", `/sleep-session/${sleepSessionId}`);
+    check("GET /sleep-session/:id round-trips status/windDownStart for the resume screen", fetchedById.json.session.status === "ACTIVE" && !!fetchedById.json.session.windDownStart);
+
+    const woke = await api("POST", `/sleep-session/${sleepSessionId}/wake`);
+    check("POST /:id/wake sets status WOKEN", woke.status === 200 && woke.json.status === "WOKEN");
+
+    const activeWhileWoken = await api("GET", "/sleep-session/active");
+    check("GET /sleep-session/active still resolves a WOKEN session (awake but not yet checked in)", activeWhileWoken.json.session?.id === sleepSessionId);
+
+    const stopped = await api("POST", `/sleep-session/${sleepSessionId}/stop`);
+    check("POST /:id/stop sets status ENDED", stopped.status === 200 && stopped.json.status === "ENDED");
+
+    const activeAfterEnd = await api("GET", "/sleep-session/active");
+    check("GET /sleep-session/active returns null again once the session has ended (nothing left to resume)", activeAfterEnd.json.session === null);
+
     // --- 17. Auth persistence audit: device revocation must actually work ---
     // A token minted before this fix carries no deviceSessionId at all —
     // must keep working exactly as before (no forced logout of pre-existing
