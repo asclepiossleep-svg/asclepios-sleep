@@ -2,8 +2,9 @@
   "version": 1,
   "states": ["ABSENT","PRESENT","WIRED","EXERCISED","MONITORED","RECOVERABLE","OPERATIONAL","DEGRADED","FAILED","RECOVERING","UNKNOWN"],
   "links": [
-    {"id":"public_front_door","from":"internet","to":"public_web","criticality":"P0","expectedProbe":"public_url","currentState":"ABSENT"},
-    {"id":"public_to_catalogue","from":"public_web","to":"shopify_catalogue","criticality":"P0","expectedProbe":"product_list_nonempty","currentState":"ABSENT"},
+    {"id":"public_front_door","from":"internet","to":"public_web","criticality":"P0","expectedProbe":"public_url","currentState":"PRESENT","evidence":"PublicHome is connected to root route on SUM feature branch; deployment not yet exercised."},
+    {"id":"launch_catalogue_to_shopify","from":"verified_phase1_catalogue","to":"shopify_catalogue","criticality":"P0","expectedProbe":"three_draft_products_queryable","currentState":"EXERCISED","evidence":"Three Asclepios Phase 1 draft products were created and re-queried via connected Shopify Admin API on 2026-09-07; not published or purchasable."},
+    {"id":"public_to_catalogue","from":"public_web","to":"shopify_catalogue","criticality":"P0","expectedProbe":"product_list_nonempty","currentState":"ABSENT","evidence":"Public shell currently renders safe static launch cards; Shopify Storefront connection not yet wired."},
     {"id":"catalogue_to_cart","from":"shopify_catalogue","to":"cart","criticality":"P0","expectedProbe":"add_to_cart","currentState":"ABSENT"},
     {"id":"cart_to_checkout","from":"cart","to":"checkout","criticality":"P0","expectedProbe":"checkout_reachable","currentState":"ABSENT"},
     {"id":"checkout_to_payment","from":"checkout","to":"payment","criticality":"P0","expectedProbe":"test_payment","currentState":"ABSENT"},
@@ -18,6 +19,6 @@
     {"id":"checkin_to_review","from":"morning_checkin","to":"review_engine","criticality":"P1","expectedProbe":"seven_day_review","currentState":"WIRED"},
     {"id":"events_to_analytics","from":"business_events","to":"analytics","criticality":"P1","expectedProbe":"event_persisted_queryable","currentState":"PRESENT"},
     {"id":"exceptions_to_monitoring","from":"failures","to":"monitoring","criticality":"P0","expectedProbe":"synthetic_failure_visible","currentState":"PRESENT"},
-    {"id":"rex_to_repo","from":"rex","to":"github_pr","criticality":"P1","expectedProbe":"issue_to_branch_to_pr","currentState":"WIRED"}
+    {"id":"rex_to_repo","from":"rex","to":"github_pr","criticality":"P1","expectedProbe":"issue_to_branch_to_pr","currentState":"WIRED","evidence":"Safer SUM branch/PR contract exists on PR #28 but is not active on main until merged."}
   ]
 }
