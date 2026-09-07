@@ -11,8 +11,10 @@ const checks = [
   ['Failure/recovery runbook', 'docs/sum/07_FAILURE_RECOVERY_RUNBOOK.md'],
   ['Real-world operations', 'docs/sum/08_REAL_WORLD_OPERATIONS_MAP.md'],
   ['Agent external tooling', 'docs/sum/09_AGENT_EXTERNAL_TOOLING.md'],
+  ['Product truth governance', 'docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md'],
   ['Machine-readable links', 'config/sum-links.json'],
   ['Provider event contracts', 'apps/api/src/integrations/contracts.ts'],
+  ['Commercial launch guard', 'apps/api/src/domain/commercialLaunchGuard.ts'],
   ['MCP project contract', '.mcp.json'],
   ['Public storefront', 'apps/web/src/pages/PublicHome.tsx'],
   ['Member app routes', 'apps/web/src/App.tsx'],
@@ -80,6 +82,23 @@ const supabaseUrl = mcp?.mcpServers?.supabase?.url ?? '';
 const mcpScoped = supabaseUrl.includes('project_ref=${SUPABASE_PROJECT_REF}') && supabaseUrl.includes('read_only=true');
 console.log(`${mcpScoped ? 'PASS' : 'FAIL'} Supabase MCP scoped/read-only default`);
 if (!mcpScoped) failed = true;
+
+const guard = fs.readFileSync('apps/api/src/domain/commercialLaunchGuard.ts', 'utf8');
+const guardLocksPhase1 = guard.includes('priceCents: null') && guard.includes('active: false') && guard.includes('COMING_SOON');
+console.log(`${guardLocksPhase1 ? 'PASS' : 'FAIL'} Phase-1 commercial guard state`);
+if (!guardLocksPhase1) failed = true;
+
+const seedCatalog = fs.readFileSync('apps/api/prisma/seedCatalog.ts', 'utf8');
+const seedMain = fs.readFileSync('apps/api/prisma/seed.ts', 'utf8');
+const demoRoute = fs.readFileSync('apps/api/src/routes/demo.ts', 'utf8');
+const guardCoverage = [seedCatalog, seedMain, demoRoute].every((content) => content.includes('enforcePhase1PrelaunchGuard'));
+console.log(`${guardCoverage ? 'PASS' : 'FAIL'} deploy/full-seed/demo-reset commercial guard coverage`);
+if (!guardCoverage) failed = true;
+
+const truth = fs.readFileSync('docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md', 'utf8');
+const staleMouthTapeQuarantined = truth.includes('STALE FOR PRODUCT IDENTITY') && truth.includes('Nasal Strips');
+console.log(`${staleMouthTapeQuarantined ? 'PASS' : 'FAIL'} stale mouth-tape source quarantine`);
+if (!staleMouthTapeQuarantined) failed = true;
 
 if (failed) process.exit(1);
 console.log('SUM structural health check completed.');
