@@ -1,0 +1,131 @@
+.public-site {
+  min-height: 100vh;
+  background: #f7f4ed;
+  color: #19362f;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.public-header {
+  min-height: 76px;
+  padding: 0 6vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #d8ded8;
+  background: rgba(255, 253, 248, 0.92);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+}
+
+.public-brand {
+  color: #153b32;
+  text-decoration: none;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.public-nav { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.public-nav a { color: #2f5b4f; text-decoration: none; font-size: 0.95rem; }
+.public-nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
+
+.public-hero {
+  padding: clamp(72px, 12vw, 150px) 8vw;
+  max-width: 1100px;
+}
+
+.public-kicker {
+  color: #2f5b4f;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+.public-hero h1,
+.public-section h2 {
+  margin: 0;
+  color: #153b32;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+.public-hero h1 { font-size: clamp(3rem, 8vw, 6.7rem); max-width: 850px; }
+.public-section h2 { font-size: clamp(2rem, 4.5vw, 4rem); max-width: 760px; }
+
+.public-lede {
+  margin: 28px 0 0;
+  max-width: 720px;
+  color: #67736e;
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.65;
+}
+.public-lede.compact { font-size: 1.05rem; }
+
+.public-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 34px; }
+.public-button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 650;
+}
+.public-button.primary { background: #153b32; color: #fffdf8; }
+.public-button.secondary { border: 1px solid #b8c4bd; color: #153b32; background: #fffdf8; }
+
+.public-section { padding: 80px 8vw; border-top: 1px solid #d8ded8; }
+.public-section-heading > p:last-child { max-width: 720px; color: #67736e; line-height: 1.6; }
+
+.public-product-grid,
+.public-domain-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 36px; }
+.public-product-card {
+  background: #fffdf8;
+  border: 1px solid #d8ded8;
+  border-radius: 22px;
+  padding: 28px;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 45px rgba(21, 59, 50, 0.06);
+}
+.public-product-card h3 { font-size: 1.45rem; margin: 10px 0; }
+.public-product-card p { color: #67736e; line-height: 1.55; }
+.public-product-card button {
+  margin-top: auto;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid #d8ded8;
+  background: #f1efe9;
+  color: #67736e;
+}
+.public-status { font-size: 0.72rem; letter-spacing: 0.12em; font-weight: 700; color: #2f5b4f; }
+.public-product-timing { margin-bottom: 0; font-size: 0.9rem; }
+
+.public-flow { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
+.public-flow ol { list-style: none; padding: 0; margin: 0; counter-reset: flow; }
+.public-flow li { padding: 22px 0; border-bottom: 1px solid #d8ded8; display: grid; grid-template-columns: 130px 1fr; gap: 18px; }
+.public-flow li strong { color: #153b32; }
+.public-flow li span { color: #67736e; line-height: 1.55; }
+
+.public-intelligence { background: #153b32; color: #fffdf8; }
+.public-intelligence .public-kicker,
+.public-intelligence h2 { color: #fffdf8; }
+.public-domain-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.public-domain-grid div { border-top: 1px solid rgba(255,255,255,.32); padding: 18px 0; display: grid; gap: 8px; }
+.public-domain-grid span { opacity: .72; }
+
+.public-footer { padding: 36px 8vw; display: flex; justify-content: space-between; gap: 20px; color: #67736e; font-size: .9rem; }
+
+@media (max-width: 820px) {
+  .public-header { align-items: flex-start; flex-direction: column; padding-top: 18px; padding-bottom: 18px; }
+  .public-nav { gap: 14px; }
+  .public-product-grid, .public-domain-grid, .public-flow { grid-template-columns: 1fr; }
+  .public-hero, .public-section { padding-left: 6vw; padding-right: 6vw; }
+  .public-flow li { grid-template-columns: 1fr; gap: 6px; }
+  .public-footer { flex-direction: column; }
+}

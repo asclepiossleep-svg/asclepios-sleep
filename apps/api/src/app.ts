@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
+import { prisma } from "./db";
 import authRoutes from "./routes/auth";
 import demoRoutes from "./routes/demo";
 import assessmentRoutes from "./routes/assessment";
@@ -19,21 +20,35 @@ import programmesRoutes from "./routes/programmes";
 import musicRoutes from "./routes/music";
 
 /**
- * The Express app itself, with no `listen()` call — shared by:
- *  - src/index.ts (local dev: `npm run dev`, calls app.listen())
- *  - api/index.ts (Vercel: exported directly as the serverless handler)
- *
- * Master Kick-off V1 §17/§21: same codebase, same behaviour, whether it's
- * running as a long-lived local process or a Vercel serverless function.
- * Don't add anything here that assumes a persistent process (in-memory
- * caches, setInterval, etc.) — Vercel functions are stateless per-invocation.
+ * The Express app itself, with no `listen()` call — shared by local dev and
+ * the Vercel serverless handler. Keep request handling stateless.
  */
 export function createApp() {
   const app = express();
   app.use(cors());
   app.use(express.json());
 
-  app.get("/health", (_req, res) => res.json({ ok: true, service: "asclepios-sleep-api" }));
+  // SUM observability contract:
+  // - live = process/function can answer HTTP
+  // - ready = critical dependency (database) is reachable
+  // Keep /health as a backwards-compatible liveness alias.
+  const livePayload = { ok: true, service: "asclepios-sleep-api", probe: "live" };
+  app.get("/health", (_req, res) => res.json(livePayload));
+  app.get("/health/live", (_req, res) => res.json(livePayload));
+  app.get("/health/ready", async (_req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ ok: true, service: "asclepios-sleep-api", probe: "ready", database: "ok" });
+    } catch (error) {
+      console.error("readiness_probe_failed", error);
+      res.status(503).json({
+        ok: false,
+        service: "asclepios-sleep-api",
+        probe: "ready",
+        database: "unavailable",
+      });
+    }
+  });
 
   app.use("/auth", authRoutes);
   app.use("/demo", demoRoutes);

@@ -1,0 +1,44 @@
+name: SUM Ecosystem Health
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  structural-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: SUM structural contract
+        run: node scripts/sum-health-check.mjs
+      - name: Install dependencies
+        run: npm install
+      - name: Build all workspaces
+        run: npm run build
+
+  external-health-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Explain external checks
+        run: |
+          echo 'External services are checked only when their endpoint/credential variables exist.'
+          echo 'Missing credentials are reported as NOT WIRED, never as PASS.'
+      - name: Public website reachability
+        if: ${{ vars.ASCLEPIOS_PUBLIC_URL != '' }}
+        run: curl --fail --silent --show-error --max-time 20 "${{ vars.ASCLEPIOS_PUBLIC_URL }}" >/dev/null
+      - name: API health reachability
+        if: ${{ vars.ASCLEPIOS_API_HEALTH_URL != '' }}
+        run: curl --fail --silent --show-error --max-time 20 "${{ vars.ASCLEPIOS_API_HEALTH_URL }}" >/dev/null
