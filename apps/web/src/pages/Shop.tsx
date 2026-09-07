@@ -3,9 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import { t } from "../i18n";
 
-type Surface = "catalogue" | "product" | "cart" | "checkout" | "order" | "help";
+type Surface = "catalogue" | "product" | "cart" | "checkout" | "order" | "help" | "unknown";
 
-const surfaceByPath: Record<string, Surface> = {
+const surfaceByPath: Record<string, Exclude<Surface, "unknown">> = {
   "/shop": "catalogue",
   "/shop/product": "product",
   "/shop/cart": "cart",
@@ -14,21 +14,21 @@ const surfaceByPath: Record<string, Surface> = {
   "/shop/help": "help",
 };
 
-const navItems: Array<{ surface: Exclude<Surface, "catalogue">; path: string; labelKey: string }> = [
-  { surface: "product", path: "/shop/product", labelKey: "shop.previewBadge" },
-  { surface: "cart", path: "/shop/cart", labelKey: "shop.cartTitle" },
-  { surface: "checkout", path: "/shop/checkout", labelKey: "shop.checkoutTitle" },
-  { surface: "order", path: "/shop/order", labelKey: "shop.completeTitle" },
-  { surface: "help", path: "/shop/help", labelKey: "shop.safetyTitle" },
+const navItems: Array<{ surface: Exclude<Surface, "catalogue" | "unknown">; path: string }> = [
+  { surface: "product", path: "/shop/product" },
+  { surface: "cart", path: "/shop/cart" },
+  { surface: "checkout", path: "/shop/checkout" },
+  { surface: "order", path: "/shop/order" },
+  { surface: "help", path: "/shop/help" },
 ];
 
-const titleKeyBySurface: Record<Surface, string> = {
-  catalogue: "shop.title",
-  product: "shop.previewBadge",
-  cart: "shop.cartTitle",
-  checkout: "shop.checkoutTitle",
-  order: "shop.completeTitle",
-  help: "shop.safetyTitle",
+const titleKeyBySurface: Record<Exclude<Surface, "unknown">, string> = {
+  catalogue: "shop.previewBadge",
+  product: "shop.surface.product",
+  cart: "shop.surface.cart",
+  checkout: "shop.surface.checkout",
+  order: "shop.surface.order",
+  help: "shop.surface.help",
 };
 
 /**
@@ -40,7 +40,7 @@ const titleKeyBySurface: Record<Surface, string> = {
  */
 export default function Shop() {
   const { pathname } = useLocation();
-  const surface = surfaceByPath[pathname] ?? "catalogue";
+  const surface: Surface = surfaceByPath[pathname] ?? "unknown";
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -53,6 +53,8 @@ export default function Shop() {
     display: "inline-flex",
     alignItems: "center",
   } as const;
+
+  const headingKey = surface === "unknown" ? "shop.notFound" : titleKeyBySurface[surface];
 
   return (
     <main className="screen">
@@ -72,13 +74,14 @@ export default function Shop() {
           tabIndex={-1}
           style={{ fontFamily: "var(--font-display)", marginBottom: "0.5rem" }}
         >
-          {t(titleKeyBySurface[surface])}
+          {t(headingKey)}
         </h2>
-
-        <p>{t("shop.previewNotice")}</p>
-        <p className="muted" style={{ marginBottom: 0 }}>
-          {surface === "help" ? t("shop.checkoutSafety") : t("shop.pendingCommercials")}
-        </p>
+        <p>{surface === "unknown" ? t("shop.notFound") : t("shop.previewNotice")}</p>
+        {surface !== "unknown" && (
+          <p className="muted" style={{ marginBottom: 0 }}>
+            {t("shop.pendingCommercials")}
+          </p>
+        )}
       </section>
 
       {surface === "catalogue" ? (
@@ -87,7 +90,7 @@ export default function Shop() {
             {navItems.map((item) => (
               <li key={item.surface}>
                 <Link to={item.path} style={linkStyle}>
-                  {t(item.labelKey)}
+                  {t(`shop.surface.${item.surface}`)}
                 </Link>
               </li>
             ))}
@@ -99,9 +102,11 @@ export default function Shop() {
         </Link>
       )}
 
-      <p className="muted" role="status">
-        {t("shop.checkoutSafety")}
-      </p>
+      {surface !== "unknown" && (
+        <p className="muted" role="status">
+          {t("shop.checkoutSafety")}
+        </p>
+      )}
 
       <Link to="/home" style={linkStyle}>
         {t("shop.home")}
