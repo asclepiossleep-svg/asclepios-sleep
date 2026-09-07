@@ -20,6 +20,7 @@ Visible artifacts:
 - `docs/company/COMMERCE_EXCEPTION_ALERT_PERMISSION_MODEL_V1.md`
 - `docs/company/CANONICAL_COMMERCE_DATA_REPORTING_MAP_V1.md`
 - `docs/company/COMMERCE_EXISTING_SCHEMA_DELTA_V1.md`
+- `docs/company/COMMERCE_C1_SCHEMA_IMPLEMENTATION_SPEC_V1.md`
 - `docs/company/LAUNCH_CUSTOMER_SERVICE_OPERATING_PACKAGE_V1.md`
 - `docs/company/CS_KNOWLEDGE_MACRO_SCHEMA_V1.md`
 
@@ -29,13 +30,14 @@ Checkpoint completed through 2026-09-07:
 - commerce exception severity P0-P3, operational triggers/actions/owners/escalations and role permissions defined;
 - canonical vendor-independent commerce data model defined across customer/consent, product/SKU, order/payment, inventory, fulfilment, return, CS, exceptions, attribution and activation;
 - existing Prisma schema reconciled against the canonical model and missing transactional layer scoped;
-- implementation divided into C1-C6 slices and pre-provider tests defined;
+- C1 schema implementation spec now defines exact additive Order/OrderItem/OrderEvent/Payment/Refund persistence boundary, state vocabularies, indexes/idempotency, migration/parity rules, ten verification tests and Definition of Done without choosing a payment provider;
+- implementation remains divided into C1-C6 slices and pre-provider tests defined;
 - launch CS operating model and controlled macro schema defined;
 - first Sleep Tape launch media package now exists before stock arrival, advancing Marketing Gate 7 without waiting for production media.
 
 Next:
+- keep C1 ready for Rex when engineering capacity is assigned; no further strategy processing should be charged to Rex for this slice;
 - continue launch content/CS/marketing preparation while final commercial/provider decisions remain non-gating;
-- prepare precise Rex engineering ticket for commerce C1 only when implementation capacity is appropriate;
 - obtain/compare vendor quotes only when commercial outreach or stock timing makes the decision gating;
 - keep final shipping/returns/refund/support-channel facts configurable and PENDING until approved rather than inventing them.
 
@@ -108,10 +110,11 @@ Meaningful milestone report: WHAT CHANGED / WHERE TO SEE IT / WHAT TO REVIEW / N
 - DONE: Fulfilment Decision Matrix V1.
 - DONE: Commerce Exception / Alert / Permission Model V1.
 - DONE: Canonical Commerce Data & Reporting Map + existing-schema delta.
+- DONE: Commerce C1 Schema Implementation Spec V1 — exact schema-only handoff ready for Rex without provider choice.
 - DONE: Magnesium Product Knowledge Object V1 pre-formulation checkpoint.
 - DONE: Digital Asset Structure + Registry Schema V1.
 - DONE: Launch Customer Service Operating Package + CS Macro Schema V1.
 - DONE: Sleep Tape Launch Media Package V1 — 3 shorts, explainer, founder outline, storyboard, captions, channel/measurement/claims gates.
 - WORKING: product-knowledge completion from verified supplier facts.
 - WORKING: evidence -> scenario / corroboration / behavioural strategy mapping.
-- NEXT: continue highest-value unblocked launch preparation; production assets and product-specific claims remain gated by verified final facts.
+- NEXT: continue highest-value unblocked launch preparation; C1 is implementation-ready while production assets and product-specific claims remain gated by verified final facts.
