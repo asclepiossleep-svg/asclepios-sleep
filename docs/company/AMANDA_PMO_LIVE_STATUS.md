@@ -30,12 +30,11 @@ Checkpoint completed through 2026-09-07:
 - canonical vendor-independent commerce data model defined across customer/consent, product/SKU, order/payment, inventory, fulfilment, return, CS, exceptions, attribution and activation;
 - existing Prisma schema reconciled against the canonical model and missing transactional layer scoped;
 - implementation divided into C1-C6 slices and pre-provider tests defined;
-- launch CS operating model now defined across product/pre-sale/use/safety, payment, order, fulfilment, lost/damaged, cancellation, return/refund, activation, app, complaint and privacy cases;
-- CSCase minimum record, severity/escalation, verification, source hierarchy, AI first-line support boundary and feedback loop defined;
-- Sleep Tape safety/product macros plus commerce/payment/fulfilment/activation macro schema created with source traceability, draft/approved/retired control and locked P0 wording.
+- launch CS operating model and controlled macro schema defined;
+- first Sleep Tape launch media package now exists before stock arrival, advancing Marketing Gate 7 without waiting for production media.
 
 Next:
-- continue launch content/CS preparation while final commercial/provider decisions remain non-gating;
+- continue launch content/CS/marketing preparation while final commercial/provider decisions remain non-gating;
 - prepare precise Rex engineering ticket for commerce C1 only when implementation capacity is appropriate;
 - obtain/compare vendor quotes only when commercial outreach or stock timing makes the decision gating;
 - keep final shipping/returns/refund/support-channel facts configurable and PENDING until approved rather than inventing them.
@@ -45,84 +44,55 @@ Visible artifacts:
 - `docs/product/SLEEP_TAPE_PRODUCT_KNOWLEDGE_OBJECT_V1.md`
 - `docs/product/SLEEP_TAPE_IMPLEMENTATION_FIELD_MAP_V1.md`
 - `docs/product/MAGNESIUM_PRODUCT_KNOWLEDGE_OBJECT_V1.md`
-
-Checkpoint:
-- Sleep Tape canonical product truth, suitability/safety screen, claims policy, website copy, FAQ/CS matrix, Intelligence bridge and Growth atom exist;
-- Sleep Tape knowledge translated into implementation fields and launch CS macros;
-- magnesium pre-formulation Product Knowledge Object exists with explicit non-treatment positioning, safety/caution framework and pending formula/label facts.
-
-Important launch dependencies: final Sleep Tape SKU/material/adhesive specification, pack IFU/count/barcode/price; final magnesium form(s), elemental magnesium/dose, full ingredients, label/pack/price; stock/shipping/returns rules; final legal/regulatory/claims approval.
-
-Next visible output:
-- populate magnesium formulation fields from approved supplier/product catalogue when available;
-- prepare probiotic/gut-brain Product Knowledge Object when sufficient source facts exist;
-- otherwise continue unblocked launch assets/CS/marketing work without inventing product facts.
+Checkpoint: Sleep Tape canonical truth + implementation fields exist; magnesium pre-formulation object exists with unknown formulation/label facts explicitly pending.
+Important dependencies: final SKU/material/pack/barcode/price/formulation/label/claims facts.
+Next: populate only from verified supplier facts; otherwise continue unblocked launch work.
 
 ### 3. Customer Service / Launch Support — WORKING / CHECKPOINT COMPLETE
 Visible artifacts:
 - `docs/company/LAUNCH_CUSTOMER_SERVICE_OPERATING_PACKAGE_V1.md`
 - `docs/company/CS_KNOWLEDGE_MACRO_SCHEMA_V1.md`
+Checkpoint: taxonomy, CSCase data, P0-P3 escalation, verification, controlled product/safety/commerce macros, AI boundary and acceptance tests defined.
+Next: final product macros only when verified formula/label facts exist; expose approved help objects when implementation surfaces are ready.
+
+### 4. Growth / Video Production Pipeline — WORKING / MAJOR CHECKPOINT
+Visible artifact:
+- `docs/marketing/SLEEP_TAPE_LAUNCH_MEDIA_PACKAGE_V1.md`
 
 Checkpoint completed 2026-09-07:
-- full launch contact taxonomy and CSCase state/data model defined;
-- P0-P3 support severity aligned with commerce exception model;
-- order/customer verification and least-privilege rules defined;
-- Sleep Tape controlled product/safety responses derived from canonical Product Knowledge;
-- payment/order/fulfilment/lost-damaged/cancellation/return/refund/activation operating rules defined without provider-specific fabrication;
-- AI first-line support allowed/prohibited actions defined, with locked deterministic P0 safety handling preferred;
-- reusable macro schema defined with source refs, versions, status lifecycle, language, severity, response mode, internal/prohibited actions and escalation;
-- core Sleep Tape + commerce launch macros drafted, while return-policy macro intentionally remains draft until approved policy exists;
-- 12 launch acceptance tests defined.
+- campaign spine locked to “Use a cue, not a cure”;
+- three production-ready 20–30 sec short scripts defined;
+- 55-sec explainer script defined;
+- 2–3 minute founder/product outline defined;
+- storyboard master, visual guardrails, caption/subtitle master and five social/FAQ responses defined;
+- planned immutable asset IDs reserved in line with digital-asset governance;
+- channel variants and measurement fields defined;
+- paid advertising remains held behind claims/legal/channel-policy gate;
+- safety messaging must remain inside video rather than being hidden only in captions.
 
-Next:
-- add final magnesium macros only when final formula/label facts are verified;
-- expose approved CS/help objects to implementation when commerce/order surfaces are ready;
-- final support inbox, shipping SLA, return/refund policy and provider escalation contacts remain grouped launch dependencies.
-
-### 4. Growth / Video Production Pipeline — WORKING
-Pipeline: research/product signal -> core message -> short -> explainer -> founder/product outline -> storyboard -> voice/subtitle -> variants -> publish gate -> measurement.
-Checkpoint:
-- Sleep Tape master marketing atom exists using “Use a cue, not a cure.”
-- Magnesium pre-formulation marketing atom exists.
-- digital asset governance now defines immutable asset IDs, status/version control, claims/rights gates and channel/publication traceability for future media production.
-- CS feedback loop now creates a governed route from repeated customer questions to Product/Growth insight without automatically creating efficacy claims.
-Next visible output: production-ready media briefs/scripts tied to canonical asset IDs once product-specific claims gates are sufficiently locked.
+Next visible output:
+- register/produce actual media assets when production tooling/final product imagery is ready;
+- derive launch education/creative from magnesium only after final formulation facts support it;
+- continue non-product-fact-dependent marketing architecture rather than inventing claims.
 
 ### 5. Sleep Intelligence V1 — WORKING
 Visible artifacts:
 - `docs/product/ASCLEPIOS_SLEEP_INTELLIGENCE_MASTER.md`
 - `docs/product/SLEEP_INTELLIGENCE_RESEARCH_REGISTRY_V1.md`
 Current step: evidence -> question -> signal/tag -> confidence -> strategy -> action -> outcome mapping, with safety/corroboration gates.
-Checkpoint:
-- Sleep Tape recommendation logic defined with safety suppression rules.
-- Magnesium recommendation boundary defined without inferring deficiency or over-claiming.
+Checkpoint: Sleep Tape recommendation logic and magnesium recommendation boundary defined.
 
 ### 6. Amanda OS V1 — WORKING
-Visible artifact:
-- `docs/company/AMANDA_OS_V1.md`
-Commerce permission/exception layer, canonical reporting map, existing-schema delta, CS operating layer and asset-governance layer are inspectable.
+Visible artifact: `docs/company/AMANDA_OS_V1.md`
+Commerce, CS, asset-governance and launch-media operating layers are inspectable.
 Next: decision-log format after launch handoff work.
 
 ### 7. Digital Asset Structure — WORKING / CHECKPOINT COMPLETE
 Visible artifacts:
 - `docs/company/DIGITAL_ASSET_STRUCTURE_METADATA_PLAN_V1.md`
 - `docs/company/DIGITAL_ASSET_REGISTRY_SCHEMA_V1.md`
-
-Checkpoint completed 2026-09-06:
-- canonical Asclepios and separate RockPillar asset roots defined;
-- Research/Product/Brand/Website-App/Marketing/Video/Audio/CS/Operations/Published/Archive folder logic defined;
-- product/SKU and campaign/media substructures defined;
-- mandatory metadata, immutable asset IDs, controlled status/version/rights/claims fields and publication gates defined;
-- EN/ZH-HK/ZH-CN localisation controls defined;
-- HOT/WARM/COLD archive and minimum access model defined;
-- launch can begin with a lightweight registry rather than a heavyweight DAM;
-- exact registry schema, controlled enums, sample Sleep Tape/magnesium rows, validation rules and minimum launch views defined;
-- custom DAM implementation explicitly deferred until volume/workflow complexity justifies it.
-
-Next:
-- use planned asset IDs in new marketing/video briefs and Rex media implementation tickets;
-- create actual shared Drive folders/registry only when the approved shared Drive/account destination is available;
-- do not block launch work on physical folder creation.
+Checkpoint: roots/folders, immutable IDs, metadata, status/version/rights/claims, localisation, archive/access model and lightweight launch registry defined. Sleep Tape media package now consumes planned asset IDs.
+Next: physical Drive/registry setup only when approved shared destination exists; do not block launch.
 
 ## Rex work — monitored separately
 Rex implementation should follow business-readiness priority: commerce/product pages and customer reliability before non-critical cosmetic app polish. Amanda prepares thinking-heavy strategy/research/content first to reduce Rex token use.
@@ -133,21 +103,15 @@ Meaningful milestone report: WHAT CHANGED / WHERE TO SEE IT / WHAT TO REVIEW / N
 ## Today — active checkpoint
 - DONE: Amanda OS V1 baseline.
 - DONE: Sleep Intelligence research-registry skeleton.
-- DONE: Amanda live PMO tracker.
-- DONE: business-launch-first reprioritisation.
-- DONE: Launch Readiness Map V1.
-- DONE: Sleep Tape Product Knowledge Object V1.
+- DONE: business-launch-first reprioritisation and Launch Readiness Map V1.
+- DONE: Sleep Tape Product Knowledge Object + implementation field map.
 - DONE: Fulfilment Decision Matrix V1.
 - DONE: Commerce Exception / Alert / Permission Model V1.
-- DONE: Canonical Commerce Data & Reporting Map V1.
-- DONE: existing Prisma commerce-schema reconciliation + scoped engineering delta.
-- DONE: Sleep Tape implementation field map.
+- DONE: Canonical Commerce Data & Reporting Map + existing-schema delta.
 - DONE: Magnesium Product Knowledge Object V1 pre-formulation checkpoint.
-- DONE: Digital Asset Structure & Metadata Plan V1.
-- DONE: Digital Asset Registry Schema V1.
-- DONE: Launch Customer Service Operating Package V1.
-- DONE: CS Knowledge & Macro Schema V1 with initial launch macros.
+- DONE: Digital Asset Structure + Registry Schema V1.
+- DONE: Launch Customer Service Operating Package + CS Macro Schema V1.
+- DONE: Sleep Tape Launch Media Package V1 — 3 shorts, explainer, founder outline, storyboard, captions, channel/measurement/claims gates.
 - WORKING: product-knowledge completion from verified supplier facts.
 - WORKING: evidence -> scenario / corroboration / behavioural strategy mapping.
-- WORKING: marketing/video output structure derived from research/product content.
-- NEXT: production-ready Sleep Tape launch media brief or probiotic product object when verified facts are sufficient.
+- NEXT: continue highest-value unblocked launch preparation; production assets and product-specific claims remain gated by verified final facts.
