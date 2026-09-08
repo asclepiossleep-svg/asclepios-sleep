@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useSession } from "./state/session";
 import { useLocale } from "./i18n";
 import PublicHome from "./pages/PublicHome";
+import PublicProducts from "./pages/PublicProducts";
+import PublicEducation from "./pages/PublicEducation";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Wallpaper from "./pages/Wallpaper";
@@ -67,8 +69,10 @@ export default function App() {
       <AppBackground />
       {user && <InstallPrompt />}
       <Routes>
-        {/* Public commercial front door. Member Home remains a separate authenticated surface. */}
         <Route path="/" element={<PublicHome />} />
+        <Route path="/products" element={<PublicProducts />} />
+        <Route path="/education" element={<PublicEducation />} />
+        <Route path="/about" element={<PublicEducation />} />
         <Route path="/login" element={<Login />} />
         <Route path="/member" element={<MemberRedirect />} />
         <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
