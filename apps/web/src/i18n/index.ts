@@ -27,7 +27,35 @@ export const SUPPORTED_LOCALES: { code: string; label: string }[] = [
   { code: "zh-CN", label: "简体中文" },
 ];
 
-let currentLocale = "en";
+const LOCALE_STORAGE_KEY = "asclepios.locale";
+
+function readStoredLocale(): string {
+  if (typeof window === "undefined") return "en";
+  try {
+    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    return stored && RESOURCES[stored] ? stored : "en";
+  } catch {
+    return "en";
+  }
+}
+
+function persistLocale(locale: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch {
+    // Storage can be unavailable in privacy-restricted browsers.
+  }
+}
+
+function syncDocumentLocale(locale: string) {
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = locale;
+  }
+}
+
+let currentLocale = readStoredLocale();
+syncDocumentLocale(currentLocale);
 
 // Language persistence (5 Sep 2026) — `t()` reads a plain module variable,
 // not React state, so a locale change made after login (Settings) never
@@ -39,6 +67,8 @@ const listeners = new Set<() => void>();
 
 export function setLocale(locale: string) {
   const next = RESOURCES[locale] ? locale : "en";
+  persistLocale(next);
+  syncDocumentLocale(next);
   if (next === currentLocale) return;
   currentLocale = next;
   listeners.forEach((fn) => fn());
