@@ -100,6 +100,17 @@
 .public-footer { padding: 26px 5vw 34px; color: #67736e; font-size: .77rem; letter-spacing: .2em; }
 .public-footer-centered { text-align: center; display: block; }
 
+/* Keep every public control visible when navigating without a pointer. */
+.public-brand-lockup:focus-visible,
+.public-nav a:focus-visible,
+.public-language select:focus-visible,
+.public-button:focus-visible,
+.public-pillar-card:focus-visible,
+.public-back:focus-visible {
+  outline: 3px solid var(--color-accent, #c47d59);
+  outline-offset: 4px;
+}
+
 @media (max-width: 900px) {
   .public-header { min-height: 72px; grid-template-columns: 1fr auto; padding: 10px 4vw 0; gap: 6px 12px; }
   .public-brand-mark { width: 46px; height: 46px; flex-basis: 46px; }
