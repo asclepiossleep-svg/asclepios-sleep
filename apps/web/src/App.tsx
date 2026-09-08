@@ -72,7 +72,6 @@ export default function App() {
         <Route path="/" element={<PublicHome />} />
         <Route path="/products" element={<PublicProducts />} />
         <Route path="/education" element={<PublicEducation />} />
-        <Route path="/about" element={<PublicEducation />} />
         <Route path="/login" element={<Login />} />
         <Route path="/member" element={<MemberRedirect />} />
         <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
