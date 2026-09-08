@@ -32,7 +32,7 @@ export default function PublicProducts() {
                 <span className="public-kicker">{item.category}</span>
                 <h2>{item.title}</h2>
                 <p>{item.copy}</p>
-                <button type="button" disabled>{t("public.products.pending")}</button>
+                <Link className="public-card-link" to={`/products/${item.id}`}>{t("public.products.viewDetails")} →</Link>
               </div>
             </article>
           ))}

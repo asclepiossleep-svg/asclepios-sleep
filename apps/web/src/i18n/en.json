@@ -373,5 +373,10 @@
   "public.education.research.title": "Reading & Research",
   "public.education.research.copy": "A future home for sourced research notes and reading lists.",
   "public.education.comingSoon": "Section coming soon",
-  "public.education.footer": "ASCLEPIOS HEALTH · LEARNING PREVIEW"
+  "public.education.footer": "ASCLEPIOS HEALTH · LEARNING PREVIEW",
+  "public.products.viewDetails": "View product preview",
+  "public.productDetail.backProducts": "Back to products",
+  "public.productDetail.home": "Home",
+  "public.productDetail.pendingTitle": "Product details coming soon.",
+  "public.productDetail.pending": "This preview is not available for purchase. Confirmed product details, pricing, availability, cart and checkout are not connected."
 }

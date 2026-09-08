@@ -4,6 +4,7 @@ import { useSession } from "./state/session";
 import { useLocale } from "./i18n";
 import PublicHome from "./pages/PublicHome";
 import PublicProducts from "./pages/PublicProducts";
+import PublicProductDetail from "./pages/PublicProductDetail";
 import PublicEducation from "./pages/PublicEducation";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -71,6 +72,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<PublicHome />} />
         <Route path="/products" element={<PublicProducts />} />
+        <Route path="/products/:productId" element={<PublicProductDetail />} />
         <Route path="/education" element={<PublicEducation />} />
         <Route path="/login" element={<Login />} />
         <Route path="/member" element={<MemberRedirect />} />

@@ -373,5 +373,10 @@
   "public.education.research.title": "閱讀與研究",
   "public.education.research.copy": "日後將提供附來源的研究筆記及閱讀清單。",
   "public.education.comingSoon": "內容即將推出",
-  "public.education.footer": "阿斯康健康 · 學習預覽"
+  "public.education.footer": "阿斯康健康 · 學習預覽",
+  "public.products.viewDetails": "查看產品預覽",
+  "public.productDetail.backProducts": "返回產品",
+  "public.productDetail.home": "首頁",
+  "public.productDetail.pendingTitle": "產品詳情即將推出。",
+  "public.productDetail.pending": "此預覽暫不可購買。已確認的產品詳情、價格、供應情況、購物車及結帳尚未連接。"
 }

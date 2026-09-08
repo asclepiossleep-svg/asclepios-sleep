@@ -106,6 +106,7 @@
 .public-language select:focus-visible,
 .public-button:focus-visible,
 .public-pillar-card:focus-visible,
+.public-card-link:focus-visible,
 .public-back:focus-visible {
   outline: 3px solid var(--color-accent, #c47d59);
   outline-offset: 4px;
