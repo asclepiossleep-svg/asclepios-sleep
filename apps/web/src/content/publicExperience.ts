@@ -38,7 +38,7 @@ export const homeModules: PublicVisualModule[] = [
   {
     id: "sleep-app",
     title: "Sleep App",
-    copy: "Personalised guidance for better sleep and brighter days.",
+    copy: "Member sleep tools and guidance in one place.",
     to: "/member",
     cta: "Enter Sleep App",
     visualClass: "visual-sleep-app",
@@ -46,7 +46,7 @@ export const homeModules: PublicVisualModule[] = [
   {
     id: "learning",
     title: "Learning & Courses",
-    copy: "Evidence-based education for healthier, more confident choices.",
+    copy: "Sleep and wellbeing learning resources.",
     to: "/education",
     cta: "Start learning",
     visualClass: "visual-learning",
@@ -58,21 +58,21 @@ export const productModules: ProductVisualModule[] = [
     id: "sleep-support",
     category: "SLEEP",
     title: "Sleep Support",
-    copy: "Sleep-focused products and routines, presented with clear usage guidance.",
+    copy: "A preview of future sleep-related product information.",
     visualClass: "visual-product-sleep",
   },
   {
     id: "calm-body",
     category: "CALM",
     title: "Calm & Body",
-    copy: "Wellbeing support for relaxation, body comfort and daily balance.",
+    copy: "A preview of future wellbeing product information.",
     visualClass: "visual-product-calm",
   },
   {
     id: "gut-mood",
     category: "GUT & MOOD",
     title: "Gut & Mood",
-    copy: "Gut and mood support products connected to the wider wellbeing journey.",
+    copy: "A preview of future gut and mood product information.",
     visualClass: "visual-product-gut",
   },
 ];

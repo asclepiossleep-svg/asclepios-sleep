@@ -12,8 +12,8 @@ export default function PublicProducts() {
         <section className="public-subhero products-subhero">
           <Link className="public-back" to="/">← Back</Link>
           <p className="public-kicker">NATURE · SCIENCE · A BRIGHTER YOU</p>
-          <h1>Products for Better Sleep & Daily Wellbeing.</h1>
-          <p>Each product tile is an independent visual module. Approved packaging, photography, background treatment and campaign art can change product by product without rebuilding the page structure.</p>
+          <h1>Product information coming soon.</h1>
+          <p>This is a non-purchasable preview. Catalogue, prices, availability, cart and checkout are not connected.</p>
         </section>
         <section className="public-category-grid">
           {productModules.map((item) => (
@@ -35,7 +35,7 @@ export default function PublicProducts() {
           ))}
         </section>
       </main>
-      <footer className="public-footer public-footer-centered">INSPIRED BY NATURE · GUIDED BY SCIENCE</footer>
+      <footer className="public-footer public-footer-centered">ASCLEPIOS HEALTH · PRODUCT PREVIEW</footer>
     </div>
   );
 }

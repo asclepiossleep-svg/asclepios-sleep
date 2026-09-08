@@ -13,14 +13,14 @@ export default function PublicHome() {
           <div className="public-hero-copy">
             <p className="public-kicker">SUPPORTING A BRIGHTER YOU</p>
             <h1>Better Sleep.<br />Healthier Living.</h1>
-            <p className="public-lede">Science-backed solutions for deeper sleep, sharper days and a healthier, happier you.</p>
+            <p className="public-lede">Explore sleep products, learning resources and the member app.</p>
             <div className="public-actions">
               <Link className="public-button primary" to="/products">Explore Products <span>→</span></Link>
               <Link className="public-button secondary" to="/member">Enter Sleep App <span>→</span></Link>
             </div>
           </div>
-          <div className="public-hero-note">NATURAL<br />SCIENCE<br />BRIGHTER LIVING</div>
-          <div className="public-hero-signature">INSPIRED BY NATURE<br />GUIDED BY SCIENCE</div>
+          <div className="public-hero-note">PRODUCTS<br />LEARNING<br />MEMBER APP</div>
+          <div className="public-hero-signature">ASCLEPIOS HEALTH<br />PUBLIC PREVIEW</div>
         </section>
 
         <section className="public-pillar-grid" aria-label="Asclepios Health areas">
@@ -42,7 +42,7 @@ export default function PublicHome() {
           ))}
         </section>
       </main>
-      <footer className="public-footer public-footer-centered">BETTER PEOPLE · A BRIGHTER TOMORROW</footer>
+      <footer className="public-footer public-footer-centered">ASCLEPIOS HEALTH · PUBLIC PREVIEW</footer>
     </div>
   );
 }
