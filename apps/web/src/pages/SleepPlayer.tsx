@@ -6,6 +6,7 @@ import { useSession } from "../state/session";
 import { SNOOZE_MINUTES, SYNTH_TRACKS, isSynthTrack } from "@asclepios/shared";
 import { SleepAudioEngine } from "../audio/synthEngine";
 import * as musicPlayer from "../audio/musicPlayer";
+import BackButton from "../components/BackButton";
 
 // App-wide wallpaper (29 Aug 2026) — Tonight.tsx sends
 // `wallpaperId: user?.wallpaperId ?? "WALL_MOON_LAKE_04"` when starting a
@@ -245,6 +246,9 @@ export default function SleepPlayer() {
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
         }}
       >
+        <div style={{ alignSelf: "flex-start", position: "relative", zIndex: 2 }}>
+          <BackButton to="/tonight" inverse />
+        </div>
         {sessionLoadFailed ? (
           <div style={{ textAlign: "center", margin: "auto 0" }}>
             <p style={{ color: "#f6f5fa", opacity: 0.85, marginBottom: "1rem" }}>{t("player.sessionLoadFailed")}</p>
