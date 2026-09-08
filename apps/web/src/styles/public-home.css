@@ -41,6 +41,8 @@
 .public-nav { display: flex; justify-content: center; align-items: center; gap: clamp(18px, 3vw, 40px); }
 .public-nav a { color: #102b3c; text-decoration: none; font-size: .92rem; padding: 26px 0 22px; border-bottom: 2px solid transparent; }
 .public-nav a.active, .public-nav a:hover { border-bottom-color: #168da0; }
+.public-language { display: inline-flex; align-items: center; justify-self: end; gap: 6px; color: #102b3c; }
+.public-language select { max-width: 132px; border: 1px solid rgba(16,43,60,.22); border-radius: 999px; background: white; color: #102b3c; padding: 7px 10px; }
 
 .public-hero-photo {
   min-height: 540px;
@@ -99,11 +101,11 @@
 .public-footer-centered { text-align: center; display: block; }
 
 @media (max-width: 900px) {
-  .public-header { min-height: 72px; grid-template-columns: 1fr; padding: 10px 4vw 0; gap: 6px; }
+  .public-header { min-height: 72px; grid-template-columns: 1fr auto; padding: 10px 4vw 0; gap: 6px 12px; }
   .public-brand-mark { width: 48px; height: 48px; flex-basis: 48px; }
   .public-brand-copy strong { font-size: 1.03rem; letter-spacing: .16em; }
   .public-brand-copy span { font-size: .6rem; letter-spacing: .34em; }
-  .public-nav { display: flex; justify-content: flex-start; gap: 20px; overflow-x: auto; scrollbar-width: thin; }
+  .public-nav { grid-column: 1 / -1; display: flex; justify-content: flex-start; gap: 20px; overflow-x: auto; scrollbar-width: thin; }
   .public-nav a { flex: 0 0 auto; padding: 10px 0 12px; }
   .public-hero-photo { min-height: 590px; grid-template-columns: 1fr; padding: 52px 6vw 40px; background-position: 60% center; }
   .public-hero-photo::before, .public-subhero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(248,251,250,.95) 0 48%, rgba(248,251,250,.42) 72%, rgba(248,251,250,.10)); }

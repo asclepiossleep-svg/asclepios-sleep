@@ -1,29 +1,32 @@
 import { Link } from "react-router-dom";
 import PublicHeader from "../components/PublicHeader";
-import { homeModules } from "../content/publicExperience";
+import { getHomeModules } from "../content/publicExperience";
+import { t } from "../i18n";
 import "../styles/public-home.css";
 import "../styles/public-visual-modules.css";
 
 export default function PublicHome() {
+  const homeModules = getHomeModules();
+
   return (
     <div className="public-site">
       <PublicHeader />
       <main>
         <section className="public-hero public-hero-photo">
           <div className="public-hero-copy">
-            <p className="public-kicker">SUPPORTING A BRIGHTER YOU</p>
-            <h1>Better Sleep.<br />Healthier Living.</h1>
-            <p className="public-lede">Explore sleep products, learning resources and the member app.</p>
+            <p className="public-kicker">{t("public.home.kicker")}</p>
+            <h1>{t("public.home.title.line1")}<br />{t("public.home.title.line2")}</h1>
+            <p className="public-lede">{t("public.home.lede")}</p>
             <div className="public-actions">
-              <Link className="public-button primary" to="/products">Explore Products <span>→</span></Link>
-              <Link className="public-button secondary" to="/member">Enter Sleep App <span>→</span></Link>
+              <Link className="public-button primary" to="/products">{t("public.home.products.cta")} <span>→</span></Link>
+              <Link className="public-button secondary" to="/member">{t("public.home.app.cta")} <span>→</span></Link>
             </div>
           </div>
-          <div className="public-hero-note">PRODUCTS<br />LEARNING<br />MEMBER APP</div>
-          <div className="public-hero-signature">ASCLEPIOS HEALTH<br />PUBLIC PREVIEW</div>
+          <div className="public-hero-note">{t("public.home.note")}</div>
+          <div className="public-hero-signature">{t("public.home.signature")}</div>
         </section>
 
-        <section className="public-pillar-grid" aria-label="Asclepios Health areas">
+        <section className="public-pillar-grid" aria-label={t("public.home.areasAria")}>
           {homeModules.map((item) => (
             <Link className="public-pillar-card" to={item.to} key={item.id}>
               <div
@@ -42,7 +45,7 @@ export default function PublicHome() {
           ))}
         </section>
       </main>
-      <footer className="public-footer public-footer-centered">ASCLEPIOS HEALTH · PUBLIC PREVIEW</footer>
+      <footer className="public-footer public-footer-centered">{t("public.home.footer")}</footer>
     </div>
   );
 }

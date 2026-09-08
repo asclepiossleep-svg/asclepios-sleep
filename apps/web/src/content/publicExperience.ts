@@ -1,3 +1,5 @@
+import { t } from "../i18n";
+
 export type PublicVisualModule = {
   id: string;
   title: string;
@@ -19,60 +21,57 @@ export type ProductVisualModule = {
   imageAlt?: string;
 };
 
-/**
- * Owner-approved rule:
- * These cards are functional content modules, not baked-in screenshots.
- * Each module owns its route, copy, visual treatment and optional image.
- * Product / course / app visuals can therefore be swapped independently
- * as real photography, packaging and campaigns are approved.
- */
-export const homeModules: PublicVisualModule[] = [
-  {
-    id: "products",
-    title: "Products",
-    copy: "Thoughtfully selected sleep and wellbeing products.",
-    to: "/products",
-    cta: "Explore products",
-    visualClass: "visual-products",
-  },
-  {
-    id: "sleep-app",
-    title: "Sleep App",
-    copy: "Member sleep tools and guidance in one place.",
-    to: "/member",
-    cta: "Enter Sleep App",
-    visualClass: "visual-sleep-app",
-  },
-  {
-    id: "learning",
-    title: "Learning & Courses",
-    copy: "Sleep and wellbeing learning resources.",
-    to: "/education",
-    cta: "Start learning",
-    visualClass: "visual-learning",
-  },
-];
+export function getHomeModules(): PublicVisualModule[] {
+  return [
+    {
+      id: "products",
+      title: t("public.home.products.title"),
+      copy: t("public.home.products.copy"),
+      to: "/products",
+      cta: t("public.home.products.cta"),
+      visualClass: "visual-products",
+    },
+    {
+      id: "sleep-app",
+      title: t("public.home.app.title"),
+      copy: t("public.home.app.copy"),
+      to: "/member",
+      cta: t("public.home.app.cta"),
+      visualClass: "visual-sleep-app",
+    },
+    {
+      id: "learning",
+      title: t("public.home.learning.title"),
+      copy: t("public.home.learning.copy"),
+      to: "/education",
+      cta: t("public.home.learning.cta"),
+      visualClass: "visual-learning",
+    },
+  ];
+}
 
-export const productModules: ProductVisualModule[] = [
-  {
-    id: "sleep-support",
-    category: "SLEEP",
-    title: "Sleep Support",
-    copy: "A preview of future sleep-related product information.",
-    visualClass: "visual-product-sleep",
-  },
-  {
-    id: "calm-body",
-    category: "CALM",
-    title: "Calm & Body",
-    copy: "A preview of future wellbeing product information.",
-    visualClass: "visual-product-calm",
-  },
-  {
-    id: "gut-mood",
-    category: "GUT & MOOD",
-    title: "Gut & Mood",
-    copy: "A preview of future gut and mood product information.",
-    visualClass: "visual-product-gut",
-  },
-];
+export function getProductModules(): ProductVisualModule[] {
+  return [
+    {
+      id: "sleep-support",
+      category: t("public.products.sleep.category"),
+      title: t("public.products.sleep.title"),
+      copy: t("public.products.sleep.copy"),
+      visualClass: "visual-product-sleep",
+    },
+    {
+      id: "calm-body",
+      category: t("public.products.calm.category"),
+      title: t("public.products.calm.title"),
+      copy: t("public.products.calm.copy"),
+      visualClass: "visual-product-calm",
+    },
+    {
+      id: "gut-mood",
+      category: t("public.products.gut.category"),
+      title: t("public.products.gut.title"),
+      copy: t("public.products.gut.copy"),
+      visualClass: "visual-product-gut",
+    },
+  ];
+}

@@ -1,39 +1,40 @@
 import { Link } from "react-router-dom";
 import PublicHeader from "../components/PublicHeader";
+import { t } from "../i18n";
 import "../styles/public-home.css";
 
-const learning = [
-  { title: "Sleep Foundations", copy: "Understand how sleep works and the practical foundations of better rest." },
-  { title: "Calm Mind Practices", copy: "General learning material about calm evening routines." },
-  { title: "Science & Research", copy: "A future home for sourced research notes and reading lists." },
-];
-
 export default function PublicEducation() {
+  const learning = [
+    { title: t("public.education.sleep.title"), copy: t("public.education.sleep.copy") },
+    { title: t("public.education.calm.title"), copy: t("public.education.calm.copy") },
+    { title: t("public.education.research.title"), copy: t("public.education.research.copy") },
+  ];
+
   return (
     <div className="public-site">
       <PublicHeader />
       <main>
         <section className="public-subhero education-subhero">
-          <Link className="public-back" to="/">← Back</Link>
-          <p className="public-kicker">KNOWLEDGE FOR A BRIGHTER TOMORROW</p>
-          <h1>Sleep and wellbeing learning resources.</h1>
-          <p>This preview keeps public learning resources separate from the member app. Course sections are not yet available.</p>
+          <Link className="public-back" to="/">← {t("public.common.back")}</Link>
+          <p className="public-kicker">{t("public.education.kicker")}</p>
+          <h1>{t("public.education.title")}</h1>
+          <p>{t("public.education.intro")}</p>
         </section>
-        <section className="public-category-grid" id="research">
+        <section className="public-category-grid">
           {learning.map((item) => (
             <article className="public-category-card" key={item.title}>
               <div className="public-category-visual learning" aria-hidden="true" />
               <div>
-                <span className="public-kicker">LEARNING</span>
+                <span className="public-kicker">{t("public.education.label")}</span>
                 <h2>{item.title}</h2>
                 <p>{item.copy}</p>
-                <span className="public-card-link">Section coming soon</span>
+                <span className="public-card-link">{t("public.education.comingSoon")}</span>
               </div>
             </article>
           ))}
         </section>
       </main>
-      <footer className="public-footer public-footer-centered">ASCLEPIOS HEALTH · LEARNING PREVIEW</footer>
+      <footer className="public-footer public-footer-centered">{t("public.education.footer")}</footer>
     </div>
   );
 }
