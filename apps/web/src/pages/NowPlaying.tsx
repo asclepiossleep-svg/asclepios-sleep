@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import BackButton from "../components/BackButton";
 import { useMusicPlayer } from "../state/useMusicPlayer";
 import { pause, resume, stop, seek, setVolume } from "../audio/musicPlayer";
 import { t } from "../i18n";
@@ -88,13 +89,9 @@ export default function NowPlaying() {
           width: "100%",
         }}
       >
-        <button
-          onClick={() => navigate(-1)}
-          aria-label={t("nav.back")}
-          style={{ alignSelf: "flex-start", background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 44, height: 44, borderRadius: "50%", fontSize: "1.3rem" }}
-        >
-          ‹
-        </button>
+        <div style={{ alignSelf: "flex-start" }}>
+          <BackButton inverse />
+        </div>
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", textAlign: "center", gap: "0.35rem", paddingBottom: "2rem" }}>
           <h1 style={{ fontSize: "1.6rem", margin: 0, fontWeight: 700 }}>{track.title}</h1>
