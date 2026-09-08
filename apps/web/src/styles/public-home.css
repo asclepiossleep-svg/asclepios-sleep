@@ -55,7 +55,7 @@
     url("../assets/hero/login-hero-photo.webp") center/cover no-repeat;
 }
 .public-hero-copy { align-self: center; z-index: 1; }
-.public-kicker { margin: 0 0 18px; font-size: .76rem; font-weight: 700; letter-spacing: .26em; color: #7fa58f; text-transform: uppercase; }
+.public-kicker { margin: 0 0 18px; font-size: .76rem; font-weight: 700; letter-spacing: .26em; color: #2f5b4f; text-transform: uppercase; }
 .public-hero h1, .public-subhero h1, .public-pillar-card h2, .public-category-card h2 {
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 500;
