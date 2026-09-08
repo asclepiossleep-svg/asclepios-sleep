@@ -1,12 +1,7 @@
 import { Link } from "react-router-dom";
 import PublicHeader from "../components/PublicHeader";
+import { homeModules } from "../content/publicExperience";
 import "../styles/public-home.css";
-
-const pillars = [
-  { title: "Products", copy: "Thoughtfully selected sleep and wellbeing products.", to: "/products", cta: "Explore products" },
-  { title: "Sleep App", copy: "Personalised guidance for better sleep and brighter days.", to: "/member", cta: "Enter Sleep App" },
-  { title: "Learning & Courses", copy: "Evidence-based education for healthier, more confident choices.", to: "/education", cta: "Start learning" },
-];
 
 export default function PublicHome() {
   return (
@@ -28,9 +23,15 @@ export default function PublicHome() {
         </section>
 
         <section className="public-pillar-grid" aria-label="Asclepios Health areas">
-          {pillars.map((item, index) => (
-            <Link className={`public-pillar-card pillar-${index + 1}`} to={item.to} key={item.title}>
-              <div className="public-pillar-visual" aria-hidden="true" />
+          {homeModules.map((item) => (
+            <Link className="public-pillar-card" to={item.to} key={item.id}>
+              <div
+                className={`public-pillar-visual ${item.visualClass}`}
+                aria-hidden={item.imageAlt ? undefined : true}
+                role={item.imageAlt ? "img" : undefined}
+                aria-label={item.imageAlt}
+                style={item.imageSrc ? { backgroundImage: `url(${item.imageSrc})` } : undefined}
+              />
               <div className="public-pillar-copy">
                 <h2>{item.title}</h2>
                 <p>{item.copy}</p>
