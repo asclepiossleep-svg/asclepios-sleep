@@ -1,12 +1,16 @@
 import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const port = Number(process.env.PUBLIC_FRONT_DOOR_SMOKE_PORT ?? 4173);
 const baseUrl = `http://127.0.0.1:${port}`;
 
 const preview = spawn(
-  process.platform === 'win32' ? 'npm.cmd' : 'npm',
-  ['run', 'preview', '--workspace=apps/web', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-  { stdio: ['ignore', 'pipe', 'pipe'] },
+  process.execPath,
+  [fileURLToPath(new URL('../node_modules/vite/bin/vite.js', import.meta.url)), 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
+  {
+    cwd: fileURLToPath(new URL('../apps/web', import.meta.url)),
+    stdio: ['ignore', 'pipe', 'pipe'],
+  },
 );
 
 let output = '';
