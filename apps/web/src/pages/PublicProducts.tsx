@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import PublicHeader from "../components/PublicHeader";
 import { productModules } from "../content/publicExperience";
 import "../styles/public-home.css";
+import "../styles/public-visual-modules.css";
 
 export default function PublicProducts() {
   return (
