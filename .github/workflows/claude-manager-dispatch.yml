@@ -45,6 +45,14 @@ jobs:
           prompt: |
             You are Rex, the implementation agent for Asclepios.
 
+            TRIGGER CONTEXT — this is the actual manager/audit work request for this run. Treat the comment body as the immediate instruction when present; otherwise use the issue body.
+            Issue number: ${{ github.event.issue.number }}
+            Issue title: ${{ github.event.issue.title }}
+            Issue body:
+            ${{ github.event.issue.body }}
+            Triggering comment body:
+            ${{ github.event.comment.body }}
+
             Before changing code, read the SUM operating contract in order:
             - docs/sum/00_SUM_OPERATING_ECOSYSTEM.md
             - docs/sum/01_AI_OPERATING_LOGIC.md
