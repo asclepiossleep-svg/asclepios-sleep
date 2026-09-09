@@ -53,6 +53,21 @@ jobs:
               failed=1
             fi
 
+            if ! grep -Eq '^concurrency:' "$file"; then
+              echo "::error file=$file::Hardened workflows must declare workflow-level concurrency"
+              failed=1
+            fi
+
+            if ! grep -Eq '^[[:space:]]*cancel-in-progress:[[:space:]]*true([[:space:]]|$)' "$file"; then
+              echo "::error file=$file::Hardened workflows must cancel superseded in-progress runs"
+              failed=1
+            fi
+
+            if ! grep -Eq '^[[:space:]]*timeout-minutes:[[:space:]]*[1-9][0-9]*([[:space:]]|$)' "$file"; then
+              echo "::error file=$file::Every hardened workflow must bound job runtime with timeout-minutes"
+              failed=1
+            fi
+
             while IFS= read -r line; do
               ref="${line#*@}"
               if [[ "$line" == *'uses: ./'* ]]; then
@@ -69,4 +84,4 @@ jobs:
             exit 1
           fi
 
-          echo 'Policy gate passed: hardened workflows use explicit least-privilege permissions, safe PR triggers, and immutable action references.'
+          echo 'Policy gate passed: hardened workflows use explicit least-privilege permissions, safe PR triggers, bounded runtimes, superseded-run cancellation, and immutable action references.'
