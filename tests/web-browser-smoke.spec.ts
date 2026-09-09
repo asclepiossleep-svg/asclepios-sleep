@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const baseUrl = "http://127.0.0.1:4173";
 const routes = [
@@ -15,7 +15,7 @@ const viewports = [
   { name: "mobile", width: 390, height: 844 },
 ] as const;
 
-function captureBrowserFailures(page: Parameters<Parameters<typeof test>[1]>[0]["page"]) {
+function captureBrowserFailures(page: Page) {
   const failures: string[] = [];
 
   page.on("pageerror", (error) => {
