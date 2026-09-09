@@ -15,12 +15,36 @@ const viewports = [
   { name: "mobile", width: 390, height: 844 },
 ] as const;
 
+function captureBrowserFailures(page: Parameters<Parameters<typeof test>[1]>[0]["page"]) {
+  const failures: string[] = [];
+
+  page.on("pageerror", (error) => {
+    failures.push(`pageerror: ${error.message}`);
+  });
+
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      failures.push(`console.error: ${message.text()}`);
+    }
+  });
+
+  page.on("response", (response) => {
+    const url = new URL(response.url());
+    if (url.origin === baseUrl && response.status() >= 400) {
+      failures.push(`HTTP ${response.status()}: ${url.pathname}`);
+    }
+  });
+
+  return failures;
+}
+
 for (const viewport of viewports) {
   test.describe(viewport.name, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
     for (const route of routes) {
-      test(`${route} renders without horizontal overflow`, async ({ page }, testInfo) => {
+      test(`${route} renders cleanly without horizontal overflow`, async ({ page }, testInfo) => {
+        const browserFailures = captureBrowserFailures(page);
         const response = await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle" });
         expect(response, `${route} should return a browser response`).not.toBeNull();
         expect(response?.ok(), `${route} should return HTTP success`).toBeTruthy();
@@ -33,6 +57,7 @@ for (const viewport of viewports) {
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         );
         expect(overflowPixels, `${route} must not overflow horizontally`).toBeLessThanOrEqual(1);
+        expect(browserFailures, `${route} must not emit runtime, console, or same-origin HTTP errors`).toEqual([]);
 
         const slug = route === "/" ? "home" : route.slice(1).replaceAll("/", "-");
         await page.screenshot({
@@ -42,7 +67,16 @@ for (const viewport of viewports) {
       });
     }
 
+    test("invalid product id safely redirects to products", async ({ page }) => {
+      const browserFailures = captureBrowserFailures(page);
+      await page.goto(`${baseUrl}/products/not-a-real-product`, { waitUntil: "networkidle" });
+      await expect(page).toHaveURL(`${baseUrl}/products`);
+      await expect(page.locator("body")).toBeVisible();
+      expect(browserFailures, "invalid product redirect must not emit browser failures").toEqual([]);
+    });
+
     test("public locale switching survives navigation without overflow", async ({ page }) => {
+      const browserFailures = captureBrowserFailures(page);
       await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
       const localeSelect = page.locator(".public-language select");
       await expect(localeSelect).toBeVisible();
@@ -61,6 +95,8 @@ for (const viewport of viewports) {
 
         await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
       }
+
+      expect(browserFailures, "locale flow must not emit browser failures").toEqual([]);
     });
   });
 }
