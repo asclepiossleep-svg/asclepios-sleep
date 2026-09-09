@@ -25,7 +25,7 @@ export default function PublicHome() {
       <header className="public-header">
         <Link className="public-brand" to="/">ASCLĒPIOS HEALTH</Link>
         <nav className="public-nav" aria-label="Primary navigation">
-          <a href="#shop">Shop</a>
+          <Link to="/products">Shop</Link>
           <a href="#how-it-works">How It Works</a>
           <a href="#intelligence">Sleep Intelligence</a>
           <a href="#learn">Learn</a>
@@ -41,7 +41,7 @@ export default function PublicHome() {
             Asclepios combines everyday sleep support products with a simple digital routine that helps you focus on what matters tonight.
           </p>
           <div className="public-actions">
-            <a className="public-button primary" href="#shop">Explore Sleep Solutions</a>
+            <Link className="public-button primary" to="/products">Explore Sleep Solutions</Link>
             <Link className="public-button secondary" to="/login">Open Member Experience</Link>
           </div>
         </section>
