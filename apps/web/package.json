@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run build --workspace=@asclepios/shared --prefix ../.. && tsc -b --force && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@asclepios/shared": "0.1.0",
@@ -15,6 +16,7 @@
     "react-router-dom": "^6.26.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
