@@ -25,17 +25,21 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20
-          cache: npm
+          package-manager-cache: false
 
+      # This repo does not currently commit a package-lock.json. GitHub's setup-node
+      # documentation requires dependency caching to be disabled without a lockfile,
+      # and npm ci itself also requires an existing lockfile. Use npm install until a
+      # repository lockfile is deliberately introduced in a separate hardening change.
       - name: Install repository dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Build all workspaces
         run: npm run build
 
       - name: Install pinned Playwright test runner
         run: |
-          npm install --no-save @playwright/test@1.55.0
+          npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
           npx playwright install --with-deps chromium
 
       - name: Start built web preview
