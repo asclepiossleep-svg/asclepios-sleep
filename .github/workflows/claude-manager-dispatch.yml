@@ -30,11 +30,13 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      # GitHub secure-use guidance: pin third-party actions to immutable full commit SHAs.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@v1
+      # anthropics/claude-code-action v1.0.219 commit behind the v1 tag on 2026-09-09.
+      - uses: anthropics/claude-code-action@5ccc3a35a6367cdb8e6fbd0728287467540ecfe2
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           show_full_output: true
