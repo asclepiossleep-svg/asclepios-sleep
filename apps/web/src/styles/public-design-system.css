@@ -1,0 +1,312 @@
+/*
+ * Asclepios Health public marketing design system (issue #45) — owner
+ * confirmed 5 reference screens: white header, navy serif display type,
+ * teal primary CTA, rounded white cards, botanical accents, soft
+ * lifestyle photography. Scoped to `.public-site` so these tokens never
+ * leak into the authenticated app's day/night theme in tokens.css.
+ */
+.public-site {
+  --pub-navy: #16233f;
+  --pub-navy-deep: #0d1730;
+  --pub-teal: #128f86;
+  --pub-teal-dark: #0c6b64;
+  --pub-teal-soft: #e4f4f2;
+  --pub-bg: #fbfaf6;
+  --pub-surface: #ffffff;
+  --pub-ink: #16233f;
+  --pub-text: #48536b;
+  --pub-muted: #7c879c;
+  --pub-border: #e4e7ee;
+  --pub-cream: #f3f1ea;
+  --pub-radius-lg: 28px;
+  --pub-radius-md: 20px;
+  --pub-shadow: 0 20px 50px rgba(22, 35, 63, 0.08);
+
+  min-height: 100vh;
+  background: var(--pub-bg);
+  color: var(--pub-text);
+  font-family: -apple-system, "Segoe UI", "PingFang HK", "Noto Sans CJK TC", system-ui, sans-serif;
+}
+
+.public-site h1,
+.public-site h2,
+.public-site h3 {
+  font-family: var(--font-display);
+  color: var(--pub-ink);
+  margin: 0;
+}
+
+/* Header */
+.public-header {
+  min-height: 76px;
+  padding: 0 6vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--pub-border);
+  background: rgba(255, 255, 255, 0.94);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+}
+
+.public-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: var(--pub-navy);
+}
+
+.public-brand-mark {
+  width: 32px;
+  height: auto;
+  display: block;
+  flex: none;
+}
+
+.public-brand-lockup {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.public-brand-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.public-brand-sub {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  color: var(--pub-teal);
+  margin-top: 0.1rem;
+}
+
+.public-nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.public-nav a {
+  color: var(--pub-navy);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.public-nav a:hover {
+  color: var(--pub-teal);
+}
+
+.public-nav a.is-active {
+  color: var(--pub-teal);
+}
+
+/* Buttons */
+.public-button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 650;
+  font-size: 0.98rem;
+  border: none;
+  cursor: pointer;
+}
+
+.public-button.primary {
+  background: var(--pub-teal);
+  color: #ffffff;
+}
+
+.public-button.primary:hover {
+  background: var(--pub-teal-dark);
+}
+
+.public-button.secondary {
+  border: 1px solid var(--pub-border);
+  color: var(--pub-navy);
+  background: var(--pub-surface);
+}
+
+.public-button.secondary:hover {
+  border-color: var(--pub-teal);
+  color: var(--pub-teal);
+}
+
+.public-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Kicker / section chrome */
+.public-kicker {
+  color: var(--pub-teal-dark);
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+  text-transform: uppercase;
+}
+
+.public-section {
+  position: relative;
+  padding: 72px 8vw;
+  border-top: 1px solid var(--pub-border);
+}
+
+.public-section.alt {
+  background: var(--pub-cream);
+}
+
+.public-section-heading > p:last-child {
+  max-width: 720px;
+  color: var(--pub-text);
+  line-height: 1.6;
+}
+
+/* Cards */
+.public-card {
+  background: var(--pub-surface);
+  border: 1px solid var(--pub-border);
+  border-radius: var(--pub-radius-lg);
+  box-shadow: var(--pub-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Chips */
+.public-chip-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 28px 0 8px;
+}
+
+.public-chip {
+  border: 1px solid var(--pub-border);
+  background: var(--pub-surface);
+  color: var(--pub-text);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.public-chip.is-active {
+  background: var(--pub-teal-soft);
+  border-color: var(--pub-teal);
+  color: var(--pub-teal-dark);
+}
+
+/* Status pill */
+.public-status {
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--pub-teal-dark);
+  background: var(--pub-teal-soft);
+  border-radius: 999px;
+  padding: 5px 12px;
+  text-transform: uppercase;
+}
+
+/* Botanical accent — SVG line-art leaf/branch flourish used near hero and
+   card corners for the "botanical accents" reference-design requirement.
+   No lifestyle illustration asset exists in the repo yet (flagged
+   separately); this CSS/SVG accent is the closest available stand-in. */
+.botanical-accent {
+  position: absolute;
+  pointer-events: none;
+  color: var(--pub-teal);
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.botanical-accent.corner-top-right {
+  top: -18px;
+  right: -18px;
+  width: 96px;
+  height: 96px;
+}
+
+.botanical-accent.corner-bottom-left {
+  bottom: -14px;
+  left: -14px;
+  width: 72px;
+  height: 72px;
+  transform: rotate(180deg);
+}
+
+.botanical-accent.hero {
+  top: 8%;
+  right: 2%;
+  width: 160px;
+  height: 160px;
+  opacity: 0.5;
+}
+
+/* Photography frame */
+.public-photo-frame {
+  border-radius: var(--pub-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--pub-shadow);
+  position: relative;
+}
+
+.public-photo-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Footer */
+.public-footer {
+  padding: 36px 8vw;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  color: var(--pub-muted);
+  font-size: 0.9rem;
+}
+
+.public-footer strong {
+  color: var(--pub-navy);
+  font-family: var(--font-display);
+}
+
+@media (max-width: 820px) {
+  .public-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-top: 18px;
+    padding-bottom: 18px;
+    gap: 12px;
+  }
+  .public-nav {
+    gap: 14px;
+  }
+  .public-section {
+    padding-left: 6vw;
+    padding-right: 6vw;
+  }
+  .public-footer {
+    flex-direction: column;
+  }
+}
