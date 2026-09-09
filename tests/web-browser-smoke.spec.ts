@@ -1,7 +1,15 @@
 import { expect, test } from "@playwright/test";
 
 const baseUrl = "http://127.0.0.1:4173";
-const routes = ["/", "/products", "/education", "/login"];
+const routes = [
+  "/",
+  "/products",
+  "/products/sleep-support",
+  "/products/calm-body",
+  "/products/gut-mood",
+  "/education",
+  "/login",
+];
 const viewports = [
   { name: "desktop", width: 1440, height: 900 },
   { name: "mobile", width: 390, height: 844 },
@@ -33,5 +41,26 @@ for (const viewport of viewports) {
         });
       });
     }
+
+    test("public locale switching survives navigation without overflow", async ({ page }) => {
+      await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+      const localeSelect = page.locator(".public-language select");
+      await expect(localeSelect).toBeVisible();
+
+      for (const locale of ["zh-HK", "zh-CN", "en"]) {
+        await localeSelect.selectOption(locale);
+        await expect(page.locator("html")).toHaveAttribute("lang", locale);
+
+        await page.goto(`${baseUrl}/products`, { waitUntil: "networkidle" });
+        await expect(page.locator("html")).toHaveAttribute("lang", locale);
+
+        const overflowPixels = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflowPixels, `${locale} /products must not overflow horizontally`).toBeLessThanOrEqual(1);
+
+        await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+      }
+    });
   });
 }
