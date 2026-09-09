@@ -15,7 +15,9 @@ test("public front door renders and exposes real primary routes", async ({ page 
 
   await assertNoHorizontalOverflow(page);
 
-  await page.screenshot({ path: `test-results/front-door-${test.info().project.name}.png`, fullPage: true });
+  // Fail closed on unexpected desktop/mobile visual drift. Golden snapshots are
+  // reviewed repository artifacts; CI never updates or self-approves them.
+  await expect(page).toHaveScreenshot("front-door.png", { fullPage: true });
 });
 
 test("products route is reachable from the public front door", async ({ page }) => {
