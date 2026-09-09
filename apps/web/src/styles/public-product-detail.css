@@ -1,0 +1,83 @@
+.public-detail-back {
+  padding: 28px 8vw 0;
+}
+
+.public-detail-back a {
+  color: var(--pub-teal-dark);
+  text-decoration: none;
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+
+.public-detail-hero {
+  padding: 24px 8vw 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-width: 760px;
+}
+
+.public-detail-hero h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.public-detail-body {
+  padding: 32px 8vw 90px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 32px;
+}
+
+.public-detail-usage {
+  padding: 30px;
+}
+
+.public-detail-usage h2 {
+  font-size: 1.15rem;
+  margin-bottom: 14px;
+}
+
+.public-detail-usage ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.public-detail-usage li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+
+.public-detail-usage li .public-entry-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  flex: none;
+}
+
+.public-detail-side {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.public-detail-side h2 {
+  font-size: 1.05rem;
+}
+
+.public-detail-side p {
+  margin: 0;
+  color: var(--pub-text);
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .public-detail-body {
+    grid-template-columns: 1fr;
+  }
+}
