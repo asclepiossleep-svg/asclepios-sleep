@@ -1,0 +1,70 @@
+name: completion-gate
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: completion-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: read
+  statuses: read
+
+jobs:
+  completion:
+    name: completion
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      REQUIRED_CHECKS: build|browser|verify-vercel|structural-health|external-health-contract
+    steps:
+      - name: Enforce explicit completion criteria
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          IFS='|' read -r -a required <<< "$REQUIRED_CHECKS"
+
+          for attempt in $(seq 1 40); do
+            payload="$(gh api -H 'Accept: application/vnd.github+json' "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100")"
+            all_success=true
+
+            for check in "${required[@]}"; do
+              status="$(jq -r --arg check "$check" '[.check_runs[] | select(.name == $check)] | sort_by(.started_at // .created_at) | last | .status // empty' <<< "$payload")"
+              conclusion="$(jq -r --arg check "$check" '[.check_runs[] | select(.name == $check)] | sort_by(.started_at // .created_at) | last | .conclusion // empty' <<< "$payload")"
+
+              if [[ -z "$status" ]]; then
+                echo "[$attempt/40] $check: not reported yet"
+                all_success=false
+                continue
+              fi
+
+              if [[ "$status" != "completed" ]]; then
+                echo "[$attempt/40] $check: $status"
+                all_success=false
+                continue
+              fi
+
+              if [[ "$conclusion" == "success" || "$conclusion" == "neutral" || "$conclusion" == "skipped" ]]; then
+                echo "[$attempt/40] $check: $conclusion"
+              else
+                echo "::error::$check completed with conclusion=$conclusion for $HEAD_SHA"
+                exit 1
+              fi
+            done
+
+            if [[ "$all_success" == "true" ]]; then
+              echo "Completion checkpoint passed: all deterministic execution criteria succeeded for $HEAD_SHA"
+              exit 0
+            fi
+
+            sleep 15
+          done
+
+          echo "::error::Completion checkpoint timed out before all required checks succeeded for $HEAD_SHA"
+          exit 1
