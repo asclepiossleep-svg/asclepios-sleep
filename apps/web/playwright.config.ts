@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: "./tests/browser",
   timeout: 30_000,
   expect: { timeout: 5_000 },
+  forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : "list",
@@ -11,6 +12,10 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    locale: "en-GB",
+    timezoneId: "Europe/London",
+    colorScheme: "light",
+    reducedMotion: "reduce",
   },
   projects: [
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
