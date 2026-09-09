@@ -1,0 +1,51 @@
+.public-pillar-visual,
+.public-category-visual {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: transform .24s ease, filter .24s ease;
+}
+
+.public-pillar-card:hover .public-pillar-visual,
+.public-category-card:hover .public-category-visual {
+  transform: scale(1.015);
+}
+
+/* Home modules are intentionally independent: future approved imagery can be
+   assigned per module without changing the page component or other cards. */
+.visual-products {
+  background:
+    radial-gradient(circle at 30% 58%, rgba(198,183,154,.65) 0 8%, transparent 9%),
+    linear-gradient(135deg, #e6eee7 0%, #f4f1e8 52%, #ccd9cd 100%);
+}
+
+.visual-sleep-app {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(250,238,179,.86) 0 11%, transparent 12%),
+    linear-gradient(160deg, #0d2844 0%, #0c6175 60%, #56aeb7 100%);
+}
+
+.visual-learning {
+  background:
+    linear-gradient(152deg, rgba(246,241,232,.96) 0 47%, rgba(219,232,225,.94) 48% 100%);
+}
+
+/* Product cards each have their own art direction token. Replace any one of
+   these with approved packaging photography/backgrounds independently. */
+.visual-product-sleep {
+  background:
+    radial-gradient(circle at 78% 18%, rgba(220,211,236,.9) 0 9%, transparent 10%),
+    linear-gradient(145deg, #eee8df 0%, #d8e3dd 54%, #c8d4c8 100%);
+}
+
+.visual-product-calm {
+  background:
+    radial-gradient(circle at 70% 26%, rgba(245,236,207,.9) 0 10%, transparent 11%),
+    linear-gradient(145deg, #edf0e6 0%, #d8e6d4 56%, #e9e3d6 100%);
+}
+
+.visual-product-gut {
+  background:
+    radial-gradient(circle at 74% 22%, rgba(233,222,198,.9) 0 9%, transparent 10%),
+    linear-gradient(145deg, #e5eee8 0%, #cadbcf 52%, #f0ece2 100%);
+}

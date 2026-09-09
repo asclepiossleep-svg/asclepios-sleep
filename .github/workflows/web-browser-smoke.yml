@@ -1,0 +1,74 @@
+name: Asclepios Merge Guard
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asclepios-merge-guard-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-smoke:
+    # Stable status-check name intended for repository ruleset / branch protection.
+    # Completion means: dependency install, all-workspace build, real Chromium route
+    # checks, desktop/mobile overflow checks, locale persistence, runtime/console/network
+    # error checks, fallback routing, and evidence upload have all reached the gate.
+    name: merge-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Set up Node 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+          package-manager-cache: false
+
+      # This repo does not currently commit a package-lock.json. GitHub's setup-node
+      # documentation requires dependency caching to be disabled without a lockfile,
+      # and npm ci itself also requires an existing lockfile. Use npm install until a
+      # repository lockfile is deliberately introduced in a separate hardening change.
+      - name: Install repository dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build all workspaces
+        run: npm run build
+
+      - name: Install pinned Playwright test runner
+        run: |
+          npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start built web preview
+        run: |
+          nohup npm run preview --workspace=apps/web -- --host 127.0.0.1 --port 4173 > /tmp/asclepios-web-preview.log 2>&1 &
+          echo $! > /tmp/asclepios-web-preview.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/asclepios-web-preview.log
+          exit 1
+
+      - name: Run deterministic desktop and mobile merge gate
+        run: npx playwright test tests/web-browser-smoke.spec.ts --reporter=line
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: asclepios-merge-guard-evidence
+          path: |
+            test-results/
+            /tmp/asclepios-web-preview.log
+          if-no-files-found: warn
+          retention-days: 14
