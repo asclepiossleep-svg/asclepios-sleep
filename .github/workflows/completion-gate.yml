@@ -21,7 +21,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-      REQUIRED_CHECKS: build|browser|verify-vercel|structural-health|external-health-contract
+      REQUIRED_CHECKS: build|browser|verify-vercel|policy|structural-health|external-health-contract
     steps:
       - name: Enforce explicit completion criteria
         shell: bash
