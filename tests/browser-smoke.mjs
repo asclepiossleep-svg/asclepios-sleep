@@ -10,6 +10,12 @@ const scenarios = [
   { name: 'mobile', context: devices['iPhone 13'] },
 ];
 
+const routes = [
+  { name: 'homepage', path: '/', minVisibleChars: 50 },
+  { name: 'products', path: '/products', minVisibleChars: 30 },
+  { name: 'sleep-app', path: '/sleep-app', minVisibleChars: 30 },
+];
+
 const browser = await chromium.launch();
 let failed = false;
 
@@ -28,31 +34,41 @@ async function verifyScenario(scenario) {
     }
 
     try {
-      const response = await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 30_000 });
-      if (!response || !response.ok()) {
-        throw new Error(`Homepage returned HTTP ${response?.status() ?? 'no response'}`);
-      }
+      for (const route of routes) {
+        pageErrors.length = 0;
+        const response = await page.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle', timeout: 30_000 });
+        if (!response || !response.ok()) {
+          throw new Error(`${route.name} returned HTTP ${response?.status() ?? 'no response'}`);
+        }
 
-      await page.locator('body').waitFor({ state: 'visible', timeout: 10_000 });
-      const bodyText = (await page.locator('body').innerText()).trim();
-      if (bodyText.length < 50) {
-        throw new Error(`Homepage rendered too little visible content (${bodyText.length} chars)`);
-      }
+        await page.locator('body').waitFor({ state: 'visible', timeout: 10_000 });
+        const bodyText = (await page.locator('body').innerText()).trim();
+        if (bodyText.length < route.minVisibleChars) {
+          throw new Error(`${route.name} rendered too little visible content (${bodyText.length} chars)`);
+        }
 
-      if (pageErrors.length > 0) {
-        throw new Error(`Uncaught browser error(s): ${pageErrors.join(' | ')}`);
-      }
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+        if (overflow) {
+          throw new Error(`${route.name} has horizontal overflow (${await page.evaluate(() => `${document.documentElement.scrollWidth}px > ${document.documentElement.clientWidth}px`)})`);
+        }
 
-      await page.screenshot({
-        path: `${outputDir}/${scenario.name}-homepage.png`,
-        fullPage: true,
-      });
+        if (pageErrors.length > 0) {
+          throw new Error(`${route.name} uncaught browser error(s): ${pageErrors.join(' | ')}`);
+        }
+
+        await page.screenshot({
+          path: `${outputDir}/${scenario.name}-${route.name}.png`,
+          fullPage: true,
+        });
+
+        console.log(`PASS ${scenario.name} ${route.name}: HTTP ${response.status()}, visible chars ${bodyText.length}, no horizontal overflow`);
+      }
 
       if (tracing) {
         await context.tracing.stop();
       }
 
-      console.log(`PASS ${scenario.name} attempt ${attempt}: HTTP ${response.status()}, visible chars ${bodyText.length}`);
+      console.log(`PASS ${scenario.name} attempt ${attempt}: all required routes verified`);
       await context.close();
       return true;
     } catch (error) {
