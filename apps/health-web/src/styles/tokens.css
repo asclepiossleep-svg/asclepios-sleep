@@ -1,0 +1,50 @@
+/*
+ * Asclepios Health brand tokens. Adapted from the owner-approved public
+ * design system (issue #45: navy serif display type, teal primary CTA,
+ * rounded white cards) but kept as this app's own copy — apps/health-web
+ * is an independent deployment from apps/web (issue #52) and must not
+ * import across the workspace boundary.
+ */
+:root {
+  --hw-navy: #16233f;
+  --hw-teal: #128f86;
+  --hw-teal-dark: #0c6b64;
+  --hw-teal-soft: #e4f4f2;
+  --hw-bg: #fbfaf6;
+  --hw-surface: #ffffff;
+  --hw-text: #48536b;
+  --hw-muted: #7c879c;
+  --hw-border: #e4e7ee;
+  --hw-cream: #f3f1ea;
+  --hw-radius-lg: 28px;
+  --hw-radius-md: 20px;
+  --hw-shadow: 0 20px 50px rgba(22, 35, 63, 0.08);
+  --font-display: Georgia, "Noto Serif TC", "Songti TC", "PingFang HK", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", "PingFang HK", "Noto Sans CJK TC", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--hw-bg);
+  color: var(--hw-text);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  color: var(--hw-navy);
+  margin: 0;
+}
