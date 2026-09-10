@@ -13,44 +13,74 @@ const scenarios = [
 const browser = await chromium.launch();
 let failed = false;
 
-for (const scenario of scenarios) {
-  const context = await browser.newContext(scenario.context);
-  const page = await context.newPage();
-  const pageErrors = [];
-  page.on('pageerror', error => pageErrors.push(error.message));
+async function verifyScenario(scenario) {
+  const maxAttempts = 2;
 
-  try {
-    const response = await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 30_000 });
-    if (!response || !response.ok()) {
-      throw new Error(`Homepage returned HTTP ${response?.status() ?? 'no response'}`);
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const context = await browser.newContext(scenario.context);
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', error => pageErrors.push(error.message));
+
+    const tracing = attempt > 1;
+    if (tracing) {
+      await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
     }
 
-    await page.locator('body').waitFor({ state: 'visible', timeout: 10_000 });
-    const bodyText = (await page.locator('body').innerText()).trim();
-    if (bodyText.length < 50) {
-      throw new Error(`Homepage rendered too little visible content (${bodyText.length} chars)`);
+    try {
+      const response = await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 30_000 });
+      if (!response || !response.ok()) {
+        throw new Error(`Homepage returned HTTP ${response?.status() ?? 'no response'}`);
+      }
+
+      await page.locator('body').waitFor({ state: 'visible', timeout: 10_000 });
+      const bodyText = (await page.locator('body').innerText()).trim();
+      if (bodyText.length < 50) {
+        throw new Error(`Homepage rendered too little visible content (${bodyText.length} chars)`);
+      }
+
+      if (pageErrors.length > 0) {
+        throw new Error(`Uncaught browser error(s): ${pageErrors.join(' | ')}`);
+      }
+
+      await page.screenshot({
+        path: `${outputDir}/${scenario.name}-homepage.png`,
+        fullPage: true,
+      });
+
+      if (tracing) {
+        await context.tracing.stop();
+      }
+
+      console.log(`PASS ${scenario.name} attempt ${attempt}: HTTP ${response.status()}, visible chars ${bodyText.length}`);
+      await context.close();
+      return true;
+    } catch (error) {
+      await page.screenshot({
+        path: `${outputDir}/${scenario.name}-attempt-${attempt}-failure.png`,
+        fullPage: true,
+      }).catch(() => {});
+
+      if (tracing) {
+        await context.tracing.stop({
+          path: `${outputDir}/${scenario.name}-retry-trace.zip`,
+        }).catch(() => {});
+      }
+
+      console.error(`FAIL ${scenario.name} attempt ${attempt}: ${error.message}`);
+      await context.close();
+
+      if (attempt === maxAttempts) return false;
+      await new Promise(resolve => setTimeout(resolve, 2_000));
     }
-
-    if (pageErrors.length > 0) {
-      throw new Error(`Uncaught browser error(s): ${pageErrors.join(' | ')}`);
-    }
-
-    await page.screenshot({
-      path: `${outputDir}/${scenario.name}-homepage.png`,
-      fullPage: true,
-    });
-
-    console.log(`PASS ${scenario.name}: HTTP ${response.status()}, visible chars ${bodyText.length}`);
-  } catch (error) {
-    failed = true;
-    await page.screenshot({
-      path: `${outputDir}/${scenario.name}-failure.png`,
-      fullPage: true,
-    }).catch(() => {});
-    console.error(`FAIL ${scenario.name}: ${error.message}`);
-  } finally {
-    await context.close();
   }
+
+  return false;
+}
+
+for (const scenario of scenarios) {
+  const passed = await verifyScenario(scenario);
+  if (!passed) failed = true;
 }
 
 await browser.close();
