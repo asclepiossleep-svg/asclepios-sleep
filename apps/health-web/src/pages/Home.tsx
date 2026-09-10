@@ -39,14 +39,24 @@ export default function Home() {
             <Link className="health-destination-card" to="/products">
               <span className="health-destination-media products" aria-hidden="true">
                 <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
-                  <rect x="5" y="8" width="14" height="12" rx="3" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M9 8V6.5a3 3 0 0 1 6 0V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <path
+                    d="M11.2 3H5.6A2.6 2.6 0 0 0 3 5.6v5.6c0 .69.27 1.35.76 1.84l8.6 8.6a2.6 2.6 0 0 0 3.68 0l5.2-5.2a2.6 2.6 0 0 0 0-3.68l-8.6-8.6A2.6 2.6 0 0 0 11.2 3Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="8" cy="8" r="1.3" fill="currentColor" />
                 </svg>
               </span>
               <span className="health-destination-body">
                 <span className="health-status">{t("health.status.comingSoon")}</span>
                 <h3>{t("health.card.products.title")}</h3>
                 <p>{t("health.card.products.body")}</p>
+                <ul className="health-product-family-list">
+                  <li>{t("health.products.family.sleeptape")}</li>
+                  <li>{t("health.products.family.dayMode")}</li>
+                  <li>{t("health.products.family.restSleepMode")}</li>
+                </ul>
                 <span className="health-card-cta">{t("health.card.products.cta")} →</span>
               </span>
             </Link>

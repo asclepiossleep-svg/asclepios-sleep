@@ -326,6 +326,59 @@
   margin-top: 2px;
 }
 
+.health-product-family-list {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.health-product-family-list li {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--hw-navy);
+}
+
+.health-product-family-grid {
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.health-product-family-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px 18px;
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-lg);
+}
+
+.health-product-family-card h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.health-product-family-card p {
+  margin: 0;
+  color: var(--hw-text);
+  font-size: 0.9rem;
+}
+
+.health-product-imagery-note {
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--hw-muted);
+}
+
 .health-status {
   display: inline-flex;
   align-self: flex-start;
