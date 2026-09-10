@@ -1,15 +1,10 @@
 # Hourly retry for Claude work paused by a usage limit.
 # Carried forward from branch codex/ai-collaboration-setup. Changes:
-#   - added the `vars.CLAUDE_AUTOMATION_ENABLED != 'false'` guard so the
-#     repo kill switch also stops the retry loop;
-#   - added a concurrency group so a manual run cannot overlap the
-#     scheduled one.
+#   - repo kill switch stops the retry loop;
+#   - concurrency prevents overlapping manual/scheduled runs;
+#   - retries are bounded per issue and fail closed after exhaustion.
 # Pairs with the "Classify Claude result" step in claude.yml.
 # See docs/ai/AI_COLLABORATION.md.
-#
-# Note: this re-pings a quota-paused issue once per hour with no maximum
-# retry count; it self-clears when the quota returns, and the kill switch
-# above is the manual stop.
 name: Retry Claude quota-paused work
 
 on:
@@ -35,6 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
+          MAX_RETRIES: "6"
         shell: bash
         run: |
           set -euo pipefail
@@ -43,8 +39,26 @@ jobs:
             --jq '.[].number')
 
           for number in ${numbers}; do
+            comments=$(gh api --paginate \
+              "repos/${REPOSITORY}/issues/${number}/comments?per_page=100" \
+              --jq '.[].body')
+
+            attempts=$(printf '%s\n' "${comments}" | \
+              grep -Fc '@claude Resume this task from the latest committed checkpoint' || true)
+
+            if [ "${attempts}" -ge "${MAX_RETRIES}" ]; then
+              if ! printf '%s\n' "${comments}" | grep -Fq '<!-- claude-quota-retry-exhausted -->'; then
+                gh api --method POST "repos/${REPOSITORY}/issues/${number}/comments" \
+                  -f body="<!-- claude-quota-retry-exhausted -->
+AUTOMATION BLOCKED: Claude quota retry limit reached after ${attempts} automated resume attempts. The ai:paused-quota label is intentionally retained and no further automated retries will be sent until a human changes the issue state or removes the exhaustion marker."
+              fi
+              continue
+            fi
+
+            next_attempt=$((attempts + 1))
             gh api --method POST "repos/${REPOSITORY}/issues/${number}/comments" \
-              -f body='@claude Resume this task from the latest committed checkpoint and GitHub discussion. Do not repeat completed work. Continue until the next coherent checkpoint or READY_FOR_AUDIT.'
+              -f body="<!-- claude-quota-retry-attempt:${next_attempt} -->
+@claude Resume this task from the latest committed checkpoint and GitHub discussion. Do not repeat completed work. Continue until the next coherent checkpoint or READY_FOR_AUDIT."
             gh api --method DELETE \
               "repos/${REPOSITORY}/issues/${number}/labels/ai%3Apaused-quota" \
               >/dev/null 2>&1 || true
