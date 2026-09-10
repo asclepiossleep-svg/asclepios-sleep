@@ -10,9 +10,10 @@
     "postinstall": "npm run build --workspace=packages/shared",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
+    "dev:health": "npm run dev --workspace=apps/health-web",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
-    "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/api && npm run build --workspace=apps/web"
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/api && npm run build --workspace=apps/web && npm run build --workspace=apps/health-web"
   },
   "engines": {
     "node": ">=18"
