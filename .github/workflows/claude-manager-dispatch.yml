@@ -22,7 +22,7 @@ jobs:
         contains(join(github.event.issue.labels.*.name, ','), 'manager-order') ||
         contains(join(github.event.issue.labels.*.name, ','), 'audit-fix')
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: write
