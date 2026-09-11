@@ -1,0 +1,62 @@
+name: deployment-gate
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: deployment-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  statuses: read
+
+jobs:
+  verify-vercel:
+    name: verify-vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_CONTEXTS: Vercel – asclepios-sleep-web|Vercel – asclepios-sleep-api
+    steps:
+      - name: Wait for required Vercel deployments
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          IFS='|' read -r -a required <<< "$EXPECTED_CONTEXTS"
+
+          for attempt in $(seq 1 30); do
+            payload="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/status")"
+            all_success=true
+
+            for context in "${required[@]}"; do
+              state="$(jq -r --arg context "$context" '.statuses[] | select(.context == $context) | .state' <<< "$payload" | head -n1)"
+
+              if [[ -z "$state" ]]; then
+                echo "[$attempt/30] $context: not reported yet"
+                all_success=false
+              elif [[ "$state" == "success" ]]; then
+                echo "[$attempt/30] $context: success"
+              elif [[ "$state" == "failure" || "$state" == "error" ]]; then
+                echo "::error::$context reported $state for $HEAD_SHA"
+                exit 1
+              else
+                echo "[$attempt/30] $context: $state"
+                all_success=false
+              fi
+            done
+
+            if [[ "$all_success" == "true" ]]; then
+              echo "All required Vercel deployment statuses succeeded for $HEAD_SHA"
+              exit 0
+            fi
+
+            sleep 20
+          done
+
+          echo "::error::Timed out waiting for required Vercel deployment statuses on $HEAD_SHA"
+          exit 1
