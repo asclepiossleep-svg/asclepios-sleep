@@ -49,19 +49,21 @@ jobs:
 
             if [ "$attempts" -ge "$MAX_RETRIES" ]; then
               if ! printf '%s\n' "$comments" | grep -Fq '<!-- claude-quota-retry-exhausted -->'; then
-                body="<!-- claude-quota-retry-exhausted -->
-[AMANDA-RECOVERY] BLOCKED
-
-CAUSE: Claude quota retry limit reached after ${attempts} automated resume attempts.
-EXACT NEXT ACTION: Review quota/account availability, then remove the exhaustion marker or quota label only when recovery is safe."
+                printf -v body '%s\n' \
+                  '<!-- claude-quota-retry-exhausted -->' \
+                  '[AMANDA-RECOVERY] BLOCKED' \
+                  '' \
+                  "CAUSE: Claude quota retry limit reached after ${attempts} automated resume attempts." \
+                  'EXACT NEXT ACTION: Review quota/account availability, then remove the exhaustion marker or quota label only when recovery is safe.'
                 gh issue comment "$number" --repo "$REPOSITORY" --body "$body"
               fi
               continue
             fi
 
             next_attempt=$((attempts + 1))
-            body="<!-- claude-quota-retry-attempt:${next_attempt} -->
-@claude Resume this task from the latest committed checkpoint and GitHub discussion. Do not repeat completed work. Continue until the next coherent checkpoint and post the required structured handoff."
+            printf -v body '%s\n' \
+              "<!-- claude-quota-retry-attempt:${next_attempt} -->" \
+              '@claude Resume this task from the latest committed checkpoint and GitHub discussion. Do not repeat completed work. Continue until the next coherent checkpoint and post the required structured handoff.'
             gh issue comment "$number" --repo "$REPOSITORY" --body "$body"
             gh issue edit "$number" --repo "$REPOSITORY" --remove-label 'ai:paused-quota' >/dev/null 2>&1 || true
           done
