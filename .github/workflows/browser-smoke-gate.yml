@@ -28,8 +28,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install application dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install application dependencies from lockfile
+        run: npm ci --no-audit --no-fund
 
       - name: Build monorepo
         run: npm run build

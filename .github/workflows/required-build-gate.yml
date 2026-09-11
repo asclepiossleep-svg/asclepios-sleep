@@ -30,8 +30,8 @@ jobs:
       - name: Enforce immutable workflow action pins
         run: node scripts/ci/check-workflow-pins.mjs
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install dependencies from lockfile
+        run: npm ci --no-audit --no-fund
 
       - name: Build monorepo
         run: npm run build
