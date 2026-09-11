@@ -38,10 +38,10 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           show_full_output: true
-          claude_args: |
+          claude_args: >-
             --model claude-sonnet-5
             --max-turns 150
-            --dangerously-skip-permissions
+            --allowedTools "Bash(npm ci),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(node scripts/sum-health-check.mjs),Bash(git status),Bash(git diff),Bash(git log),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Edit,Write,Read,Glob,Grep"
           prompt: |
             You are Rex, the implementation agent for Asclepios.
 
