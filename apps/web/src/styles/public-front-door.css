@@ -1,0 +1,177 @@
+.public-front-door {
+  min-height: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.25rem clamp(1rem, 4vw, 3rem) 3rem;
+}
+
+.public-front-door__header {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.public-front-door__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.public-front-door__brand img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.public-front-door__brand div {
+  display: grid;
+  line-height: 1.05;
+}
+
+.public-front-door__brand strong {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-size: 1.05rem;
+}
+
+.public-front-door__brand span {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+}
+
+.public-front-door__member-link,
+.public-front-door__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target-min);
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 650;
+}
+
+.public-front-door__member-link {
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: 0.65rem 1rem;
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+}
+
+.public-front-door__hero {
+  max-width: 820px;
+  padding: clamp(4rem, 10vw, 8rem) 0 clamp(3rem, 7vw, 5rem);
+}
+
+.public-front-door__eyebrow,
+.public-front-door__kicker {
+  color: var(--color-primary);
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  font-size: 0.76rem;
+}
+
+.public-front-door__hero h1 {
+  margin: 0.6rem 0 1rem;
+  max-width: 760px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.5rem, 7vw, 5.2rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+.public-front-door__hero > p:not(.public-front-door__eyebrow) {
+  max-width: 650px;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+}
+
+.public-front-door__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.9rem 1rem;
+  margin-top: 1.8rem;
+}
+
+.public-front-door__primary {
+  padding: 0.8rem 1.25rem;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.public-front-door__status {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.public-front-door__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.public-front-door__grid article {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+}
+
+.public-front-door__grid h2 {
+  margin: 0.55rem 0 0.65rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 550;
+}
+
+.public-front-door__grid p {
+  margin: 0 0 1.25rem;
+  color: var(--color-text-muted);
+}
+
+.public-front-door__grid a,
+.public-front-door__grid .public-front-door__status {
+  margin-top: auto;
+}
+
+.public-front-door__grid a {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+@media (max-width: 760px) {
+  .public-front-door {
+    padding-inline: 1rem;
+  }
+
+  .public-front-door__header {
+    align-items: flex-start;
+  }
+
+  .public-front-door__member-link {
+    white-space: nowrap;
+  }
+
+  .public-front-door__hero {
+    padding-top: 4rem;
+  }
+
+  .public-front-door__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-front-door__grid article {
+    min-height: 190px;
+  }
+}
