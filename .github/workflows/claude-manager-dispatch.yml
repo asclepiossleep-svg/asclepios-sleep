@@ -5,22 +5,41 @@ on:
     types: [opened]
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Authoritative Goal Issue number"
+        required: true
+        type: string
+      manager_instruction:
+        description: "One bounded continuation instruction from Amanda controller"
+        required: true
+        type: string
+
+concurrency:
+  group: amanda-goal-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
 
 jobs:
   claude-respond:
     if: >
       vars.CLAUDE_AUTOMATION_ENABLED != 'false' &&
-      (github.event.issue.user.login == 'asclepiossleep-svg' ||
-       github.event.comment.user.login == 'asclepiossleep-svg') &&
       (
-        contains(github.event.issue.title, '[MANAGER]') ||
-        contains(github.event.issue.title, '[AUDIT]') ||
-        contains(github.event.issue.body, '[MANAGER]') ||
-        contains(github.event.issue.body, '[AUDIT]') ||
-        contains(github.event.comment.body, '[MANAGER]') ||
-        contains(github.event.comment.body, '[AUDIT]') ||
-        contains(join(github.event.issue.labels.*.name, ','), 'manager-order') ||
-        contains(join(github.event.issue.labels.*.name, ','), 'audit-fix')
+        github.event_name == 'workflow_dispatch' ||
+        (
+          (github.event.issue.user.login == 'asclepiossleep-svg' ||
+           github.event.comment.user.login == 'asclepiossleep-svg') &&
+          (
+            contains(github.event.issue.title, '[MANAGER]') ||
+            contains(github.event.issue.title, '[AUDIT]') ||
+            contains(github.event.issue.body, '[MANAGER]') ||
+            contains(github.event.issue.body, '[AUDIT]') ||
+            contains(github.event.comment.body, '[MANAGER]') ||
+            contains(github.event.comment.body, '[AUDIT]') ||
+            contains(join(github.event.issue.labels.*.name, ','), 'manager-order') ||
+            contains(join(github.event.issue.labels.*.name, ','), 'audit-fix')
+          )
+        )
       )
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -28,10 +47,40 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      actions: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
+
+      - name: Resolve authoritative Goal context
+        id: goal
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
+          INPUT_MANAGER_INSTRUCTION: ${{ inputs.manager_instruction }}
+        run: |
+          set -euo pipefail
+          ISSUE_NUMBER="${EVENT_ISSUE_NUMBER:-${INPUT_ISSUE_NUMBER:-}}"
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "No Goal Issue number resolved" >&2
+            exit 1
+          fi
+          echo "issue_number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          ISSUE_TITLE="$(gh issue view "$ISSUE_NUMBER" --json title --jq .title)"
+          echo "issue_title=$ISSUE_TITLE" >> "$GITHUB_OUTPUT"
+          {
+            echo 'manager_instruction<<EOF'
+            if [ -n "${INPUT_MANAGER_INSTRUCTION:-}" ]; then
+              printf '%s\n' "$INPUT_MANAGER_INSTRUCTION"
+            elif [ "${{ github.event_name }}" = "issue_comment" ]; then
+              cat "$GITHUB_EVENT_PATH" | jq -r '.comment.body // ""'
+            else
+              cat "$GITHUB_EVENT_PATH" | jq -r '.issue.body // ""'
+            fi
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
 
       - uses: anthropics/claude-code-action@19dda84776b3518d98b8798e591daee763049ed3
         with:
@@ -40,19 +89,21 @@ jobs:
           claude_args: >-
             --model claude-sonnet-5
             --max-turns 150
-            --allowedTools "Bash(npm ci),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(node scripts/sum-health-check.mjs),Bash(git status),Bash(git diff),Bash(git log),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Edit,Write,Read,Glob,Grep"
+            --allowedTools "Bash(npm ci),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(node scripts/sum-health-check.mjs),Bash(git status),Bash(git diff),Bash(git log),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*),Bash(gh issue comment:*),Edit,Write,Read,Glob,Grep"
           prompt: |
-            You are Rex, the implementation agent for Asclepios.
+            You are Rex, the sole implementation worker for the current Amanda OS Goal.
 
-            TRIGGER CONTEXT — this is the actual manager/audit work request for this run. Treat the comment body as the immediate instruction when present; otherwise use the issue body.
-            Issue number: ${{ github.event.issue.number }}
-            Issue title: ${{ github.event.issue.title }}
-            Issue body:
-            ${{ github.event.issue.body }}
-            Triggering comment body:
-            ${{ github.event.comment.body }}
+            AUTHORITATIVE GOAL ISSUE
+            Issue number: ${{ steps.goal.outputs.issue_number }}
+            Issue title: ${{ steps.goal.outputs.issue_title }}
 
-            Before changing code, read the SUM operating contract in order:
+            CURRENT BOUNDED MANAGER INSTRUCTION
+            ${{ steps.goal.outputs.manager_instruction }}
+
+            Before changing code, read the authoritative Goal Issue in full with:
+            gh issue view ${{ steps.goal.outputs.issue_number }} --comments
+
+            Then read the SUM operating contract in order:
             - docs/sum/00_SUM_OPERATING_ECOSYSTEM.md
             - docs/sum/01_AI_OPERATING_LOGIC.md
             - docs/sum/02_SLEEP_INTELLIGENCE_LOGIC.md
@@ -68,24 +119,55 @@ jobs:
             - AGENTS.md
             - CLAUDE.md
 
-            Core operating rule: a page, schema, document or component is NOT operational merely because it exists. It is only operational when connected to upstream/downstream dependencies, exercised, observable and recoverable.
+            AMANDA OS V1.1 HARD RULES
+            - One authoritative Goal Issue owns business completion state.
+            - You are the only implementation worker for this Goal run.
+            - Do not create new agents or monitors.
+            - Do not auto-merge production.
+            - A green workflow is not business completion.
+            - Use one bounded work item at a time.
+            - Never invent product truth, packaging, prices, claims, credentials, URLs, deployment state or acceptance evidence.
+            - If a required live fact cannot be verified, mark it UNKNOWN and do not use it as an autonomous dependency.
+            - Every evidence item must bind to the same current commit SHA wherever applicable: PR, CI, Vercel preview and visual proof.
+            - Late/stale results must not overwrite newer Goal state. Always re-read the Goal Issue immediately before posting your handoff.
 
-            Read the triggering issue/comment fully and locate the requested work in the end-to-end business chain before coding. If an upstream broken link prevents the requested work from functioning, repair the smallest necessary upstream link first. Do not polish downstream work while the nearest required P0 link is ABSENT or FAILED.
+            Core operating rule: a page, schema, document or component is NOT operational merely because it exists. It is only operational when connected to upstream/downstream dependencies, exercised, observable and recoverable.
 
             Product truth is governed by docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md. Never resurrect historical mouth-tape identity for SLEEPTAPE™, provisional prices, invented stock, tax, SKU, claims, launch dates or fulfilment facts. Phase-1 products remain COMING_SOON/DRAFT until the commercial release gates have verified owner-approved values.
 
-            Never commit directly to main. Create or reuse a feature branch named rex/<issue-number>-<short-slug>. Make incremental commits on that branch, run relevant build/typecheck/tests plus `node scripts/sum-health-check.mjs`, push the branch, then create or update a pull request to main. Never merge the PR yourself.
+            Never commit directly to main. Create or reuse a feature branch named rex/${{ steps.goal.outputs.issue_number }}-<short-slug>. Make incremental commits on that branch, run relevant build/typecheck/tests plus `node scripts/sum-health-check.mjs`, push the branch, then create or update a pull request to main. Never merge the PR yourself.
 
-            For every implementation report, include evidence under these headings:
-            1. CONNECTION — what upstream/downstream systems this change connects.
-            2. EXECUTION — exact path exercised.
-            3. OBSERVABILITY — event/log/health check proving activity.
-            4. RECOVERY — retry/error/rollback behaviour.
-            5. TEST — commands/results.
-            6. REMAINS — exact next broken link, if any.
+            Stop for owner input only for genuine product/legal/commercial decisions, destructive migrations, paid external services, secrets/account ownership, production DNS/domain changes, publishing products, capturing/refunding money, physical fulfilment dispatch, missing approved asset, or other irreversible actions. Otherwise continue the highest-priority safe unblocked link.
 
-            Do not report a provider as connected unless real credential/configuration and a successful test prove it. Missing credentials/configuration are NOT WIRED, never PASS. If external truth conflicts across sources, reconcile identifiers/timestamps before changing state.
+            MANDATORY END-OF-RUN HANDOFF
+            Before ending this run, post exactly one structured handoff comment to the authoritative Goal Issue using `gh issue comment`. The comment must begin with this exact marker:
 
-            Prefer official/provider-native, proven patterns for commerce, payments, signed webhooks, fulfilment, CRM, analytics, retries, reconciliation and monitoring. Custom invention is reserved for Asclepios-specific product intelligence and experience.
+            <!-- AMANDA_REX_HANDOFF -->
 
-            Stop for owner input only for genuine product/legal/commercial decisions, destructive migrations, paid external services, secrets/account ownership, production DNS/domain changes, publishing products, capturing/refunding money, physical fulfilment dispatch, or other irreversible actions. Otherwise continue with the highest-priority safe unblocked link in the SUM graph.
+            Then include exactly these fields:
+            Rex Outcome: PROGRESS | BLOCKED | NO_PROGRESS
+            Goal ID: [stable Goal ID from issue]
+            Run ID: ${{ github.run_id }}
+            Exact Work Completed: [plain-language description]
+            Commit SHA: [SHA or NONE]
+            PR: [URL or NONE]
+            Preview URL: [URL or NONE]
+            Checks: [build/browser/health/schema results]
+            Visual Evidence: [screenshot/artifact/URL or NONE]
+            Acceptance Items Proven: [list]
+            Remaining Acceptance Items: [list]
+            Blocker: [exact blocker or NONE]
+            Failure Classification: NONE | TRANSIENT | QUOTA | PERMISSION | CREDENTIAL | ASSET | OWNER_DECISION | UNKNOWN
+            Exact Next Action: [one bounded action]
+            Another Rex Run Required: YES | NO
+            Recommended Goal State: ACTIVE | BLOCKED | RECOVERING | COMPLETE
+
+            Use NO_PROGRESS only when no acceptance item advanced. Never loop indefinitely: the Amanda controller owns retry counting and will convert repeated NO_PROGRESS to BLOCKED.
+
+            For implementation evidence, also include these headings in the PR body or handoff as appropriate:
+            1. CONNECTION
+            2. EXECUTION
+            3. OBSERVABILITY
+            4. RECOVERY
+            5. TEST
+            6. REMAINS
