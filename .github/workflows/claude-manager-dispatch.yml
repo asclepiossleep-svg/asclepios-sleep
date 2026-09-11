@@ -20,6 +20,10 @@ concurrency:
   group: amanda-goal-${{ github.event.issue.number || inputs.issue_number }}
   cancel-in-progress: false
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  queue: max
+
 jobs:
   claude-respond:
     if: >
