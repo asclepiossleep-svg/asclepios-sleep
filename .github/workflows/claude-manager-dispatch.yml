@@ -17,34 +17,11 @@ on:
         type: string
 
 concurrency:
-  group: amanda-goal-${{ github.event.issue.number || inputs.issue_number }}
+  group: amanda-goal-${{ github.event.issue.number || inputs.issue_number || github.run_id }}
   cancel-in-progress: false
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number }}
-  queue: max
 
 jobs:
   claude-respond:
-    if: >
-      vars.CLAUDE_AUTOMATION_ENABLED != 'false' &&
-      (
-        github.event_name == 'workflow_dispatch' ||
-        (
-          (github.event.issue.user.login == 'asclepiossleep-svg' ||
-           github.event.comment.user.login == 'asclepiossleep-svg') &&
-          (
-            contains(github.event.issue.title, '[MANAGER]') ||
-            contains(github.event.issue.title, '[AUDIT]') ||
-            contains(github.event.issue.body, '[MANAGER]') ||
-            contains(github.event.issue.body, '[AUDIT]') ||
-            contains(github.event.comment.body, '[MANAGER]') ||
-            contains(github.event.comment.body, '[AUDIT]') ||
-            contains(join(github.event.issue.labels.*.name, ','), 'manager-order') ||
-            contains(join(github.event.issue.labels.*.name, ','), 'audit-fix')
-          )
-        )
-      )
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -53,17 +30,59 @@ jobs:
       pull-requests: write
       actions: read
     steps:
+      - name: Preflight trigger and kill switch
+        id: preflight
+        env:
+          AUTOMATION_ENABLED: ${{ vars.CLAUDE_AUTOMATION_ENABLED }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${AUTOMATION_ENABLED:-}" = "false" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Automation kill switch is false."
+            exit 0
+          fi
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          AUTHOR="$(jq -r 'if .comment then .comment.user.login else .issue.user.login end // ""' "$GITHUB_EVENT_PATH")"
+          TITLE="$(jq -r '.issue.title // ""' "$GITHUB_EVENT_PATH")"
+          ISSUE_BODY="$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH")"
+          COMMENT_BODY="$(jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH")"
+          LABELS="$(jq -r '[.issue.labels[]?.name] | join(",")' "$GITHUB_EVENT_PATH")"
+          TEXT="$TITLE
+          $ISSUE_BODY
+          $COMMENT_BODY
+          $LABELS"
+          if [ "$AUTHOR" != "asclepiossleep-svg" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Ignoring non-owner actor: $AUTHOR"
+            exit 0
+          fi
+          if grep -Eq '\[MANAGER\]|\[AUDIT\]|manager-order|audit-fix' <<<"$TEXT"; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "No manager/audit marker found."
+          fi
+
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        if: steps.preflight.outputs.should_run == 'true'
         with:
           fetch-depth: 0
 
       - name: Resolve authoritative Goal context
         id: goal
+        if: steps.preflight.outputs.should_run == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
           INPUT_MANAGER_INSTRUCTION: ${{ inputs.manager_instruction }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
         run: |
           set -euo pipefail
           ISSUE_NUMBER="${EVENT_ISSUE_NUMBER:-${INPUT_ISSUE_NUMBER:-}}"
@@ -78,15 +97,16 @@ jobs:
             echo 'manager_instruction<<EOF'
             if [ -n "${INPUT_MANAGER_INSTRUCTION:-}" ]; then
               printf '%s\n' "$INPUT_MANAGER_INSTRUCTION"
-            elif [ "${{ github.event_name }}" = "issue_comment" ]; then
-              cat "$GITHUB_EVENT_PATH" | jq -r '.comment.body // ""'
+            elif [ "$EVENT_NAME" = "issue_comment" ]; then
+              jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH"
             else
-              cat "$GITHUB_EVENT_PATH" | jq -r '.issue.body // ""'
+              jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH"
             fi
             echo EOF
           } >> "$GITHUB_OUTPUT"
 
       - uses: anthropics/claude-code-action@19dda84776b3518d98b8798e591daee763049ed3
+        if: steps.preflight.outputs.should_run == 'true'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           show_full_output: true
@@ -133,11 +153,11 @@ jobs:
             - Never invent product truth, packaging, prices, claims, credentials, URLs, deployment state or acceptance evidence.
             - If a required live fact cannot be verified, mark it UNKNOWN and do not use it as an autonomous dependency.
             - Every evidence item must bind to the same current commit SHA wherever applicable: PR, CI, Vercel preview and visual proof.
-            - Late/stale results must not overwrite newer Goal state. Always re-read the Goal Issue immediately before posting your handoff.
+            - Late/stale results must not overwrite newer Goal state. Re-read the Goal Issue immediately before posting the handoff.
 
             Core operating rule: a page, schema, document or component is NOT operational merely because it exists. It is only operational when connected to upstream/downstream dependencies, exercised, observable and recoverable.
 
-            Product truth is governed by docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md. Never resurrect historical mouth-tape identity for SLEEPTAPE™, provisional prices, invented stock, tax, SKU, claims, launch dates or fulfilment facts. Phase-1 products remain COMING_SOON/DRAFT until the commercial release gates have verified owner-approved values.
+            Product truth is governed by docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md. Never invent product packaging, prices, stock, tax, SKU, claims, launch dates or fulfilment facts. Phase-1 products remain COMING_SOON/DRAFT until commercial release gates have verified owner-approved values.
 
             Never commit directly to main. Create or reuse a feature branch named rex/${{ steps.goal.outputs.issue_number }}-<short-slug>. Make incremental commits on that branch, run relevant build/typecheck/tests plus `node scripts/sum-health-check.mjs`, push the branch, then create or update a pull request to main. Never merge the PR yourself.
 
@@ -166,7 +186,7 @@ jobs:
             Another Rex Run Required: YES | NO
             Recommended Goal State: ACTIVE | BLOCKED | RECOVERING | COMPLETE
 
-            Use NO_PROGRESS only when no acceptance item advanced. Never loop indefinitely: the Amanda controller owns retry counting and will convert repeated NO_PROGRESS to BLOCKED.
+            Use NO_PROGRESS only when no acceptance item advanced. Never loop indefinitely: the Amanda controller owns retry counting and converts repeated NO_PROGRESS to BLOCKED.
 
             For implementation evidence, also include these headings in the PR body or handoff as appropriate:
             1. CONNECTION
