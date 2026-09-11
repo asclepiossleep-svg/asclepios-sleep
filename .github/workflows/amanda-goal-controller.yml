@@ -30,6 +30,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: read
       actions: write
 
     steps:
@@ -107,7 +108,40 @@ jobs:
               exit 0
             fi
 
-            gh issue comment "$ISSUE_NUMBER" --body "[AMANDA-CONTROLLER] COMPLETE\n\nGoal ID: $GOAL_ID\nRun ID: $RUN_ID\nCommit SHA: $COMMIT_SHA\nPR: $PR_URL\nPreview: $PREVIEW_URL\nVisual Evidence: $VISUAL_EVIDENCE\n\nAll completion evidence is bound to the current handoff. No production merge was performed by the controller."
+            if ! [[ "$COMMIT_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              gh issue comment "$ISSUE_NUMBER" --body "[AMANDA-CONTROLLER] BLOCKED\n\nGoal ID: $GOAL_ID\nCAUSE: COMPLETE claimed an invalid commit SHA format.\nEVIDENCE: Commit SHA '$COMMIT_SHA', Run ID $RUN_ID.\nEXACT NEXT ACTION: Provide the exact 40-character Git commit SHA for this run."
+              exit 0
+            fi
+
+            if ! gh api "repos/$REPO/commits/$COMMIT_SHA" >/dev/null 2>&1; then
+              gh issue comment "$ISSUE_NUMBER" --body "[AMANDA-CONTROLLER] BLOCKED\n\nGoal ID: $GOAL_ID\nCAUSE: Claimed COMPLETE commit does not resolve in $REPO.\nEVIDENCE: Commit SHA $COMMIT_SHA, Run ID $RUN_ID.\nEXACT NEXT ACTION: Push the claimed commit to the repository and report the exact repository commit SHA."
+              exit 0
+            fi
+
+            EXPECTED_PR_PREFIX="https://github.com/$REPO/pull/"
+            if [[ "$PR_URL" != "$EXPECTED_PR_PREFIX"* ]]; then
+              gh issue comment "$ISSUE_NUMBER" --body "[AMANDA-CONTROLLER] BLOCKED\n\nGoal ID: $GOAL_ID\nCAUSE: COMPLETE claimed a PR outside the authoritative repository.\nEVIDENCE: PR $PR_URL, expected prefix $EXPECTED_PR_PREFIX.\nEXACT NEXT ACTION: Provide the pull request URL from $REPO for commit $COMMIT_SHA."
+              exit 0
+            fi
+
+            PR_NUMBER="${PR_URL#${EXPECTED_PR_PREFIX}}"
+            if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+              gh issue comment "$ISSUE_NUMBER" --body "[AMANDA-CONTROLLER] BLOCKED\n\nGoal ID: $GOAL_ID\nCAUSE: COMPLETE claimed a malformed pull request URL.\nEVIDENCE: PR $PR_URL.\nEXACT NEXT ACTION: Provide the canonical GitHub pull request URL from $REPO."
+              exit 0
+            fi
+
+            if ! PR_JSON="$(gh api "repos/$REPO/pulls/$PR_NUMBER" 2>/dev/null)"; then
+              gh issue comment "$ISSUE_NUMBER" --body "[AMANDA-CONTROLLER] BLOCKED\n\nGoal ID: $GOAL_ID\nCAUSE: Claimed COMPLETE pull request cannot be resolved.\nEVIDENCE: PR $PR_URL, Run ID $RUN_ID.\nEXACT NEXT ACTION: Create or restore the pull request for commit $COMMIT_SHA and report its canonical URL."
+              exit 0
+            fi
+
+            PR_HEAD_SHA="$(jq -r '.head.sha // ""' <<<"$PR_JSON")"
+            if [ "$PR_HEAD_SHA" != "$COMMIT_SHA" ]; then
+              gh issue comment "$ISSUE_NUMBER" --body "[AMANDA-CONTROLLER] BLOCKED\n\nGoal ID: $GOAL_ID\nCAUSE: Claimed COMPLETE PR is not bound to the claimed commit.\nEVIDENCE: PR head $PR_HEAD_SHA; claimed commit $COMMIT_SHA; PR $PR_URL.\nEXACT NEXT ACTION: Update the PR so its current head is $COMMIT_SHA, then emit a fresh handoff."
+              exit 0
+            fi
+
+            gh issue comment "$ISSUE_NUMBER" --body "[AMANDA-CONTROLLER] COMPLETE\n\nGoal ID: $GOAL_ID\nRun ID: $RUN_ID\nCommit SHA: $COMMIT_SHA\nPR: $PR_URL\nPreview: $PREVIEW_URL\nVisual Evidence: $VISUAL_EVIDENCE\n\nCommit and PR evidence were resolved through GitHub and are bound to the current handoff. No production merge was performed by the controller."
             exit 0
           fi
 
