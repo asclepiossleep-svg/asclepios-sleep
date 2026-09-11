@@ -55,11 +55,18 @@ jobs:
           ISSUE_JSON="$(gh api "repos/$REPO/issues/$ISSUE_NUMBER")"
           ISSUE_BODY="$(jq -r '.body // ""' <<<"$ISSUE_JSON")"
 
-          if ! grep -qE 'Goal ID:|Goal ID：|GOAL ID:' <<<"$ISSUE_BODY"; then
-            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
+          post_comment() {
+            local body="$1"
+            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "$body"
+          }
 
-CAUSE: Goal Issue has no stable Goal ID.
-EXACT NEXT ACTION: Add a stable Goal ID before autonomous continuation."
+          if ! grep -qE 'Goal ID:|Goal ID：|GOAL ID:' <<<"$ISSUE_BODY"; then
+            printf -v body '%s\n' \
+              '[AMANDA-CONTROLLER] BLOCKED' \
+              '' \
+              'CAUSE: Goal Issue has no stable Goal ID.' \
+              'EXACT NEXT ACTION: Add a stable Goal ID before autonomous continuation.'
+            post_comment "$body"
             exit 0
           fi
 
@@ -68,10 +75,12 @@ EXACT NEXT ACTION: Add a stable Goal ID before autonomous continuation."
           HANDOFF_COUNT="$(jq 'length' <<<"$HANDOFFS")"
 
           if [ "$HANDOFF_COUNT" -eq 0 ]; then
-            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
-
-CAUSE: No structured Rex handoff exists.
-EXACT NEXT ACTION: Run one bounded Rex execution that posts the AMANDA_REX_HANDOFF contract."
+            printf -v body '%s\n' \
+              '[AMANDA-CONTROLLER] BLOCKED' \
+              '' \
+              'CAUSE: No structured Rex handoff exists.' \
+              'EXACT NEXT ACTION: Run one bounded Rex execution that posts the AMANDA_REX_HANDOFF contract.'
+            post_comment "$body"
             exit 0
           fi
 
@@ -103,90 +112,106 @@ EXACT NEXT ACTION: Run one bounded Rex execution that posts the AMANDA_REX_HANDO
           RECOMMENDED_STATE="$(field 'Recommended Goal State')"
 
           if [ -z "$OUTCOME" ] || [ -z "$GOAL_ID" ] || [ -z "$RUN_ID" ] || [ -z "$NEXT_ACTION" ] || [ -z "$RECOMMENDED_STATE" ]; then
-            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
-
-CAUSE: Latest Rex handoff is incomplete or malformed.
-EVIDENCE: handoff comment id $LATEST_ID
-EXACT NEXT ACTION: Re-run Rex and produce every required handoff field."
+            printf -v body '%s\n' \
+              '[AMANDA-CONTROLLER] BLOCKED' \
+              '' \
+              'CAUSE: Latest Rex handoff is incomplete or malformed.' \
+              "EVIDENCE: handoff comment id $LATEST_ID" \
+              'EXACT NEXT ACTION: Re-run Rex and produce every required handoff field.'
+            post_comment "$body"
             exit 0
           fi
 
           if [ "$RECOMMENDED_STATE" = "COMPLETE" ]; then
             if [ "$COMMIT_SHA" = "NONE" ] || [ -z "$COMMIT_SHA" ] || [ "$PR_URL" = "NONE" ] || [ -z "$PR_URL" ] || [ "$PREVIEW_URL" = "NONE" ] || [ -z "$PREVIEW_URL" ] || [ "$VISUAL_EVIDENCE" = "NONE" ] || [ -z "$VISUAL_EVIDENCE" ]; then
-              gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
-
-Goal ID: $GOAL_ID
-CAUSE: COMPLETE was recommended without commit-bound PR, preview and visual evidence.
-EVIDENCE: Run ID $RUN_ID, handoff comment $LATEST_ID
-EXACT NEXT ACTION: Produce missing commit-bound evidence; do not mark COMPLETE yet."
+              printf -v body '%s\n' \
+                '[AMANDA-CONTROLLER] BLOCKED' \
+                '' \
+                "Goal ID: $GOAL_ID" \
+                'CAUSE: COMPLETE was recommended without commit-bound PR, preview and visual evidence.' \
+                "EVIDENCE: Run ID $RUN_ID, handoff comment $LATEST_ID" \
+                'EXACT NEXT ACTION: Produce missing commit-bound evidence; do not mark COMPLETE yet.'
+              post_comment "$body"
               exit 0
             fi
 
             PR_NUMBER="${PR_URL##*/}"
             PR_HEAD="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
             if [ -z "$PR_HEAD" ] || [ "$PR_HEAD" != "$COMMIT_SHA" ]; then
-              gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
-
-Goal ID: $GOAL_ID
-CAUSE: Evidence binding failed: recorded PR head does not match recorded Commit SHA.
-EVIDENCE: Run ID $RUN_ID; recorded SHA $COMMIT_SHA; PR head ${PR_HEAD:-UNKNOWN}.
-EXACT NEXT ACTION: Reconcile PR, commit, preview and visual evidence to one current commit before COMPLETE."
+              printf -v body '%s\n' \
+                '[AMANDA-CONTROLLER] BLOCKED' \
+                '' \
+                "Goal ID: $GOAL_ID" \
+                'CAUSE: Evidence binding failed: recorded PR head does not match recorded Commit SHA.' \
+                "EVIDENCE: Run ID $RUN_ID; recorded SHA $COMMIT_SHA; PR head ${PR_HEAD:-UNKNOWN}." \
+                'EXACT NEXT ACTION: Reconcile PR, commit, preview and visual evidence to one current commit before COMPLETE.'
+              post_comment "$body"
               exit 0
             fi
 
-            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] COMPLETE
-
-Goal ID: $GOAL_ID
-Run ID: $RUN_ID
-Commit SHA: $COMMIT_SHA
-PR: $PR_URL
-Preview: $PREVIEW_URL
-Visual Evidence: $VISUAL_EVIDENCE
-
-PR-to-commit binding verified. No production merge was performed by the controller."
+            printf -v body '%s\n' \
+              '[AMANDA-CONTROLLER] COMPLETE' \
+              '' \
+              "Goal ID: $GOAL_ID" \
+              "Run ID: $RUN_ID" \
+              "Commit SHA: $COMMIT_SHA" \
+              "PR: $PR_URL" \
+              "Preview: $PREVIEW_URL" \
+              "Visual Evidence: $VISUAL_EVIDENCE" \
+              '' \
+              'PR-to-commit binding verified. No production merge was performed by the controller.'
+            post_comment "$body"
             exit 0
           fi
 
           if [ "$OUTCOME" = "BLOCKED" ] || [ "$RECOMMENDED_STATE" = "BLOCKED" ]; then
-            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
-
-Goal ID: $GOAL_ID
-Run ID: $RUN_ID
-CAUSE: ${BLOCKER:-Unspecified blocker}
-Failure Classification: ${FAILURE_CLASS:-UNKNOWN}
-EXACT NEXT ACTION: $NEXT_ACTION"
+            printf -v body '%s\n' \
+              '[AMANDA-CONTROLLER] BLOCKED' \
+              '' \
+              "Goal ID: $GOAL_ID" \
+              "Run ID: $RUN_ID" \
+              "CAUSE: ${BLOCKER:-Unspecified blocker}" \
+              "Failure Classification: ${FAILURE_CLASS:-UNKNOWN}" \
+              "EXACT NEXT ACTION: $NEXT_ACTION"
+            post_comment "$body"
             exit 0
           fi
 
           NO_PROGRESS_COUNT="$(jq '[.[] | select(.body | contains("<!-- AMANDA_REX_HANDOFF -->")) | select(.body | contains("Rex Outcome: NO_PROGRESS"))] | length' <<<"$COMMENTS")"
           if [ "$OUTCOME" = "NO_PROGRESS" ] && [ "$NO_PROGRESS_COUNT" -gt 1 ]; then
-            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
-
-Goal ID: $GOAL_ID
-CAUSE: Repeated NO_PROGRESS reached the pilot limit.
-EVIDENCE: $NO_PROGRESS_COUNT NO_PROGRESS handoffs. Latest Run ID: $RUN_ID
-EXACT NEXT ACTION: $NEXT_ACTION"
+            printf -v body '%s\n' \
+              '[AMANDA-CONTROLLER] BLOCKED' \
+              '' \
+              "Goal ID: $GOAL_ID" \
+              'CAUSE: Repeated NO_PROGRESS reached the pilot limit.' \
+              "EVIDENCE: $NO_PROGRESS_COUNT NO_PROGRESS handoffs. Latest Run ID: $RUN_ID" \
+              "EXACT NEXT ACTION: $NEXT_ACTION"
+            post_comment "$body"
             exit 0
           fi
 
           RECOVERY_COUNT="$(jq '[.[] | select(.body | contains("[AMANDA-CONTROLLER] RECOVERING"))] | length' <<<"$COMMENTS")"
           if [ "$RECOMMENDED_STATE" = "RECOVERING" ] && [ "$RECOVERY_COUNT" -ge 2 ]; then
-            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
-
-Goal ID: $GOAL_ID
-CAUSE: Transient recovery retry limit reached.
-EVIDENCE: $RECOVERY_COUNT prior RECOVERING controller states. Latest Run ID: $RUN_ID.
-EXACT NEXT ACTION: $NEXT_ACTION"
+            printf -v body '%s\n' \
+              '[AMANDA-CONTROLLER] BLOCKED' \
+              '' \
+              "Goal ID: $GOAL_ID" \
+              'CAUSE: Transient recovery retry limit reached.' \
+              "EVIDENCE: $RECOVERY_COUNT prior RECOVERING controller states. Latest Run ID: $RUN_ID." \
+              "EXACT NEXT ACTION: $NEXT_ACTION"
+            post_comment "$body"
             exit 0
           fi
 
           if [ "$ANOTHER_RUN" != "YES" ]; then
-            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] BLOCKED
-
-Goal ID: $GOAL_ID
-CAUSE: Goal is not COMPLETE but Rex did not request another run.
-EVIDENCE: Run ID $RUN_ID; recommended state $RECOMMENDED_STATE.
-EXACT NEXT ACTION: $NEXT_ACTION"
+            printf -v body '%s\n' \
+              '[AMANDA-CONTROLLER] BLOCKED' \
+              '' \
+              "Goal ID: $GOAL_ID" \
+              'CAUSE: Goal is not COMPLETE but Rex did not request another run.' \
+              "EVIDENCE: Run ID $RUN_ID; recommended state $RECOMMENDED_STATE." \
+              "EXACT NEXT ACTION: $NEXT_ACTION"
+            post_comment "$body"
             exit 0
           fi
 
@@ -196,13 +221,15 @@ EXACT NEXT ACTION: $NEXT_ACTION"
             STATUS="ACTIVE"
           fi
 
-          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "[AMANDA-CONTROLLER] $STATUS
-
-Goal ID: $GOAL_ID
-Run ID: $RUN_ID
-Exact Next Action: $NEXT_ACTION
-
-Dispatching the next bounded Rex run automatically. Owner does not need to say continue."
+          printf -v body '%s\n' \
+            "[AMANDA-CONTROLLER] $STATUS" \
+            '' \
+            "Goal ID: $GOAL_ID" \
+            "Run ID: $RUN_ID" \
+            "Exact Next Action: $NEXT_ACTION" \
+            '' \
+            'Dispatching the next bounded Rex run automatically. Owner does not need to say continue.'
+          post_comment "$body"
 
           gh workflow run claude-manager-dispatch.yml --repo "$REPO" \
             --ref main \

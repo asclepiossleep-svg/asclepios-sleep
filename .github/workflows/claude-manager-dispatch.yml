@@ -20,16 +20,17 @@ concurrency:
   group: amanda-goal-${{ github.event.issue.number || inputs.issue_number || github.run_id }}
   cancel-in-progress: false
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+  id-token: write
+
 jobs:
   claude-respond:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-      actions: read
-      id-token: write
     steps:
       - name: Preflight trigger and kill switch
         id: preflight
@@ -53,10 +54,7 @@ jobs:
           ISSUE_BODY="$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH")"
           COMMENT_BODY="$(jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH")"
           LABELS="$(jq -r '[.issue.labels[]?.name] | join(",")' "$GITHUB_EVENT_PATH")"
-          TEXT="$TITLE
-          $ISSUE_BODY
-          $COMMENT_BODY
-          $LABELS"
+          TEXT="${TITLE}${ISSUE_BODY}${COMMENT_BODY}${LABELS}"
           if [ "$AUTHOR" != "asclepiossleep-svg" ]; then
             echo "should_run=false" >> "$GITHUB_OUTPUT"
             echo "Ignoring non-owner actor: $AUTHOR"
@@ -92,7 +90,7 @@ jobs:
             exit 1
           fi
           echo "issue_number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
-          ISSUE_TITLE="$(gh issue view "$ISSUE_NUMBER" --json title --jq .title)"
+          ISSUE_TITLE="$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq .title)"
           echo "issue_title=$ISSUE_TITLE" >> "$GITHUB_OUTPUT"
           {
             echo 'manager_instruction<<EOF'
@@ -108,6 +106,7 @@ jobs:
 
       - name: Execute bounded Rex work
         id: rex
+        continue-on-error: true
         uses: anthropics/claude-code-action@19dda84776b3518d98b8798e591daee763049ed3
         if: steps.preflight.outputs.should_run == 'true'
         with:
@@ -160,15 +159,13 @@ jobs:
 
             Core operating rule: a page, schema, document or component is NOT operational merely because it exists. It is only operational when connected to upstream/downstream dependencies, exercised, observable and recoverable.
 
-            Product truth is governed by docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md. Never invent product packaging, prices, stock, tax, SKU, claims, launch dates or fulfilment facts. Phase-1 products remain COMING_SOON/DRAFT until commercial release gates have verified owner-approved values.
+            Product truth is governed by docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md. Never invent product packaging, prices, stock, tax, SKU, claims, launch dates or fulfilment facts.
 
-            Never commit directly to main. Create or reuse a feature branch named rex/${{ steps.goal.outputs.issue_number }}-<short-slug>. Make incremental commits on that branch, run relevant build/typecheck/tests plus `node scripts/sum-health-check.mjs`, push the branch, then create or update a pull request to main. Never merge the PR yourself.
+            Never commit directly to main. Create or reuse a feature branch named rex/${{ steps.goal.outputs.issue_number }}-<short-slug>. Make incremental commits, run relevant build/typecheck/tests plus `node scripts/sum-health-check.mjs`, push the branch, then create or update a pull request to main. Never merge the PR yourself.
 
             Stop for owner input only for genuine product/legal/commercial decisions, destructive migrations, paid external services, secrets/account ownership, production DNS/domain changes, publishing products, capturing/refunding money, physical fulfilment dispatch, missing approved asset, or other irreversible actions. Otherwise continue the highest-priority safe unblocked link.
 
-            MANDATORY END-OF-RUN HANDOFF
-            Before ending this run, post exactly one structured handoff comment to the authoritative Goal Issue using `gh issue comment`. The comment must begin with this exact marker:
-
+            Before ending this run, post exactly one comment to the Goal Issue beginning with:
             <!-- AMANDA_REX_HANDOFF -->
 
             Then include exactly these fields:
@@ -189,48 +186,48 @@ jobs:
             Another Rex Run Required: YES | NO
             Recommended Goal State: ACTIVE | BLOCKED | RECOVERING | COMPLETE
 
-            Use NO_PROGRESS only when no acceptance item advanced. Never loop indefinitely: the Amanda controller owns retry counting and converts repeated NO_PROGRESS to BLOCKED.
-
-            For implementation evidence, also include these headings in the PR body or handoff as appropriate:
-            1. CONNECTION
-            2. EXECUTION
-            3. OBSERVABILITY
-            4. RECOVERY
-            5. TEST
-            6. REMAINS
-
-      - name: Emit recoverable handoff if executor fails before Rex reports
-        if: failure() && steps.preflight.outputs.should_run == 'true'
+      - name: Ensure structured handoff exists
+        if: always() && steps.preflight.outputs.should_run == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
-          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_NUMBER: ${{ steps.goal.outputs.issue_number }}
           RUN_ID: ${{ github.run_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CLAUDE_CONCLUSION: ${{ steps.rex.outputs.conclusion }}
         shell: bash
         run: |
           set -euo pipefail
-          ISSUE_NUMBER="${EVENT_ISSUE_NUMBER:-${INPUT_ISSUE_NUMBER:-}}"
-          [ -n "$ISSUE_NUMBER" ] || exit 0
-          ISSUE_BODY="$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json body --jq '.body // ""')"
-          GOAL_ID="$(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^[[:space:]]*(Goal ID|GOAL ID):[[:space:]]*//p' | head -n1)"
-          [ -n "$GOAL_ID" ] || GOAL_ID="UNKNOWN"
-          body="<!-- AMANDA_REX_HANDOFF -->
-Rex Outcome: NO_PROGRESS
-Goal ID: $GOAL_ID
-Run ID: $RUN_ID
-Exact Work Completed: Executor failed before Rex could complete the bounded work item.
-Commit SHA: NONE
-PR: NONE
-Preview URL: NONE
-Checks: Manager workflow failure; inspect $RUN_URL
-Visual Evidence: NONE
-Acceptance Items Proven: none
-Remaining Acceptance Items: unchanged
-Blocker: Manager/Rex execution infrastructure failed before a normal handoff.
-Failure Classification: TRANSIENT
-Exact Next Action: Retry the same bounded action after infrastructure recovery; inspect run $RUN_URL if the retry also fails.
-Another Rex Run Required: YES
-Recommended Goal State: RECOVERING"
+          [ -n "${ISSUE_NUMBER:-}" ] || exit 0
+          comments="$(gh api --paginate "repos/$REPO/issues/$ISSUE_NUMBER/comments?per_page=100" --jq '.[].body')"
+          if printf '%s\n' "$comments" | grep -Fq "Run ID: $RUN_ID"; then
+            echo "Structured handoff already exists for this run."
+            exit 0
+          fi
+          issue_body="$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json body --jq '.body // ""')"
+          goal_id="$(printf '%s\n' "$issue_body" | sed -nE 's/^[[:space:]]*(Goal ID|GOAL ID):[[:space:]]*//p' | head -n1)"
+          [ -n "$goal_id" ] || goal_id="HEALTH-VISUAL-PILOT-001"
+          printf -v body '%s\n' \
+            '<!-- AMANDA_REX_HANDOFF -->' \
+            'Rex Outcome: NO_PROGRESS' \
+            "Goal ID: $goal_id" \
+            "Run ID: $RUN_ID" \
+            'Exact Work Completed: Rex executor ended without posting the required structured handoff.' \
+            'Commit SHA: NONE' \
+            'PR: NONE' \
+            'Preview URL: NONE' \
+            "Checks: Executor conclusion ${CLAUDE_CONCLUSION:-UNKNOWN}; inspect $RUN_URL" \
+            'Visual Evidence: NONE' \
+            'Acceptance Items Proven: none' \
+            'Remaining Acceptance Items: unchanged' \
+            'Blocker: Rex execution did not produce a valid handoff.' \
+            'Failure Classification: TRANSIENT' \
+            "Exact Next Action: Retry the same bounded action once; inspect $RUN_URL if it fails again." \
+            'Another Rex Run Required: YES' \
+            'Recommended Goal State: RECOVERING'
           gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "$body"
+
+      - name: Preserve executor failure
+        if: steps.preflight.outputs.should_run == 'true' && steps.rex.outputs.conclusion != 'success'
+        shell: bash
+        run: exit 1
