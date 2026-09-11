@@ -1,0 +1,25 @@
+name: agent-workflow-policy-gate
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/verify-agent-workflow-policy.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/verify-agent-workflow-policy.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Verify deterministic agent workflow policy
+        run: node scripts/verify-agent-workflow-policy.mjs
