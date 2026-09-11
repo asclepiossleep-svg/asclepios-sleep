@@ -25,7 +25,6 @@ permissions:
   issues: write
   pull-requests: write
   actions: read
-  id-token: write
 
 jobs:
   claude-respond:
