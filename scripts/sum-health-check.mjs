@@ -32,6 +32,8 @@ for (const [name, path] of checks) {
 
 const registry = JSON.parse(fs.readFileSync('config/sum-links.json', 'utf8'));
 const allowed = new Set(registry.states ?? []);
+const allowedCriticalities = new Set(['P0', 'P1', 'P2']);
+const evidenceRequiredStates = new Set(['EXERCISED', 'MONITORED', 'RECOVERABLE', 'OPERATIONAL', 'DEGRADED', 'FAILED', 'RECOVERING']);
 if (!Array.isArray(registry.links) || registry.links.length === 0) {
   console.log('FAIL ecosystem link registry is empty');
   failed = true;
@@ -51,6 +53,14 @@ if (!Array.isArray(registry.links) || registry.links.length === 0) {
     ids.add(link.id);
     if (!allowed.has(link.currentState)) {
       console.log(`FAIL link ${link.id} invalid state ${link.currentState}`);
+      failed = true;
+    }
+    if (!allowedCriticalities.has(link.criticality)) {
+      console.log(`FAIL link ${link.id} invalid criticality ${link.criticality}`);
+      failed = true;
+    }
+    if (evidenceRequiredStates.has(link.currentState) && !(typeof link.evidence === 'string' && link.evidence.trim().length > 0)) {
+      console.log(`FAIL link ${link.id} state ${link.currentState} requires non-empty evidence`);
       failed = true;
     }
   }
