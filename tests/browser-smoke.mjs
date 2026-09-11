@@ -26,7 +26,16 @@ async function verifyScenario(scenario) {
     const context = await browser.newContext(scenario.context);
     const page = await context.newPage();
     const pageErrors = [];
+    const consoleErrors = [];
+    const requestFailures = [];
+
     page.on('pageerror', error => pageErrors.push(error.message));
+    page.on('console', message => {
+      if (message.type() === 'error') consoleErrors.push(message.text());
+    });
+    page.on('requestfailed', request => {
+      requestFailures.push(`${request.method()} ${request.url()} — ${request.failure()?.errorText ?? 'unknown network failure'}`);
+    });
 
     const tracing = attempt > 1;
     if (tracing) {
@@ -36,6 +45,9 @@ async function verifyScenario(scenario) {
     try {
       for (const route of routes) {
         pageErrors.length = 0;
+        consoleErrors.length = 0;
+        requestFailures.length = 0;
+
         const response = await page.goto(`${baseURL}${route.path}`, { waitUntil: 'networkidle', timeout: 30_000 });
         if (!response || !response.ok()) {
           throw new Error(`${route.name} returned HTTP ${response?.status() ?? 'no response'}`);
@@ -56,12 +68,20 @@ async function verifyScenario(scenario) {
           throw new Error(`${route.name} uncaught browser error(s): ${pageErrors.join(' | ')}`);
         }
 
+        if (consoleErrors.length > 0) {
+          throw new Error(`${route.name} console error(s): ${consoleErrors.join(' | ')}`);
+        }
+
+        if (requestFailures.length > 0) {
+          throw new Error(`${route.name} failed network request(s): ${requestFailures.join(' | ')}`);
+        }
+
         await page.screenshot({
           path: `${outputDir}/${scenario.name}-${route.name}.png`,
           fullPage: true,
         });
 
-        console.log(`PASS ${scenario.name} ${route.name}: HTTP ${response.status()}, visible chars ${bodyText.length}, no horizontal overflow`);
+        console.log(`PASS ${scenario.name} ${route.name}: HTTP ${response.status()}, visible chars ${bodyText.length}, no horizontal overflow, no runtime console errors, no failed network requests`);
       }
 
       if (tracing) {
