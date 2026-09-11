@@ -1,0 +1,70 @@
+name: visual-regression-gate
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: visual-regression-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  visual-regression:
+    name: visual-regression-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Install application dependencies from lockfile
+        run: npm ci --no-audit --no-fund
+
+      - name: Build monorepo
+        run: npm run build
+
+      - name: Install pinned Playwright Test and Chromium
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund @playwright/test@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Start built web preview
+        run: |
+          nohup npm run preview --workspace=apps/web -- --host 127.0.0.1 --port 4173 > /tmp/asclepios-vite-preview.log 2>&1 &
+
+      - name: Wait for preview checkpoint
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
+              echo "Preview ready on attempt ${attempt}"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/asclepios-vite-preview.log || true
+          exit 1
+
+      - name: Compare against committed visual baselines
+        env:
+          BASE_URL: http://127.0.0.1:4173
+        run: npx playwright test -c playwright.visual.config.mjs
+
+      - name: Upload visual regression evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: visual-regression-evidence-${{ github.run_id }}
+          path: |
+            test-results/
+            /tmp/asclepios-vite-preview.log
+          if-no-files-found: warn
+          retention-days: 7
