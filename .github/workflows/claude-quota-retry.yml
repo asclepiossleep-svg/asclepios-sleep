@@ -23,7 +23,7 @@ concurrency:
 jobs:
   retry:
     if: vars.CLAUDE_AUTOMATION_ENABLED != 'false'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Re-trigger paused Claude tasks
