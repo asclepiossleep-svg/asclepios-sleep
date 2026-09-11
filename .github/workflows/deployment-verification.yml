@@ -1,0 +1,33 @@
+name: deployment-verification
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: Deployment URL to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  DEPLOYMENT_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment_url || github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+
+jobs:
+  verify-deployment:
+    if: github.event_name == 'workflow_dispatch' || (github.event.deployment_status.state == 'success' && (github.event.deployment_status.environment_url != '' || github.event.deployment_status.target_url != ''))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout deployed revision
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify deployed routes with bounded retries
+        run: node scripts/verify-deployment.mjs
