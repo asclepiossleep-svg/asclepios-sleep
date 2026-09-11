@@ -29,6 +29,7 @@ jobs:
       issues: write
       pull-requests: write
       actions: read
+      id-token: write
     steps:
       - name: Preflight trigger and kill switch
         id: preflight
@@ -105,7 +106,9 @@ jobs:
             echo EOF
           } >> "$GITHUB_OUTPUT"
 
-      - uses: anthropics/claude-code-action@19dda84776b3518d98b8798e591daee763049ed3
+      - name: Execute bounded Rex work
+        id: rex
+        uses: anthropics/claude-code-action@19dda84776b3518d98b8798e591daee763049ed3
         if: steps.preflight.outputs.should_run == 'true'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -195,3 +198,39 @@ jobs:
             4. RECOVERY
             5. TEST
             6. REMAINS
+
+      - name: Emit recoverable handoff if executor fails before Rex reports
+        if: failure() && steps.preflight.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ISSUE_NUMBER="${EVENT_ISSUE_NUMBER:-${INPUT_ISSUE_NUMBER:-}}"
+          [ -n "$ISSUE_NUMBER" ] || exit 0
+          ISSUE_BODY="$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json body --jq '.body // ""')"
+          GOAL_ID="$(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^[[:space:]]*(Goal ID|GOAL ID):[[:space:]]*//p' | head -n1)"
+          [ -n "$GOAL_ID" ] || GOAL_ID="UNKNOWN"
+          body="<!-- AMANDA_REX_HANDOFF -->
+Rex Outcome: NO_PROGRESS
+Goal ID: $GOAL_ID
+Run ID: $RUN_ID
+Exact Work Completed: Executor failed before Rex could complete the bounded work item.
+Commit SHA: NONE
+PR: NONE
+Preview URL: NONE
+Checks: Manager workflow failure; inspect $RUN_URL
+Visual Evidence: NONE
+Acceptance Items Proven: none
+Remaining Acceptance Items: unchanged
+Blocker: Manager/Rex execution infrastructure failed before a normal handoff.
+Failure Classification: TRANSIENT
+Exact Next Action: Retry the same bounded action after infrastructure recovery; inspect run $RUN_URL if the retry also fails.
+Another Rex Run Required: YES
+Recommended Goal State: RECOVERING"
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "$body"
