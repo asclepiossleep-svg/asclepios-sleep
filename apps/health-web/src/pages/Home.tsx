@@ -8,6 +8,7 @@ import heroPhoto from "../assets/hero/health-hero-sunrise.webp";
 import approvedHomeReference from "../assets/pages/home/v1/approved-home-reference.png";
 import learningCardImage from "../assets/pages/home/v1/web/health-home-learning-card-v1.webp";
 import "../styles/home.css";
+import "../styles/home-approved-v1.css";
 
 type ReferenceCropProps = {
   x: number;
