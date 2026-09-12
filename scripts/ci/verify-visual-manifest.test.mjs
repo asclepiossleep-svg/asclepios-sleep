@@ -40,9 +40,11 @@ function makeFixtureRepo(manifest) {
   return { repoRoot, versionDir };
 }
 
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
 function writePngFixture(absPath) {
   fs.mkdirSync(path.dirname(absPath), { recursive: true });
-  const bytes = crypto.randomBytes(64);
+  const bytes = Buffer.concat([PNG_SIGNATURE, crypto.randomBytes(64)]);
   fs.writeFileSync(absPath, bytes);
   return crypto.createHash('sha256').update(bytes).digest('hex');
 }
@@ -92,6 +94,19 @@ test('asset path outside its declared role directory is rejected', () => {
   writePngFixture(path.join(versionDir, 'mobile/sneaked-in.png'));
   const result = verifyManifests(repoRoot);
   assert.ok(result.violations.some((v) => v.includes('must live under') && v.includes('/web/')));
+  fs.rmSync(repoRoot, { recursive: true, force: true });
+});
+
+test('a reference file whose bytes are not a real PNG is rejected even when its sha256 matches', () => {
+  const garbage = crypto.randomBytes(64); // no PNG magic-byte signature
+  const garbageSha = crypto.createHash('sha256').update(garbage).digest('hex');
+  const manifest = baseManifest({
+    approved_reference: { path: 'apps/health-web/src/assets/pages/home/v1/approved-home-reference.png', sha256: garbageSha },
+  });
+  const { repoRoot, versionDir } = makeFixtureRepo(manifest);
+  fs.writeFileSync(path.join(versionDir, 'approved-home-reference.png'), garbage);
+  const result = verifyManifests(repoRoot);
+  assert.ok(result.violations.some((v) => v.includes('approved-asset-hashes') && v.includes('valid image file signature')));
   fs.rmSync(repoRoot, { recursive: true, force: true });
 });
 

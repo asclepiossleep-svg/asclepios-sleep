@@ -127,6 +127,34 @@ function sha256Of(absPath) {
   return crypto.createHash('sha256').update(fs.readFileSync(absPath)).digest('hex');
 }
 
+// Magic-byte signatures for the raster formats this contract allows. A file
+// can have a matching sha256 and the right extension while still being a
+// corrupt or placeholder blob (e.g. random bytes saved as ".png") -- a real
+// case flagged against this Goal's own asset pipeline, where a committed
+// "approved-home-reference.png" did not carry the PNG signature at all. This
+// closes that gap deterministically instead of trusting the file extension.
+const IMAGE_SIGNATURES = {
+  '.png': [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+  '.jpg': [[0xff, 0xd8, 0xff]],
+  '.jpeg': [[0xff, 0xd8, 0xff]],
+  '.gif': [[0x47, 0x49, 0x46, 0x38, 0x37, 0x61], [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]],
+};
+
+function hasValidImageSignature(absPath) {
+  const ext = path.extname(absPath).toLowerCase();
+  if (ext === '.svg') {
+    const head = fs.readFileSync(absPath, 'utf8').slice(0, 512).trimStart();
+    return head.startsWith('<?xml') || head.startsWith('<svg');
+  }
+  const buf = fs.readFileSync(absPath);
+  if (ext === '.webp') {
+    return buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP';
+  }
+  const sigs = IMAGE_SIGNATURES[ext];
+  if (!sigs) return true; // no known signature for this extension -- nothing to check
+  return sigs.some((sig) => buf.length >= sig.length && sig.every((byte, i) => buf[i] === byte));
+}
+
 export function verifyManifests(repoRoot) {
   const violations = [];
   const fail = (check, message) => violations.push(`[${check}] ${message}`);
@@ -244,6 +272,8 @@ export function verifyManifests(repoRoot) {
           const actual = sha256Of(refAbs);
           if (actual !== approvedReference.sha256) {
             fail('approved-asset-hashes', `${relManifest} approved_reference sha256 mismatch: recorded ${approvedReference.sha256}, actual ${actual}`);
+          } else if (!hasValidImageSignature(refAbs)) {
+            fail('approved-asset-hashes', `${relManifest} approved_reference.path "${approvedReference.path}" does not have a valid image file signature -- it is a corrupt or placeholder blob, not real image content`);
           }
         }
       } else if (status === 'APPROVED') {
@@ -289,6 +319,8 @@ export function verifyManifests(repoRoot) {
         const actual = sha256Of(assetAbs);
         if (actual !== asset.sha256) {
           fail('approved-asset-hashes', `${label} sha256 mismatch: recorded ${asset.sha256}, actual ${actual}`);
+        } else if (!hasValidImageSignature(assetAbs)) {
+          fail('approved-asset-hashes', `${label}.path "${asset.path}" does not have a valid image file signature -- it is a corrupt or placeholder blob, not real image content`);
         }
       }
     }
