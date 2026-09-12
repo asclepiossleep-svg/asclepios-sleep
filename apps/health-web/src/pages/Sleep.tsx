@@ -24,11 +24,17 @@ export default function Sleep() {
           <h1>{t("health.sleep.title")}</h1>
           <p className="health-products-lead">{t("health.sleep.lead")}</p>
           <div className="health-hero-actions health-sleep-actions">
-            <SleepAppLink className="health-button primary">{t("health.card.sleepApp.cta")}</SleepAppLink>
+            <SleepAppLink className="health-button primary">{t("health.sleep.cta.startTonight")}</SleepAppLink>
             <Link className="health-button secondary" to="/products">
               {t("health.hero.cta.products")}
             </Link>
           </div>
+        </section>
+
+        <section className="health-section alt health-sleep-focus">
+          <p className="health-kicker health-section-kicker">{t("health.sleep.focus.kicker")}</p>
+          <h2>{t("health.sleep.focus.title")}</h2>
+          <p className="health-about-lead">{t("health.card.sleepApp.body")}</p>
         </section>
 
         <section className="health-sleep-features">

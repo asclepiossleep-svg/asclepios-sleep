@@ -112,6 +112,8 @@ for (const scenario of scenarios) {
     }
 
     await page.locator('h1', { hasText: 'Your night, organised.' }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.locator('.health-sleep-actions', { hasText: "Start Tonight's Plan" }).waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('h2', { hasText: 'A Calmer Evening' }).waitFor({ state: 'visible', timeout: 5_000 });
 
     const sleepFeatureTitles = ["Tonight's Plan", '30-Day Programme', 'Sleep Intelligence', 'History'];
     for (const title of sleepFeatureTitles) {
