@@ -8,12 +8,22 @@ on:
         description: Deployment URL to verify
         required: true
         type: string
+      verification_profile:
+        description: Route contract to verify
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - sleep
+          - health
 
 permissions:
   contents: read
 
 env:
   DEPLOYMENT_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment_url || github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+  VERIFY_PROFILE: ${{ github.event_name == 'workflow_dispatch' && inputs.verification_profile || 'auto' }}
 
 jobs:
   verify-deployment:
