@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Enforce Health VISUAL manifest and approved-asset policy
+        run: node tests/health-visual-manifest-check.mjs
+
       - name: Install application dependencies from lockfile
         run: npm ci --no-audit --no-fund
 
