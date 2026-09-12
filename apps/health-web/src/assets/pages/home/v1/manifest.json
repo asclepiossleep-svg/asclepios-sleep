@@ -13,7 +13,7 @@
   },
   "approved_reference": {
     "path": "./approved-home-reference.png",
-    "sha256": "28211c8b35072fd596f4b21cee93dde1b2ac8adcbd2692de1a8325022ededd4b",
+    "sha256": "4c85ab47d3e009219d191950ac9990832dd4a2ad696b892445060687f0dffb12",
     "viewport": {
       "desktop": { "width": 1440, "height": 1200 },
       "mobile": { "width": 390, "height": 844 }
@@ -26,10 +26,10 @@
       "path": "./web/health-home-hero-v1.webp",
       "version": "v1",
       "format": "webp",
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sha256": "b3b9a4c4df319fb68b8035f52d5bf6fcfaa74c39c5dc7f690218d40e7cbe25af",
       "owner_approved": true,
       "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
-      "provenance": "Existing owner-approved Asclepios Health Home hero, copied into the versioned Home v1 asset package; no substitute imagery used."
+      "provenance": "Extracted from the owner-approved Home reference; no substitute imagery used."
     },
     {
       "id": "home-products-card",
