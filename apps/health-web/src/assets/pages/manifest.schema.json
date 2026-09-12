@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://asclepios-sleep.internal/schemas/visual-asset-manifest-v1.1.json",
+  "title": "Asclepios Health VISUAL asset manifest v1.1",
+  "description": "Canonical per-page, per-version manifest contract for the Amanda OS VISUAL workflow (Goal HEALTH-VISUAL-PILOT-001 and successors). One manifest.json lives at apps/health-web/src/assets/pages/<page>/<version>/manifest.json. Enforced by scripts/ci/verify-visual-manifest.mjs. See docs/automation/VISUAL_ASSET_MANIFEST_V1_1.md for the enforcement contract.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "goal_id",
+    "page",
+    "version",
+    "status",
+    "owner_approval",
+    "approved_reference",
+    "assets",
+    "implementation_restrictions",
+    "delivery_evidence",
+    "verification"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.1"
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Must equal the stable Goal ID declared in the authoritative Amanda OS Goal Issue for this page/version."
+    },
+    "page": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Must equal the immediate parent directory name of this manifest."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$",
+      "description": "Must equal the directory name this manifest lives in (e.g. v1)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING_OWNER_ASSET", "APPROVED", "SUPERSEDED", "REJECTED"],
+      "description": "PENDING_OWNER_ASSET: scaffold exists, no owner-approved reference has been supplied yet. APPROVED: reference + all listed assets exist, hash-verified, owner-approved. SUPERSEDED: replaced by a newer version. REJECTED: owner declined this version."
+    },
+    "owner_approval": {
+      "type": "object",
+      "required": ["approved", "approved_by", "approved_at", "approval_record"],
+      "additionalProperties": false,
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approved_by": { "type": ["string", "null"] },
+        "approved_at": { "type": ["string", "null"], "description": "ISO-8601 timestamp or null." },
+        "approval_record": { "type": ["string", "null"], "description": "Pointer to the durable owner-approval evidence (issue comment URL, message reference, etc.), or null while pending." }
+      }
+    },
+    "approved_reference": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "description": "Repo-relative path to the single owner-approved full reference image for this page/version." },
+        "sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "description": "Every production visual derived from the approved reference for this page/version. Empty while status is PENDING_OWNER_ASSET.",
+      "items": {
+        "type": "object",
+        "required": ["role", "path", "sha256", "owner_approved", "approval_record"],
+        "additionalProperties": false,
+        "properties": {
+          "role": { "type": "string", "enum": ["source", "web", "mobile"] },
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "owner_approved": { "type": "boolean", "const": true },
+          "approval_record": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "implementation_restrictions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "delivery_evidence": {
+      "type": "object",
+      "required": ["pr_url", "pr_head_sha", "ci_tested_sha", "manifest_commit_sha", "vercel_preview_url", "vercel_preview_sha"],
+      "additionalProperties": false,
+      "properties": {
+        "pr_url": { "type": ["string", "null"] },
+        "pr_head_sha": { "type": ["string", "null"] },
+        "ci_tested_sha": { "type": ["string", "null"] },
+        "manifest_commit_sha": { "type": ["string", "null"] },
+        "vercel_preview_url": { "type": ["string", "null"] },
+        "vercel_preview_sha": { "type": ["string", "null"] }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["visual_desktop", "visual_mobile", "last_verified_at"],
+      "additionalProperties": false,
+      "properties": {
+        "visual_desktop": { "type": "string", "enum": ["NOT_RUN", "SKIPPED_PENDING_ASSET", "PASS", "FAIL"] },
+        "visual_mobile": { "type": "string", "enum": ["NOT_RUN", "SKIPPED_PENDING_ASSET", "PASS", "FAIL"] },
+        "last_verified_at": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

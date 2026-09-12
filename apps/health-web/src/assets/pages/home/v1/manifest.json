@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.1",
+  "goal_id": "HEALTH-VISUAL-PILOT-001",
+  "page": "home",
+  "version": "v1",
+  "status": "PENDING_OWNER_ASSET",
+  "owner_approval": {
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "approval_record": null
+  },
+  "approved_reference": {
+    "path": "apps/health-web/src/assets/pages/home/v1/approved-home-reference.png",
+    "sha256": null
+  },
+  "assets": [],
+  "implementation_restrictions": [
+    "Only files listed in this manifest's assets array may be used as production visuals for apps/health-web page \"home\" version \"v1\".",
+    "No asset may be substituted, regenerated, or approximated without a new owner_approval record and a version bump to v2 or later.",
+    "No external image URLs may be used for this page's production visuals.",
+    "No AI-generated or placeholder imagery may be substituted for an approved asset.",
+    "This manifest and its assets are scoped to the Home page pilot only; no other apps/health-web page is governed by this file."
+  ],
+  "delivery_evidence": {
+    "pr_url": null,
+    "pr_head_sha": null,
+    "ci_tested_sha": null,
+    "manifest_commit_sha": null,
+    "vercel_preview_url": null,
+    "vercel_preview_sha": null
+  },
+  "verification": {
+    "visual_desktop": "NOT_RUN",
+    "visual_mobile": "NOT_RUN",
+    "last_verified_at": null
+  }
+}
