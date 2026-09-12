@@ -25,6 +25,28 @@ function resolveManifestRelative(rel) {
   return path.resolve(path.dirname(manifestPath), rel);
 }
 
+const IMAGE_SIGNATURES = {
+  '.png': [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+  '.jpg': [[0xff, 0xd8, 0xff]],
+  '.jpeg': [[0xff, 0xd8, 0xff]],
+  '.gif': [[0x47, 0x49, 0x46, 0x38, 0x37, 0x61], [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]],
+};
+
+function hasValidImageSignature(file) {
+  const ext = path.extname(file).toLowerCase();
+  if (ext === '.svg') {
+    const head = fs.readFileSync(file, 'utf8').slice(0, 512).trimStart();
+    return head.startsWith('<?xml') || head.startsWith('<svg');
+  }
+  const buf = fs.readFileSync(file);
+  if (ext === '.webp') {
+    return buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP';
+  }
+  const sigs = IMAGE_SIGNATURES[ext];
+  if (!sigs) return true;
+  return sigs.some((sig) => buf.length >= sig.length && sig.every((byte, i) => buf[i] === byte));
+}
+
 assert(fs.existsSync(manifestPath), 'Home v1 manifest.json is missing');
 if (!fs.existsSync(manifestPath)) process.exit(1);
 
@@ -52,6 +74,10 @@ if (reference?.path) {
       actualReferenceHash === reference.sha256,
       `approved reference hash mismatch: manifest=${reference.sha256} actual=${actualReferenceHash}`,
     );
+    assert(
+      hasValidImageSignature(file),
+      `approved reference is not a valid decodable image for extension ${path.extname(file)}: ${reference.path}`,
+    );
   }
 }
 
@@ -71,6 +97,10 @@ for (const asset of manifest.assets || []) {
     assert(
       actualAssetHash === asset.sha256,
       `${asset.id || 'asset'} hash mismatch: manifest=${asset.sha256} actual=${actualAssetHash}`,
+    );
+    assert(
+      hasValidImageSignature(file),
+      `${asset.id || 'asset'} is not a valid image for extension ${path.extname(file)}: ${asset.path}`,
     );
   }
   listedPaths.add(path.normalize(asset.path));
@@ -93,4 +123,4 @@ for (const [name, file] of [['Home.tsx', homePath], ['home-approved-v1.css', hom
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('HEALTH_VISUAL_POLICY_PASS: Home v1 manifest, hashes, approval binding, and approved-asset policy are valid.');
+console.log('HEALTH_VISUAL_POLICY_PASS: Home v1 manifest, hashes, image signatures, approval binding, and approved-asset policy are valid.');
