@@ -116,7 +116,7 @@ jobs:
           claude_args: >-
             --model claude-sonnet-5
             --max-turns 150
-            --allowedTools "Bash(npm ci),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(node scripts/sum-health-check.mjs),Bash(git status),Bash(git diff),Bash(git log),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*),Bash(gh issue comment:*),Edit,Write,Read,Glob,Grep"
+            --allowedTools "Bash(npm ci:*),Bash(npm run build:*),Bash(npm run test:*),Bash(npm run lint:*),Bash(npm run typecheck:*),Bash(node scripts/sum-health-check.mjs),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(bash scripts/rex-safe-git.sh:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*),Bash(gh issue comment:*),Edit,Write,Read,Glob,Grep"
           prompt: |
             You are Rex, the sole implementation worker for the current Amanda OS Goal.
 
@@ -162,7 +162,7 @@ jobs:
 
             Product truth is governed by docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md. Never invent product packaging, prices, stock, tax, SKU, claims, launch dates or fulfilment facts.
 
-            Never commit directly to main. Create or reuse a feature branch named rex/${{ steps.goal.outputs.issue_number }}-<short-slug>. Make incremental commits, run relevant build/typecheck/tests plus `node scripts/sum-health-check.mjs`, push the branch, then create or update a pull request to main. Never merge the PR yourself.
+            Never commit directly to main. For every git write, use only `bash scripts/rex-safe-git.sh <issue-number> <operation> ...`. Start or reuse a branch with `init <slug>`, optionally reconcile with `sync-main`, stage with `add`, commit with `commit`, and push with `push`. The wrapper enforces the `rex/<issue>-...` branch boundary and refuses main writes. Then create or update a pull request to main with the allowed `gh pr` commands. Never merge or approve the PR yourself.
 
             Stop for owner input only for genuine product/legal/commercial decisions, destructive migrations, paid external services, secrets/account ownership, production DNS/domain changes, publishing products, capturing/refunding money, physical fulfilment dispatch, missing approved asset, or other irreversible actions. Otherwise continue the highest-priority safe unblocked link.
 
@@ -228,9 +228,6 @@ jobs:
             'Recommended Goal State: RECOVERING'
           gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "$body"
 
-          # A comment posted with the default GITHUB_TOKEN cannot reliably trigger
-          # another workflow's issue_comment event, so reconciliation is dispatched
-          # explicitly instead of relying on that comment to fire the controller.
           gh workflow run amanda-goal-controller.yml --repo "$REPO" \
             --ref main \
             -f issue_number="$ISSUE_NUMBER"
