@@ -5,10 +5,27 @@ if (!baseUrl) {
   process.exit(2);
 }
 
-const routes = ['/', '/products', '/sleep-app'];
+const requestedProfile = (process.env.VERIFY_PROFILE || 'auto').toLowerCase();
 const attempts = Number(process.env.VERIFY_ATTEMPTS || 6);
 const timeoutMs = Number(process.env.VERIFY_TIMEOUT_MS || 10000);
 const delayMs = Number(process.env.VERIFY_DELAY_MS || 5000);
+
+const routeProfiles = {
+  sleep: ['/', '/products', '/sleep-app'],
+  health: ['/'],
+};
+
+function resolveProfile() {
+  if (requestedProfile !== 'auto') {
+    if (!Object.hasOwn(routeProfiles, requestedProfile)) {
+      throw new Error(`Unknown VERIFY_PROFILE: ${requestedProfile}`);
+    }
+    return requestedProfile;
+  }
+
+  const hostname = new URL(baseUrl).hostname.toLowerCase();
+  return hostname.includes('health') || hostname.includes('asclepioshealth') ? 'health' : 'sleep';
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -61,10 +78,14 @@ async function verifyRoute(route) {
 }
 
 try {
+  const profile = resolveProfile();
+  const routes = routeProfiles[profile];
+  console.log(`Deployment verification profile: ${profile}`);
+
   for (const route of routes) {
     await verifyRoute(route);
   }
-  console.log(`Deployment verification passed for ${baseUrl}`);
+  console.log(`Deployment verification passed for ${baseUrl} using ${profile} profile`);
 } catch (error) {
   console.error(error.message);
   process.exit(1);
