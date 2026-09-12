@@ -170,6 +170,36 @@ jobs:
               exit 0
             fi
 
+            # Do not trust the Rex handoff's Checks field as completion proof.
+            # Query GitHub's authoritative required-check rollup for this PR.
+            REQUIRED_CHECKS_JSON="$(gh pr checks "$PR_NUMBER" --repo "$REPO" --required --json name,bucket,state,link 2>/dev/null || true)"
+            if [ -z "$REQUIRED_CHECKS_JSON" ] || ! jq -e 'type == "array" and length > 0' <<<"$REQUIRED_CHECKS_JSON" >/dev/null; then
+              printf -v body '%s\n' \
+                '[AMANDA-CONTROLLER] BLOCKED' \
+                '' \
+                "Goal ID: $GOAL_ID" \
+                'CAUSE: Required-check verification could not resolve any authoritative required checks from GitHub.' \
+                "EVIDENCE: Run ID $RUN_ID; PR $PR_URL; commit $COMMIT_SHA." \
+                'EXACT NEXT ACTION: Restore GitHub required-check visibility/configuration and re-run reconciliation; do not mark COMPLETE.'
+              post_comment "$body"
+              exit 0
+            fi
+
+            UNHEALTHY_REQUIRED_CHECKS="$(jq -r '[.[] | select(.bucket != "pass" and .bucket != "skipping") | "\(.name)=\(.state)"] | join(", ")' <<<"$REQUIRED_CHECKS_JSON")"
+            if [ -n "$UNHEALTHY_REQUIRED_CHECKS" ]; then
+              printf -v body '%s\n' \
+                '[AMANDA-CONTROLLER] BLOCKED' \
+                '' \
+                "Goal ID: $GOAL_ID" \
+                'CAUSE: GitHub required checks are not all in a merge-acceptable state for the current PR.' \
+                "EVIDENCE: Run ID $RUN_ID; PR $PR_URL; commit $COMMIT_SHA; required checks: $UNHEALTHY_REQUIRED_CHECKS." \
+                'EXACT NEXT ACTION: Fix or finish the required checks on the current PR head, then re-run reconciliation.'
+              post_comment "$body"
+              exit 0
+            fi
+
+            VERIFIED_REQUIRED_CHECKS="$(jq -r '[.[] | "\(.name)=\(.state)"] | join(", ")' <<<"$REQUIRED_CHECKS_JSON")"
+
             printf -v body '%s\n' \
               '[AMANDA-CONTROLLER] COMPLETE' \
               '' \
@@ -178,11 +208,12 @@ jobs:
               "Evidence Profile: $EVIDENCE_PROFILE" \
               "Commit SHA: $COMMIT_SHA" \
               "PR: $PR_URL" \
-              "Checks: ${CHECKS:-NONE}" \
+              "Checks (Rex handoff): ${CHECKS:-NONE}" \
+              "Required Checks (GitHub verified): $VERIFIED_REQUIRED_CHECKS" \
               "Preview: ${PREVIEW_URL:-NONE}" \
               "Visual Evidence: ${VISUAL_EVIDENCE:-NONE}" \
               '' \
-              'PR-to-commit binding verified. No production merge was performed by the controller.'
+              'PR-to-commit binding and GitHub required checks verified. No production merge was performed by the controller.'
             post_comment "$body"
             exit 0
           fi
