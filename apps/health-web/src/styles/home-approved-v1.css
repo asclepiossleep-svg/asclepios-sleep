@@ -1,0 +1,118 @@
+/* Owner-approved Home v1 visual alignment (Issue #114). */
+.health-entry-section {
+  padding-top: 20px;
+  background: #fff;
+}
+
+.health-entry-section .health-destination-list {
+  gap: 12px;
+}
+
+.health-entry-section .health-destination-card {
+  min-height: 178px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(18, 35, 62, 0.06);
+}
+
+.health-entry-section .health-destination-media.approved-photo {
+  width: 46%;
+  min-width: 132px;
+  overflow: hidden;
+  background: #f5f4ef;
+}
+
+.health-entry-section .health-destination-media.approved-photo > img,
+.health-entry-section .health-approved-crop {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.health-entry-section .health-destination-body {
+  justify-content: center;
+  padding: 18px 18px 18px 20px;
+  gap: 8px;
+}
+
+.health-entry-section .health-destination-body h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  color: var(--hw-navy);
+  font-size: clamp(1.45rem, 6vw, 2rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.health-entry-section .health-destination-body p {
+  font-family: var(--font-display);
+  font-size: 0.96rem;
+  line-height: 1.3;
+  color: #33425e;
+}
+
+.health-entry-section .health-card-cta {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hw-teal-dark);
+}
+
+@media (max-width: 420px) {
+  .health-entry-section {
+    padding-left: 4vw;
+    padding-right: 4vw;
+  }
+
+  .health-entry-section .health-destination-card {
+    min-height: 154px;
+  }
+
+  .health-entry-section .health-destination-media.approved-photo {
+    width: 48%;
+    min-width: 122px;
+  }
+
+  .health-entry-section .health-destination-body {
+    padding: 14px;
+  }
+
+  .health-entry-section .health-destination-body h3 {
+    font-size: 1.42rem;
+  }
+
+  .health-entry-section .health-destination-body p {
+    font-size: 0.86rem;
+  }
+}
+
+@media (min-width: 860px) {
+  .health-entry-section {
+    padding-top: 34px;
+  }
+
+  .health-entry-section .health-destination-list {
+    gap: 18px;
+  }
+
+  .health-entry-section .health-destination-card {
+    min-height: 390px;
+  }
+
+  .health-entry-section .health-destination-media.approved-photo {
+    width: 100%;
+    min-width: 0;
+    height: 210px;
+  }
+
+  .health-entry-section .health-destination-body {
+    padding: 24px;
+    justify-content: flex-start;
+  }
+
+  .health-entry-section .health-destination-body h3 {
+    font-size: 2rem;
+  }
+}
