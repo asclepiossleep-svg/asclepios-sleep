@@ -1,0 +1,160 @@
+# Goal #87 — Automation Loop Validation Record
+
+Status: harmless validation artifact only. No product, application, or
+deployment behavior is affected by this file.
+
+- Goal ID: `AUTOMATION-LOOP-VALIDATION-001`
+- Goal Issue: #87
+- Purpose: validate that a Rex execution session can, end to end, create a
+  feature branch, commit a file, push it, and open a pull request against
+  `main` — after the non-interactive Rex write-permission fix merged as
+  `f767a217591e36ff74de9979515e0dead9f2586f` (PR #89).
+- Base commit this record was branched from: `f767a217591e36ff74de9979515e0dead9f2586f`
+- Branch: `rex/87-automation-loop-validation`
+
+This file exists only to prove the branch → commit → push → PR chain
+works in this execution context. It is not referenced by any application
+code, build, or deployment configuration, and is safe to keep or remove
+without affecting behavior.
+
+## Retest after PR #94
+
+- Retest instruction: `[MANAGER] RETEST AUTOMATION-LOOP-VALIDATION-001 after
+  PR #94 merge` (Goal Issue #87).
+- This branch was merged forward onto `main` at commit
+  `05d534818ada7c957ac3a47adc9e2e3c7f576973` (PR #94, "automation:
+  explicitly reconcile fallback handoffs") to prove the branch/commit/PR
+  chain still works on the current main control plane, which now includes
+  deterministic evidence profiles and explicit fallback-handoff
+  reconciliation.
+- Evidence Profile for this validation Goal: `CODE_ONLY` — no Preview URL
+  or Visual Evidence applies; commit SHA, PR, and checks are the required
+  evidence.
+
+## Retest after PR #95
+
+- Retest instruction: `[MANAGER] RETEST AUTOMATION-LOOP-VALIDATION-001
+  after PR #95 merge` (Goal Issue #87), requiring proof that
+  controller-triggered `github-actions[bot]` dispatches of Rex succeed,
+  followed by independent PR/commit binding verification, with no owner
+  "continue" in between.
+- This branch was merged forward onto `main` at commit
+  `d3b1d5ab44d08c491a9271cb524291b418e7fcc2` (PR #95, "automation: allow
+  controller bot to launch bounded Rex continuation").
+- Root-cause finding on the prior controller-dispatched failure (Run
+  `34658756028`, `Rex Outcome: NO_PROGRESS`): the Amanda Goal Controller's
+  automatic `gh workflow run claude-manager-dispatch.yml -f issue_number=
+  ... -f manager_instruction=...` call is itself made with the default
+  `github.token`, so the dispatched `workflow_dispatch` run's actor is
+  `github-actions[bot]`. `claude-manager-dispatch.yml`'s own preflight step
+  already allows any `workflow_dispatch` event unconditionally, but the
+  `anthropics/claude-code-action` step underneath it has a separate,
+  independent bot-actor allowlist; without an explicit `allowed_bots`
+  input the action rejected the bot-triggered event, the executor step
+  never produced output, `steps.rex.outputs.conclusion != 'success'`, and
+  the workflow's own "Preserve executor failure" step then exited 1 —
+  matching the observed run log (job `claude-respond`, step "Preserve
+  executor failure", `exit 1`) and the fallback `NO_PROGRESS` handoff.
+  PR #95 adds `allowed_bots: "github-actions"` to that step, which is the
+  targeted fix for exactly this actor-identity rejection. This fix has not
+  yet been exercised by an actual controller → `workflow_dispatch` → Rex
+  cycle (this Rex run itself was dispatched directly by an owner
+  `[MANAGER]` comment, not by the controller), so the fix is
+  code-reviewed and reasoned-correct but remains `UNKNOWN`/unexercised
+  until the controller performs its next automatic dispatch.
+- Independent PR/commit binding verification performed this run against
+  `https://github.com/asclepiossleep-svg/asclepios-sleep/pull/91`:
+  - `gh pr view 91` reports `state: OPEN`, `headRefName:
+    rex/87-automation-loop-validation`, `headRefOid:
+    dc88c82d97e136bb7f89113c157439a492c24f14` — matching exactly the
+    `Commit SHA` recorded in the prior `Rex Outcome: PROGRESS` handoff
+    (Run `34658399572`). The PR head has not silently drifted from the
+    reported evidence commit.
+  - Required CODE_ONLY checks on that commit are all `SUCCESS`:
+    `structural-health`, `browser-smoke-gate`, `required-build-gate`,
+    `visual-regression-gate`. The four `Vercel – *` deployment checks
+    report `FAILURE` with target `...?upgradeToPro=build-rate-limit` —
+    an infra quota condition, not a code defect, and not part of the
+    CODE_ONLY evidence requirement for this docs-only validation Goal.
+  - This retest's own commit (recorded below) supersedes `dc88c82` as the
+    new PR #91 head once pushed; the binding check above is therefore a
+    point-in-time verification of the pre-retest state, immediately
+    before this run's own commit moves the head forward again.
+
+## Controller-dispatched exercise of PR #95's fix (Run 34660459558)
+
+- Manager instruction for this run (verified received and readable
+  verbatim, matching exactly the `Exact Next Action` field of the prior
+  `Rex Outcome: PROGRESS` handoff, Run `34658399572`): confirm receipt of
+  the controller-supplied `manager_instruction`, confirm PR #95's
+  `allowed_bots` fix let the `claude-code-action` step complete
+  successfully on an actual controller dispatch (producing a real
+  structured handoff, not the `NO_PROGRESS` fallback), and re-verify PR
+  #91's commit/PR binding at the then-current head.
+- Dispatch identity confirmed via `gh api
+  repos/asclepiossleep-svg/asclepios-sleep/actions/runs/34660459558`:
+  `event: workflow_dispatch`, `actor: github-actions[bot]`,
+  `triggering_actor: github-actions[bot]`, `head_branch: main`. No new
+  owner `[MANAGER]` comment exists on Goal Issue #87 between the prior
+  `[AMANDA-CONTROLLER] ACTIVE` post and this run — the dispatch was the
+  Amanda Goal Controller's automatic `workflow_dispatch` call, not an
+  owner-triggered one.
+- This is exactly the actor identity (`github-actions[bot]` via
+  `workflow_dispatch`) that PR #95's `allowed_bots: "github-actions"`
+  fix was written to admit. Because this Rex run is executing at all —
+  reading the goal, performing this verification, and about to post a
+  real `Rex Outcome` handoff rather than the workflow's `NO_PROGRESS`
+  fallback step — the fix is confirmed **EXERCISED**, not merely
+  code-reviewed: the previously `UNKNOWN` controller → `workflow_dispatch`
+  → Rex → structured-handoff cycle has now completed successfully once.
+- Independent PR/commit binding re-verified this run against
+  `https://github.com/asclepiossleep-svg/asclepios-sleep/pull/91`:
+  `gh pr view 91` reports `state: OPEN`, `mergeable: MERGEABLE`,
+  `headRefOid: e7c8b41d4f6cdace54423899308a8285d262056a` — matching
+  exactly the `Commit SHA` recorded in the prior handoff (Run
+  `34660206972`) with no drift. Required CODE_ONLY checks on that commit
+  (`gh pr checks 91`) are all `pass`: `structural-health`,
+  `browser-smoke-gate`, `required-build-gate`, `visual-regression-gate`,
+  `external-health-contract`. The four `Vercel – *` checks `fail` only on
+  the same pre-existing `build-rate-limit` infra quota condition noted in
+  prior retests — not a code defect, not required for CODE_ONLY evidence.
+- This retest's own commit (recorded below) supersedes `e7c8b41` as the
+  new PR #91 head once pushed.
+
+## Second consecutive controller-dispatched cycle (Run 34660644375)
+
+- Manager instruction for this run, verified received and readable
+  verbatim (matches exactly the `Exact Next Action` field of the prior
+  `Rex Outcome: PROGRESS` handoff, Run `34660459558`): confirm PR #91's
+  newest commit (`e91543e6504b9c96769baf91809cd8ccb41290bc`) has CODE_ONLY
+  checks resolved to `pass`, and treat this run as the second consecutive
+  controller-dispatched cycle.
+- Dispatch identity confirmed via `gh api
+  repos/asclepiossleep-svg/asclepios-sleep/actions/runs/34660644375`:
+  `event: workflow_dispatch`, `actor: github-actions[bot]`,
+  `triggering_actor: github-actions[bot]`, `head_branch: main` at
+  `d3b1d5ab44d08c491a9271cb524291b418e7fcc2` (includes PR #95). No new
+  owner `[MANAGER]` comment exists on Goal Issue #87 between the prior
+  `[AMANDA-CONTROLLER] ACTIVE` post (for Run `34660459558`) and this run —
+  this dispatch, like the one before it, is the Amanda Goal Controller's
+  automatic `workflow_dispatch` call. This is the **second consecutive**
+  such cycle (the first being Run `34660459558` itself), which is the
+  specific "repeated cycle" evidence this Goal's acceptance criteria call
+  for.
+- CODE_ONLY check resolution confirmed via `gh pr checks 91` at head
+  `e91543e6504b9c96769baf91809cd8ccb41290bc`: `structural-health`,
+  `browser-smoke-gate`, `required-build-gate`, `visual-regression-gate`,
+  `external-health-contract`, and `verify-deployment` are all `pass` (no
+  longer `pending` as they were at handoff time for the prior run). The
+  three `Vercel – *` deployment checks (`asclepios-health-web`,
+  `asclepios-sleep-api`, `asclepios-sleep-web`) `fail` only on the same
+  pre-existing `build-rate-limit` infra quota condition noted in every
+  prior retest in this record — not a code defect, not required for
+  CODE_ONLY evidence. `Vercel – asclepios-health` and `Vercel Preview
+  Comments` `pass`.
+- This run's own commit (recorded below) supersedes `e91543e` as the new
+  PR #91 head once pushed. With this cycle's checks confirmed green and
+  two consecutive controller-dispatched cycles now proven end to end, the
+  "repeated cycle" acceptance item for Goal `AUTOMATION-LOOP-VALIDATION-001`
+  is satisfied; remaining scope is Owner/controller review before any move
+  to `COMPLETE`.
