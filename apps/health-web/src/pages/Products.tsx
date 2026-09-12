@@ -8,7 +8,7 @@ import "../styles/products.css";
 
 type ChipFilter = "all" | HealthProductCategory;
 
-const CHIP_VALUES: ChipFilter[] = ["all", "night", "day"];
+const CHIP_VALUES: ChipFilter[] = ["all", "sleep", "calm", "gutMood", "bundles"];
 
 export default function Products() {
   const [filter, setFilter] = useState<ChipFilter>("all");
@@ -41,16 +41,20 @@ export default function Products() {
           </div>
         </section>
 
-        <section className="health-products-grid">
-          {visibleProducts.map((product) => (
-            <article className="health-product-card" key={product.slug}>
-              <span className="health-status">{t("health.status.comingSoon")}</span>
-              <p className="health-product-timing">{t(product.timingKey)}</p>
-              <h2>{t(product.nameKey)}</h2>
-              <p>{t(product.descriptionKey)}</p>
-            </article>
-          ))}
-        </section>
+        {visibleProducts.length > 0 ? (
+          <section className="health-products-grid">
+            {visibleProducts.map((product) => (
+              <article className="health-product-card" key={product.slug}>
+                <span className="health-status">{t("health.status.comingSoon")}</span>
+                <p className="health-product-timing">{t(product.timingKey)}</p>
+                <h2>{t(product.nameKey)}</h2>
+                <p>{t(product.descriptionKey)}</p>
+              </article>
+            ))}
+          </section>
+        ) : (
+          <p className="health-products-empty">{t("health.products.emptyCategory")}</p>
+        )}
 
         <p className="health-product-imagery-note health-products-footnote">
           {t("health.products.imageryNote")}
