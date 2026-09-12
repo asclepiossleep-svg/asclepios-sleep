@@ -47,7 +47,11 @@ if (reference?.path) {
   const file = resolveManifestRelative(reference.path);
   assert(fs.existsSync(file), `approved reference missing: ${reference.path}`);
   if (fs.existsSync(file) && reference.sha256) {
-    assert(sha256(file) === reference.sha256, 'approved reference hash mismatch');
+    const actualReferenceHash = sha256(file);
+    assert(
+      actualReferenceHash === reference.sha256,
+      `approved reference hash mismatch: manifest=${reference.sha256} actual=${actualReferenceHash}`,
+    );
   }
 }
 
@@ -63,7 +67,11 @@ for (const asset of manifest.assets || []) {
   const file = resolveManifestRelative(asset.path);
   assert(fs.existsSync(file), `approved asset missing: ${asset.path}`);
   if (fs.existsSync(file) && asset.sha256) {
-    assert(sha256(file) === asset.sha256, `${asset.id || 'asset'} hash mismatch`);
+    const actualAssetHash = sha256(file);
+    assert(
+      actualAssetHash === asset.sha256,
+      `${asset.id || 'asset'} hash mismatch: manifest=${asset.sha256} actual=${actualAssetHash}`,
+    );
   }
   listedPaths.add(path.normalize(asset.path));
 }
