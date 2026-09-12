@@ -4,33 +4,12 @@ import HealthHeader from "../components/HealthHeader";
 import HealthFooter from "../components/HealthFooter";
 import BotanicalAccent from "../components/BotanicalAccent";
 import SleepAppLink from "../components/SleepAppLink";
-import heroPhoto from "../assets/hero/health-hero-sunrise.webp";
-import approvedHomeReference from "../assets/pages/home/v1/approved-home-reference.png";
+import heroPhoto from "../assets/pages/home/v1/web/health-home-hero-v1.webp";
+import productsCardImage from "../assets/pages/home/v1/web/health-home-products-card-v1.webp";
+import sleepAppCardImage from "../assets/pages/home/v1/web/health-home-sleep-app-card-v1.webp";
 import learningCardImage from "../assets/pages/home/v1/web/health-home-learning-card-v1.webp";
 import "../styles/home.css";
 import "../styles/home-approved-v1.css";
-
-type ReferenceCropProps = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  label: string;
-};
-
-function ReferenceCrop({ x, y, width, height, label }: ReferenceCropProps) {
-  return (
-    <svg
-      className="health-approved-crop"
-      viewBox={`${x} ${y} ${width} ${height}`}
-      role="img"
-      aria-label={label}
-      preserveAspectRatio="xMidYMid slice"
-    >
-      <image href={approvedHomeReference} width="864" height="1536" />
-    </svg>
-  );
-}
 
 export default function Home() {
   return (
@@ -64,7 +43,7 @@ export default function Home() {
           <div className="health-destination-list">
             <Link className="health-destination-card" to="/products">
               <span className="health-destination-media approved-photo">
-                <ReferenceCrop x={101} y={764} width={330} height={201} label="Asclepios Health products" />
+                <img src={productsCardImage} alt="" aria-hidden="true" />
               </span>
               <span className="health-destination-body">
                 <h3>{t("health.card.products.title")}</h3>
@@ -75,7 +54,7 @@ export default function Home() {
 
             <SleepAppLink className="health-destination-card">
               <span className="health-destination-media approved-photo">
-                <ReferenceCrop x={101} y={980} width={330} height={180} label="Asclepios Sleep app" />
+                <img src={sleepAppCardImage} alt="" aria-hidden="true" />
               </span>
               <span className="health-destination-body">
                 <h3>{t("health.card.sleepApp.title")}</h3>
