@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
+import Sleep from "./pages/Sleep";
 import Learn from "./pages/Learn";
 import { useLocale } from "./i18n/useLocale";
 
@@ -13,6 +14,7 @@ export default function App() {
     <Routes key={locale}>
       <Route path="/" element={<Home />} />
       <Route path="/products" element={<Products />} />
+      <Route path="/sleep" element={<Sleep />} />
       <Route path="/learn" element={<Learn />} />
     </Routes>
   );

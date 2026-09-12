@@ -105,6 +105,36 @@ for (const scenario of scenarios) {
     });
 
     console.log(`PASS health ${scenario.name} products: heading + all three Phase-1 product names render, "Sleep" chip shows all three, "Calm" chip shows honest empty state, "All Products" restores all three, no horizontal overflow, no runtime console errors, no failed network requests`);
+
+    const sleepResponse = await page.goto(`${baseURL}/sleep`, { waitUntil: 'networkidle', timeout: 30_000 });
+    if (!sleepResponse || !sleepResponse.ok()) {
+      throw new Error(`sleep page returned HTTP ${sleepResponse?.status() ?? 'no response'}`);
+    }
+
+    await page.locator('h1', { hasText: 'Your night, organised.' }).waitFor({ state: 'visible', timeout: 10_000 });
+
+    const sleepFeatureTitles = ["Tonight's Plan", '30-Day Programme', 'Sleep Intelligence', 'History'];
+    for (const title of sleepFeatureTitles) {
+      await page.locator('.health-sleep-feature-card', { hasText: title }).waitFor({ state: 'visible', timeout: 5_000 });
+    }
+
+    await page.locator('.health-sleep-banner', { hasText: 'Ready for tonight?' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const sleepOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    if (sleepOverflow) {
+      throw new Error('sleep page has horizontal overflow');
+    }
+
+    if (pageErrors.length > 0) throw new Error(`uncaught browser error(s) on sleep page: ${pageErrors.join(' | ')}`);
+    if (consoleErrors.length > 0) throw new Error(`console error(s) on sleep page: ${consoleErrors.join(' | ')}`);
+    if (requestFailures.length > 0) throw new Error(`failed network request(s) on sleep page: ${requestFailures.join(' | ')}`);
+
+    await page.screenshot({
+      path: `${outputDir}/${scenario.name}-sleep.png`,
+      fullPage: true,
+    });
+
+    console.log(`PASS health ${scenario.name} sleep: heading + all four feature cards render, closing banner renders, no horizontal overflow, no runtime console errors, no failed network requests`);
   } catch (error) {
     failed = true;
     await page.screenshot({

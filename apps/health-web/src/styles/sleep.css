@@ -1,0 +1,60 @@
+.health-sleep-intro {
+  padding-bottom: 8px;
+}
+
+.health-sleep-actions {
+  margin-top: 24px;
+  max-width: none;
+}
+
+.health-sleep-features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 28px 6vw 0;
+}
+
+.health-sleep-feature-card h2 {
+  font-size: 1.05rem;
+  margin: 2px 0 0;
+}
+
+.health-sleep-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: flex-start;
+  margin: 40px 6vw 64px;
+  padding: 32px 28px;
+  background: var(--hw-navy);
+  color: #ffffff;
+  border-radius: var(--hw-radius-lg);
+}
+
+.health-sleep-banner h2 {
+  color: #ffffff;
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+
+.health-sleep-banner p {
+  margin: 0;
+  color: #d6dcee;
+  line-height: 1.5;
+}
+
+@media (min-width: 860px) {
+  .health-sleep-actions {
+    flex-direction: row;
+  }
+
+  .health-sleep-features {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .health-sleep-banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

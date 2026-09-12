@@ -64,5 +64,19 @@
   "health.placeholder.backHome": "返回首頁",
   "health.footer.brandLine": "更好嘅人 · 更光明嘅未來",
   "health.footer.home": "首頁",
-  "health.footer.rights": "版權所有，不得轉載。"
+  "health.footer.rights": "版權所有，不得轉載。",
+  "health.sleep.kicker": "ASCLEPIOS 睡眠 APP",
+  "health.sleep.title": "你嘅每一晚，井井有條。",
+  "health.sleep.lead": "一個平靜、以手機為先嘅同伴，將睡眠科學變成一個簡短嘅每晚routine —— 唔會變成功課。",
+  "health.sleep.feature.tonight.title": "今晚計劃",
+  "health.sleep.feature.tonight.body": "最多三個優先步驟，唔會超過你需要嘅。",
+  "health.sleep.feature.programme.title": "30日課程",
+  "health.sleep.feature.programme.body": "一條會跟住你每晚變化調整嘅引導路徑。",
+  "health.sleep.feature.intelligence.title": "睡眠智能",
+  "health.sleep.feature.intelligence.body": "節律、平靜、身體同支持環境 —— 一齊解讀，而唔係獨立嘅數據。",
+  "health.sleep.feature.history.title": "歷史記錄",
+  "health.sleep.feature.history.body": "簡單嘅每朝打卡，慢慢累積成清晰嘅全貌。",
+  "health.sleep.banner.title": "準備好今晚未？",
+  "health.sleep.banner.body": "幾分鐘內建立免費帳戶，即可獲得你嘅第一個計劃。",
+  "health.sleep.banner.cta": "立即開始"
 }
