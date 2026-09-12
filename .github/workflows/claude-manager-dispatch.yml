@@ -25,7 +25,6 @@ permissions:
   issues: write
   pull-requests: write
   actions: write
-  id-token: write
 
 jobs:
   claude-respond:
@@ -114,7 +113,6 @@ jobs:
           show_full_output: true
           allowed_bots: "github-actions"
           claude_args: >-
-            --dangerously-skip-permissions
             --model claude-sonnet-5
             --max-turns 150
             --allowedTools "Bash(npm ci),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(node scripts/sum-health-check.mjs),Bash(git status),Bash(git diff),Bash(git log),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*),Bash(gh issue comment:*),Edit,Write,Read,Glob,Grep"
