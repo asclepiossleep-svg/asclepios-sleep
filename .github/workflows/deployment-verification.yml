@@ -43,6 +43,33 @@ jobs:
       - name: Verify deployed routes with bounded retries
         run: node scripts/verify-deployment.mjs
 
+      - name: Resolve recovered deployment blocker
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REVISION: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title='[AMANDA-BLOCKER] Deployment verification failed'
+          existing="$(gh issue list --repo "$REPOSITORY" --state open --search '"[AMANDA-BLOCKER] Deployment verification failed" in:title' --limit 50 --json number,body | jq -r --arg url "$DEPLOYMENT_URL" '.[] | select(.body | contains($url)) | .number' | head -n 1)"
+
+          if [ -n "$existing" ]; then
+            printf -v body '%s\n' \
+              '[AMANDA-RECOVERY] RECOVERED' \
+              '' \
+              "VERIFIED URL: ${DEPLOYMENT_URL}" \
+              "PROFILE: ${VERIFY_PROFILE}" \
+              "REVISION: ${REVISION}" \
+              "RUN: ${RUN_URL}" \
+              '' \
+              'COMPLETION CRITERION: deterministic deployment verification passed.'
+            gh issue comment "$existing" --repo "$REPOSITORY" --body "$body"
+            gh issue close "$existing" --repo "$REPOSITORY" --reason completed
+          fi
+
       - name: Escalate failed deployment verification
         if: ${{ failure() }}
         env:
@@ -64,7 +91,7 @@ jobs:
             '' \
             'EXACT NEXT ACTION: Open the failed verification run, identify the failing route/check, restore or redeploy the affected app, then rerun deployment verification.'
 
-          existing="$(gh issue list --repo "$REPOSITORY" --state open --search '"[AMANDA-BLOCKER] Deployment verification failed" in:title' --limit 1 --json number --jq '.[0].number // empty')"
+          existing="$(gh issue list --repo "$REPOSITORY" --state open --search '"[AMANDA-BLOCKER] Deployment verification failed" in:title' --limit 50 --json number,body | jq -r --arg url "$DEPLOYMENT_URL" '.[] | select(.body | contains($url)) | .number' | head -n 1)"
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --repo "$REPOSITORY" --body "$body"
           else
