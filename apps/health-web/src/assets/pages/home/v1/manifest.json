@@ -21,6 +21,28 @@
   },
   "assets": [
     {
+      "id": "home-products-card",
+      "role": "products_card",
+      "path": "./web/health-home-products-card-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "a44f04a181f33675009ea2279c8079c1c267c72162baf834674e3d98f99e8045",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Extracted from the owner-approved Home reference; no substitute imagery used."
+    },
+    {
+      "id": "home-sleep-app-card",
+      "role": "sleep_app_card",
+      "path": "./web/health-home-sleep-app-card-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "b24cd1b3b4b5246936265b01a92c8ee2ea9fb1fa371557fce9075453111844e8",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Extracted from the owner-approved Home reference; no substitute imagery used."
+    },
+    {
       "id": "home-learning-card",
       "role": "learning_card",
       "path": "./web/health-home-learning-card-v1.webp",
