@@ -4,7 +4,7 @@
   "goal_id": "HEALTH-VISUAL-PILOT-001",
   "page": "home",
   "version": "v1",
-  "status": "DRAFT",
+  "status": "IMPLEMENTING",
   "owner_approval": {
     "status": "APPROVED",
     "approved_by": "Edmund",
@@ -45,8 +45,8 @@
   "final_authority_rule": "The page manifest may record page-level COMPLETE, but only the existing Amanda Goal Controller may transition the Goal to COMPLETE.",
   "delivery_evidence": {
     "commit_sha": "",
-    "pr_number": 0,
-    "pr_url": "",
+    "pr_number": 116,
+    "pr_url": "https://github.com/asclepiossleep-svg/asclepios-sleep/pull/116",
     "vercel_preview_url": "",
     "vercel_deployment_id": "",
     "desktop_evidence": { "status": "PENDING", "screenshot_path": "", "sha256": "", "verified_at": "" },
