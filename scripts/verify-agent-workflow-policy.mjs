@@ -6,24 +6,62 @@ const claudeWorkflows = [
 ];
 
 const privilegedWorkflows = [
-  ...claudeWorkflows,
-  { name: 'Amanda goal controller', path: '.github/workflows/amanda-goal-controller.yml' },
-  { name: 'Claude quota retry', path: '.github/workflows/claude-quota-retry.yml' },
-  { name: 'deployment verification', path: '.github/workflows/deployment-verification.yml' },
+  {
+    name: 'manager',
+    path: '.github/workflows/claude-manager-dispatch.yml',
+    permissions: /^permissions:\n  contents: write\n  issues: write\n  pull-requests: write\n  actions: write\n  id-token: write$/m,
+    timeout: /^    timeout-minutes: 45$/m,
+  },
+  {
+    name: 'interactive',
+    path: '.github/workflows/claude.yml',
+    permissions: /^permissions:\n  contents: write\n  pull-requests: write\n  issues: write\n  actions: read\n  id-token: write$/m,
+    timeout: /^    timeout-minutes: 55$/m,
+  },
+  {
+    name: 'Amanda goal controller',
+    path: '.github/workflows/amanda-goal-controller.yml',
+    permissions: /^    permissions:\n      contents: read\n      issues: write\n      actions: write\n      pull-requests: read$/m,
+    timeout: /^    timeout-minutes: 10$/m,
+  },
+  {
+    name: 'Claude quota retry',
+    path: '.github/workflows/claude-quota-retry.yml',
+    permissions: /^permissions:\n  issues: write\n  contents: read$/m,
+    timeout: /^    timeout-minutes: 5$/m,
+  },
+  {
+    name: 'deployment verification',
+    path: '.github/workflows/deployment-verification.yml',
+    permissions: /^permissions:\n  contents: read\n  issues: write$/m,
+    timeout: /^    timeout-minutes: 10$/m,
+  },
 ];
 
 const violations = [];
 function requirePattern(content, pattern, message) { if (!pattern.test(content)) violations.push(message); }
 function forbidPattern(content, pattern, message) { if (pattern.test(content)) violations.push(message); }
+function requireSingleMatch(content, pattern, message) {
+  const matches = content.match(pattern) || [];
+  if (matches.length !== 1) violations.push(`${message} (found ${matches.length})`);
+}
 
 for (const workflow of privilegedWorkflows) {
   const content = fs.readFileSync(workflow.path, 'utf8');
   const prefix = `${workflow.name} workflow`;
-  // Explicit permissions may be scoped at workflow or job level. Job-level scoping is
-  // intentionally accepted because it can be narrower than one workflow-wide grant.
-  requirePattern(content, /^\s*permissions:\s*$/m, `${prefix} must declare explicit GITHUB_TOKEN permissions at workflow or job scope`);
-  requirePattern(content, /^\s*timeout-minutes:\s*[1-9][0-9]*\s*$/m, `${prefix} must define a bounded job timeout`);
+
+  // Fail closed on the exact least-privilege permission contract already required
+  // by each workflow. This prevents a job-level override or a newly-added write
+  // scope from silently broadening GITHUB_TOKEN authority.
+  requireSingleMatch(content, /^\s*permissions:\s*(?:write-all)?\s*$/gm, `${prefix} must have exactly one permissions declaration`);
+  requirePattern(content, workflow.permissions, `${prefix} permissions must match its approved least-privilege contract`);
   forbidPattern(content, /^\s*permissions:\s*write-all\s*$/m, `${prefix} must never use write-all GITHUB_TOKEN permissions`);
+
+  // These privileged workflows currently have one execution job each. Require
+  // exactly one timeout and bind it to the approved job indentation/value so a
+  // second unbounded privileged job cannot be added without changing this policy.
+  requireSingleMatch(content, /^\s*timeout-minutes:\s*[1-9][0-9]*\s*$/gm, `${prefix} must have exactly one bounded job timeout`);
+  requirePattern(content, workflow.timeout, `${prefix} timeout must match its approved bounded runtime`);
 }
 
 for (const workflow of claudeWorkflows) {
