@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   DEPLOYMENT_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment_url || github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
@@ -41,3 +42,31 @@ jobs:
 
       - name: Verify deployed routes with bounded retries
         run: node scripts/verify-deployment.mjs
+
+      - name: Escalate failed deployment verification
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REVISION: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title='[AMANDA-BLOCKER] Deployment verification failed'
+          printf -v body '%s\n' \
+            '[AMANDA-RECOVERY] BLOCKED' \
+            '' \
+            "CAUSE: Deterministic deployment verification failed for ${DEPLOYMENT_URL}." \
+            "PROFILE: ${VERIFY_PROFILE}" \
+            "REVISION: ${REVISION}" \
+            "RUN: ${RUN_URL}" \
+            '' \
+            'EXACT NEXT ACTION: Open the failed verification run, identify the failing route/check, restore or redeploy the affected app, then rerun deployment verification.'
+
+          existing="$(gh issue list --repo "$REPOSITORY" --state open --search '"[AMANDA-BLOCKER] Deployment verification failed" in:title' --limit 1 --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$REPOSITORY" --title "$title" --body "$body"
+          fi
