@@ -80,7 +80,7 @@ Each check below is named to match the Goal Issue's required check list:
 | `approved-asset-only` | (a) every image file under the pages root is claimed by some manifest; (b) every asset/reference path is confined (no `../` traversal, no absolute paths) to its version directory, and each asset additionally to its declared role subdirectory (`source/`, `web/`, `mobile/`); (c) any image anywhere else under `apps/health-web/src/assets` is a hard failure unless it is on the explicit pre-contract grandfather list (the existing brand mark and hero photo) — this closes the gap where production code could import an unmanifested local image outside `src/assets/pages` |
 | `no-external-visuals` | no `apps/health-web/src` `.tsx`/`.ts`/`.css` file references a remote `http(s)` image URL |
 | `no-unapproved-generation` | every listed asset (and the reference, once a version is `APPROVED`) carries `owner_approved: true` and a non-empty `approval_record` |
-| `approved-evidence-complete` | an `APPROVED` manifest must carry non-null/non-empty `delivery_evidence.*`, mutually-consistent SHAs across the recorded evidence fields, `verification.visual_desktop`/`visual_mobile` both `PASS`, and a recorded `last_verified_at` — a manifest cannot flip to `APPROVED` on an empty evidence trail |
+| `approved-evidence-complete` | an `APPROVED` manifest must carry non-null/non-empty `delivery_evidence.*`, well-formed (40-hex) commit SHAs, `pr_head_sha`/`ci_tested_sha`/`vercel_preview_sha` mutually consistent with each other, at least one `source`/`web`/`mobile` asset each, `verification.visual_desktop`/`visual_mobile` both `PASS`, and a recorded `last_verified_at` — a manifest cannot flip to `APPROVED` on an empty evidence trail |
 
 This script has no third-party dependency and is safe to run inside
 `required-build-gate.yml` for every PR — when `apps/health-web/src/assets/pages`
@@ -91,6 +91,24 @@ positive and negative fixtures for every check above, including path
 traversal, role-directory confinement, and incomplete `APPROVED` evidence —
 so the enforcement logic itself is proven, not just its happy path against
 the current empty `PENDING_OWNER_ASSET` manifest.
+
+## Evidence-SHA model: why `manifest_commit_sha` is not required to equal the others
+
+`pr_head_sha`, `ci_tested_sha` and `vercel_preview_sha` all describe the same
+thing — the one commit that was CI-tested and Vercel-deployed — and
+`approved-evidence-complete` requires them to agree.
+
+`manifest_commit_sha` is deliberately excluded from that equality. It names
+the commit that finalized this manifest's approved content (the assets,
+their hashes, and the approval fields). That commit necessarily already
+exists and is already known by the time it is recorded — recording it is
+always done by a later, evidence-only commit, because a commit cannot embed
+its own resulting hash inside its own content. Requiring `manifest_commit_sha`
+to equal the live PR head would therefore make the field impossible to
+complete honestly (this was flagged by SUM checkpoint review on PR #115 and
+is now closed). The check still requires `manifest_commit_sha` to be
+non-null and shaped like a real 40-hex git commit SHA; it just does not
+require it to be identical to the still-moving PR head.
 
 ## What is intentionally not in this script
 

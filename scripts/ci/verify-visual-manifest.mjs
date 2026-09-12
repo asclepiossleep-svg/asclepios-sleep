@@ -27,6 +27,7 @@ const KNOWN_GOAL_IDS = new Set(['HEALTH-VISUAL-PILOT-001']);
 const STATUSES = new Set(['PENDING_OWNER_ASSET', 'APPROVED', 'SUPERSEDED', 'REJECTED']);
 const ASSET_ROLES = new Set(['source', 'web', 'mobile']);
 const SHA256_RE = /^[a-f0-9]{64}$/;
+const GIT_SHA_RE = /^[a-f0-9]{40}$/;
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
 const SOURCE_SCAN_EXTENSIONS = new Set(['.tsx', '.ts', '.css']);
 
@@ -304,10 +305,32 @@ export function verifyManifests(repoRoot) {
           fail('approved-evidence-complete', `${relManifest} status is APPROVED but delivery_evidence.${key} is not a recorded value`);
         }
       }
-      const evidenceShas = [evidence.pr_head_sha, evidence.ci_tested_sha, evidence.manifest_commit_sha, evidence.vercel_preview_sha]
+      // SHA-shaped fields must actually look like a git commit SHA, not just
+      // any non-empty string.
+      for (const key of ['pr_head_sha', 'ci_tested_sha', 'manifest_commit_sha', 'vercel_preview_sha']) {
+        const value = evidence[key];
+        if (typeof value === 'string' && value && !GIT_SHA_RE.test(value)) {
+          fail('approved-evidence-complete', `${relManifest} delivery_evidence.${key} "${value}" is not a 40-character git commit SHA`);
+        }
+      }
+      // pr_head_sha/ci_tested_sha/vercel_preview_sha describe the one commit
+      // that was tested and deployed, so they must agree with each other.
+      // manifest_commit_sha is deliberately excluded from this equality set:
+      // it names the commit that finalized this manifest's approved content,
+      // which is necessarily an earlier, already-existing commit recorded by
+      // a later evidence-only commit -- requiring it to equal the current PR
+      // head would make the field self-referential (a commit cannot contain
+      // its own resulting hash) and impossible to complete honestly.
+      const evidenceShas = [evidence.pr_head_sha, evidence.ci_tested_sha, evidence.vercel_preview_sha]
         .filter((v) => typeof v === 'string' && v);
       if (evidenceShas.length > 1 && new Set(evidenceShas).size > 1) {
         fail('approved-evidence-complete', `${relManifest} status is APPROVED but delivery_evidence SHAs disagree: ${JSON.stringify(evidence)}`);
+      }
+      const assetRoles = new Set((Array.isArray(manifest.assets) ? manifest.assets : []).map((a) => a && a.role));
+      for (const role of ASSET_ROLES) {
+        if (!assetRoles.has(role)) {
+          fail('approved-evidence-complete', `${relManifest} status is APPROVED but assets[] has no "${role}" derivative`);
+        }
       }
       const verification = manifest.verification || {};
       if (verification.visual_desktop !== 'PASS') {

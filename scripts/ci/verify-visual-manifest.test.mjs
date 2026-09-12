@@ -103,34 +103,106 @@ test('APPROVED status with null delivery_evidence and NOT_RUN verification is re
   fs.rmSync(repoRoot, { recursive: true, force: true });
 });
 
-test('a fully complete APPROVED manifest with real assets on disk passes', () => {
-  const { repoRoot, versionDir } = makeFixtureRepo(baseManifest());
+function completeApprovedManifest(versionDir, overrides = {}) {
   const refSha = writePngFixture(path.join(versionDir, 'approved-home-reference.png'));
+  const sourceSha = writePngFixture(path.join(versionDir, 'source/home-source.png'));
   const webSha = writePngFixture(path.join(versionDir, 'web/home-web.png'));
-  const manifest = baseManifest({
+  const mobileSha = writePngFixture(path.join(versionDir, 'mobile/home-mobile.png'));
+  return baseManifest({
     status: 'APPROVED',
     owner_approval: { approved: true, approved_by: 'edmund', approved_at: '2026-09-12T00:00:00Z', approval_record: 'issue-114-comment-3' },
     approved_reference: { path: 'apps/health-web/src/assets/pages/home/v1/approved-home-reference.png', sha256: refSha },
-    assets: [{
-      role: 'web',
-      path: 'apps/health-web/src/assets/pages/home/v1/web/home-web.png',
-      sha256: webSha,
-      owner_approved: true,
-      approval_record: 'issue-114-comment-3',
-    }],
+    assets: [
+      {
+        role: 'source',
+        path: 'apps/health-web/src/assets/pages/home/v1/source/home-source.png',
+        sha256: sourceSha,
+        owner_approved: true,
+        approval_record: 'issue-114-comment-3',
+      },
+      {
+        role: 'web',
+        path: 'apps/health-web/src/assets/pages/home/v1/web/home-web.png',
+        sha256: webSha,
+        owner_approved: true,
+        approval_record: 'issue-114-comment-3',
+      },
+      {
+        role: 'mobile',
+        path: 'apps/health-web/src/assets/pages/home/v1/mobile/home-mobile.png',
+        sha256: mobileSha,
+        owner_approved: true,
+        approval_record: 'issue-114-comment-3',
+      },
+    ],
     delivery_evidence: {
       pr_url: 'https://github.com/asclepiossleep-svg/asclepios-sleep/pull/115',
+      // manifest_commit_sha intentionally differs from the other three: it
+      // names the earlier commit that finalized this content, recorded by a
+      // later evidence-only commit -- see the comment in verify-visual-manifest.mjs.
       pr_head_sha: 'a'.repeat(40),
       ci_tested_sha: 'a'.repeat(40),
-      manifest_commit_sha: 'a'.repeat(40),
+      manifest_commit_sha: 'b'.repeat(40),
       vercel_preview_url: 'https://example.vercel.app',
       vercel_preview_sha: 'a'.repeat(40),
     },
     verification: { visual_desktop: 'PASS', visual_mobile: 'PASS', last_verified_at: '2026-09-12T00:00:00Z' },
+    ...overrides,
   });
+}
+
+test('a fully complete APPROVED manifest with real assets on disk passes, even though manifest_commit_sha differs from the tested/deployed SHA', () => {
+  const { repoRoot, versionDir } = makeFixtureRepo(baseManifest());
+  const manifest = completeApprovedManifest(versionDir);
   fs.writeFileSync(path.join(versionDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
   const result = verifyManifests(repoRoot);
   assert.deepEqual(result.violations, []);
+  fs.rmSync(repoRoot, { recursive: true, force: true });
+});
+
+test('APPROVED manifest missing a source/mobile derivative is rejected even with matching evidence', () => {
+  const { repoRoot, versionDir } = makeFixtureRepo(baseManifest());
+  const manifest = completeApprovedManifest(versionDir);
+  manifest.assets = manifest.assets.filter((a) => a.role !== 'mobile');
+  fs.writeFileSync(path.join(versionDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  const result = verifyManifests(repoRoot);
+  assert.ok(result.violations.some((v) => v.includes('approved-evidence-complete') && v.includes('no "mobile" derivative')));
+  fs.rmSync(repoRoot, { recursive: true, force: true });
+});
+
+test('APPROVED manifest is rejected when pr_head_sha and vercel_preview_sha disagree', () => {
+  const { repoRoot, versionDir } = makeFixtureRepo(baseManifest());
+  const manifest = completeApprovedManifest(versionDir, {
+    delivery_evidence: {
+      pr_url: 'https://github.com/asclepiossleep-svg/asclepios-sleep/pull/115',
+      pr_head_sha: 'a'.repeat(40),
+      ci_tested_sha: 'a'.repeat(40),
+      manifest_commit_sha: 'b'.repeat(40),
+      vercel_preview_url: 'https://example.vercel.app',
+      vercel_preview_sha: 'c'.repeat(40),
+    },
+  });
+  fs.writeFileSync(path.join(versionDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  const result = verifyManifests(repoRoot);
+  assert.ok(result.violations.some((v) => v.includes('approved-evidence-complete') && v.includes('disagree')));
+  fs.rmSync(repoRoot, { recursive: true, force: true });
+});
+
+test('APPROVED manifest with a malformed (non-hex) delivery SHA is rejected', () => {
+  const { repoRoot, versionDir } = makeFixtureRepo(baseManifest());
+  const manifest = completeApprovedManifest(versionDir, {
+    delivery_evidence: {
+      pr_url: 'https://github.com/asclepiossleep-svg/asclepios-sleep/pull/115',
+      pr_head_sha: 'not-a-real-sha',
+      ci_tested_sha: 'not-a-real-sha',
+      manifest_commit_sha: 'b'.repeat(40),
+      vercel_preview_url: 'https://example.vercel.app',
+      vercel_preview_sha: 'not-a-real-sha',
+    },
+  });
+  fs.writeFileSync(path.join(versionDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  const result = verifyManifests(repoRoot);
+  assert.ok(result.violations.some((v) => v.includes('approved-evidence-complete') && v.includes('not a 40-character git commit SHA')));
   fs.rmSync(repoRoot, { recursive: true, force: true });
 });
 

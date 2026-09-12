@@ -90,11 +90,11 @@
       "additionalProperties": false,
       "properties": {
         "pr_url": { "type": ["string", "null"] },
-        "pr_head_sha": { "type": ["string", "null"] },
-        "ci_tested_sha": { "type": ["string", "null"] },
-        "manifest_commit_sha": { "type": ["string", "null"] },
+        "pr_head_sha": { "type": ["string", "null"], "description": "The PR head commit that was CI-tested and Vercel-deployed. Must agree with ci_tested_sha and vercel_preview_sha once APPROVED." },
+        "ci_tested_sha": { "type": ["string", "null"], "description": "Must agree with pr_head_sha and vercel_preview_sha once APPROVED." },
+        "manifest_commit_sha": { "type": ["string", "null"], "description": "The commit that finalized this manifest's approved content (assets/hashes/approval fields). Recorded by a later, evidence-only commit, so it is expected to differ from pr_head_sha/ci_tested_sha/vercel_preview_sha -- a commit cannot contain its own resulting SHA." },
         "vercel_preview_url": { "type": ["string", "null"] },
-        "vercel_preview_sha": { "type": ["string", "null"] }
+        "vercel_preview_sha": { "type": ["string", "null"], "description": "Must agree with pr_head_sha and ci_tested_sha once APPROVED." }
       }
     },
     "verification": {
