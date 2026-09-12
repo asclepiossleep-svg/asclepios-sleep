@@ -25,9 +25,12 @@ for (const workflow of workflows) {
   const content = fs.readFileSync(workflow.path, 'utf8');
   const prefix = `${workflow.name} workflow`;
 
+  // Match only an actual Claude CLI argument line. Mentions in YAML comments or
+  // explanatory prose must not trip the gate, otherwise the policy can fail on
+  // documentation that explicitly says the bypass is forbidden.
   forbidPattern(
     content,
-    /dangerously-skip-permissions/,
+    /^\s*--dangerously-skip-permissions(?:\s|$)/m,
     `${prefix} must never use --dangerously-skip-permissions`,
   );
   requirePattern(
