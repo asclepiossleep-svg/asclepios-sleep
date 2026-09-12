@@ -37,16 +37,27 @@ phone browser.
 Update this list as each action is completed — don't re-ask for something
 already done.
 
-1. **Not yet done:** Create a free GitHub account (skip if you already have
-   one) and one new empty repository. Exact steps are in
-   `DEPLOYMENT.md` §1. This is the only step nobody but Edmund can do —
-   everything after it (Vercel project, Supabase database, environment
-   variables, first deploy) is configured by Claude Code once the repo
-   exists.
-2. Not yet requested — comes after #1: authorize Vercel against that GitHub
-   repo (one click).
-3. Not yet requested — comes after #2: paste one connection string from
-   Supabase into Vercel's environment variables screen.
+1. ~~Create a free GitHub account and one new empty repository.~~ **Done** —
+   repo exists, Vercel and Supabase are both connected, four Vercel
+   projects are live (`asclepios-sleep-web`, `asclepios-sleep-api`,
+   `asclepios-health-web`, `asclepios-health`).
+2. ~~Authorize Vercel against the GitHub repo.~~ **Done.**
+3. ~~Paste one Supabase connection string into Vercel's environment
+   variables.~~ **Done.**
+4. **Not yet done — current single blocking action:** attach the 4-page
+   Asclepios product catalog (the one referenced in the issue #61
+   correction, showing SLEEPTAPE™ Nasal Strips / DAY MODE™ / REST & SLEEP
+   MODE™ packaging) directly to issue #61 as a GitHub file attachment, or
+   commit it into the repo at `docs/product/catalog/`. This is the only
+   thing blocking real product imagery on the Health homepage's Products
+   card — three independent Rex sessions (PR #63) have each done a full
+   repo/git-history/issue/PR search and confirmed the file is not
+   retrievable from anywhere Claude Code has access to. No further
+   automated diagnosis of this will find a different answer; only the
+   owner can supply the file. (Alternative that also unblocks it: a
+   read-only Shopify Admin API token with `read_products` scope, added as
+   a GitHub Actions secret, if the real photos already exist on the
+   Shopify draft listings.)
 
 Each of these gets asked for on its own, only once the previous one is
 done — never all three at once.
