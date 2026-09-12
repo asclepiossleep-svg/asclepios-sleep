@@ -23,7 +23,7 @@
     "This manifest and its assets are scoped to the Home page pilot only; no other apps/health-web page is governed by this file."
   ],
   "delivery_evidence": {
-    "pr_url": null,
+    "pr_url": "https://github.com/asclepiossleep-svg/asclepios-sleep/pull/115",
     "pr_head_sha": null,
     "ci_tested_sha": null,
     "manifest_commit_sha": null,
