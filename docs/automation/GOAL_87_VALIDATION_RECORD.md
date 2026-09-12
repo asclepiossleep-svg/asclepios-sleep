@@ -80,3 +80,43 @@ without affecting behavior.
     new PR #91 head once pushed; the binding check above is therefore a
     point-in-time verification of the pre-retest state, immediately
     before this run's own commit moves the head forward again.
+
+## Controller-dispatched exercise of PR #95's fix (Run 34660459558)
+
+- Manager instruction for this run (verified received and readable
+  verbatim, matching exactly the `Exact Next Action` field of the prior
+  `Rex Outcome: PROGRESS` handoff, Run `34658399572`): confirm receipt of
+  the controller-supplied `manager_instruction`, confirm PR #95's
+  `allowed_bots` fix let the `claude-code-action` step complete
+  successfully on an actual controller dispatch (producing a real
+  structured handoff, not the `NO_PROGRESS` fallback), and re-verify PR
+  #91's commit/PR binding at the then-current head.
+- Dispatch identity confirmed via `gh api
+  repos/asclepiossleep-svg/asclepios-sleep/actions/runs/34660459558`:
+  `event: workflow_dispatch`, `actor: github-actions[bot]`,
+  `triggering_actor: github-actions[bot]`, `head_branch: main`. No new
+  owner `[MANAGER]` comment exists on Goal Issue #87 between the prior
+  `[AMANDA-CONTROLLER] ACTIVE` post and this run — the dispatch was the
+  Amanda Goal Controller's automatic `workflow_dispatch` call, not an
+  owner-triggered one.
+- This is exactly the actor identity (`github-actions[bot]` via
+  `workflow_dispatch`) that PR #95's `allowed_bots: "github-actions"`
+  fix was written to admit. Because this Rex run is executing at all —
+  reading the goal, performing this verification, and about to post a
+  real `Rex Outcome` handoff rather than the workflow's `NO_PROGRESS`
+  fallback step — the fix is confirmed **EXERCISED**, not merely
+  code-reviewed: the previously `UNKNOWN` controller → `workflow_dispatch`
+  → Rex → structured-handoff cycle has now completed successfully once.
+- Independent PR/commit binding re-verified this run against
+  `https://github.com/asclepiossleep-svg/asclepios-sleep/pull/91`:
+  `gh pr view 91` reports `state: OPEN`, `mergeable: MERGEABLE`,
+  `headRefOid: e7c8b41d4f6cdace54423899308a8285d262056a` — matching
+  exactly the `Commit SHA` recorded in the prior handoff (Run
+  `34660206972`) with no drift. Required CODE_ONLY checks on that commit
+  (`gh pr checks 91`) are all `pass`: `structural-health`,
+  `browser-smoke-gate`, `required-build-gate`, `visual-regression-gate`,
+  `external-health-contract`. The four `Vercel – *` checks `fail` only on
+  the same pre-existing `build-rate-limit` infra quota condition noted in
+  prior retests — not a code defect, not required for CODE_ONLY evidence.
+- This retest's own commit (recorded below) supersedes `e7c8b41` as the
+  new PR #91 head once pushed.
