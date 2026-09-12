@@ -116,7 +116,7 @@ jobs:
           claude_args: >-
             --model claude-sonnet-5
             --max-turns 150
-            --allowedTools "Bash(npm ci),Bash(npm run build),Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck),Bash(node scripts/sum-health-check.mjs),Bash(git status),Bash(git diff),Bash(git log),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*),Bash(gh issue comment:*),Edit,Write,Read,Glob,Grep"
+            --allowedTools "Bash(npm ci:*),Bash(npm run build:*),Bash(npm run test:*),Bash(npm run lint:*),Bash(npm run typecheck:*),Bash(node scripts/sum-health-check.mjs),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git fetch:*),Bash(git checkout:*),Bash(git switch:*),Bash(git branch:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git merge:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(gh api:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh issue view:*),Bash(gh issue comment:*),Edit,Write,Read,Glob,Grep"
           prompt: |
             You are Rex, the sole implementation worker for the current Amanda OS Goal.
 
