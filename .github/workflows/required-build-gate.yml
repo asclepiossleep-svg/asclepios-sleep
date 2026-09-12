@@ -16,7 +16,7 @@ permissions:
 jobs:
   build:
     name: required-build-gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -27,8 +27,14 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Enforce immutable workflow action pins
+        run: node scripts/ci/check-workflow-pins.mjs
+
+      - name: Enforce deterministic agent workflow security policy
+        run: node scripts/verify-agent-workflow-policy.mjs
+
+      - name: Install dependencies from lockfile
+        run: npm ci --no-audit --no-fund
 
       - name: Build monorepo
         run: npm run build

@@ -16,7 +16,7 @@ permissions:
 jobs:
   browser-smoke:
     name: browser-smoke-gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
@@ -28,8 +28,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install application dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install application dependencies from lockfile
+        run: npm ci --no-audit --no-fund
 
       - name: Build monorepo
         run: npm run build
@@ -39,16 +39,16 @@ jobs:
           npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0
           npx playwright install --with-deps chromium
 
-      - name: Start built web preview
+      - name: Start built Sleep web preview
         run: |
           nohup npm run preview --workspace=apps/web -- --host 127.0.0.1 --port 4173 > /tmp/asclepios-vite-preview.log 2>&1 &
           echo $! > /tmp/asclepios-vite-preview.pid
 
-      - name: Wait for preview checkpoint
+      - name: Wait for Sleep preview checkpoint
         run: |
           for attempt in $(seq 1 30); do
             if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
-              echo "Preview ready on attempt ${attempt}"
+              echo "Sleep preview ready on attempt ${attempt}"
               exit 0
             fi
             sleep 2
@@ -56,20 +56,46 @@ jobs:
           cat /tmp/asclepios-vite-preview.log || true
           exit 1
 
-      - name: Verify desktop and mobile browser rendering
+      - name: Verify Sleep desktop and mobile browser rendering
         env:
           BASE_URL: http://127.0.0.1:4173
         run: node tests/browser-smoke.mjs
+
+      - name: Start built Health web preview
+        run: |
+          nohup npm run preview --workspace=apps/health-web -- --host 127.0.0.1 --port 4174 > /tmp/asclepios-health-vite-preview.log 2>&1 &
+          echo $! > /tmp/asclepios-health-vite-preview.pid
+
+      - name: Wait for Health preview checkpoint
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4174/ > /dev/null; then
+              echo "Health preview ready on attempt ${attempt}"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/asclepios-health-vite-preview.log || true
+          exit 1
+
+      - name: Verify Health desktop and mobile browser rendering
+        env:
+          BASE_URL: http://127.0.0.1:4174
+        run: node tests/health-browser-smoke.mjs
 
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: browser-smoke-${{ github.run_id }}
-          path: artifacts/browser-smoke/
+          path: |
+            artifacts/browser-smoke/
+            artifacts/health-browser-smoke/
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Print preview log on failure
+      - name: Print preview logs on failure
         if: failure()
-        run: cat /tmp/asclepios-vite-preview.log || true
+        run: |
+          cat /tmp/asclepios-vite-preview.log || true
+          cat /tmp/asclepios-health-vite-preview.log || true
