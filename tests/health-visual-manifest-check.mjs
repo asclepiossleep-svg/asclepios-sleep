@@ -83,6 +83,7 @@ if (reference?.path) {
 
 assert(Array.isArray(manifest.assets) && manifest.assets.length > 0, 'manifest must list at least one approved asset');
 const listedPaths = new Set();
+const listedRoles = new Set();
 for (const asset of manifest.assets || []) {
   assert(asset.id && asset.role, 'each asset needs id and role');
   assert(asset.owner_approved === true, `${asset.id || 'asset'} is not owner-approved`);
@@ -104,11 +105,24 @@ for (const asset of manifest.assets || []) {
     );
   }
   listedPaths.add(path.normalize(asset.path));
+  listedRoles.add(asset.role);
 }
 
-// Every Home v1 production asset imported directly by Home.tsx must be declared in the manifest.
+// The approved full-page reference is source-of-truth evidence only. Production Home
+// visuals must be individual, owner-approved, versioned assets in the manifest.
+const requiredHomeRoles = ['hero', 'products_card', 'sleep_app_card', 'learning_card'];
+for (const role of requiredHomeRoles) {
+  assert(listedRoles.has(role), `manifest missing required owner-approved Home visual role: ${role}`);
+}
+
 const homeSource = fs.readFileSync(homePath, 'utf8');
-const importMatches = [...homeSource.matchAll(/from\s+["']\.\.\/assets\/pages\/home\/v1\/(?!approved-home-reference\.png)([^"']+)["']/g)];
+assert(
+  !/ReferenceCrop|approvedHomeReference/.test(homeSource),
+  'Home.tsx must not render crops from the full-page approved reference; use individual manifest-approved assets instead',
+);
+
+// Every Home v1 production asset imported directly by Home.tsx must be declared in the manifest.
+const importMatches = [...homeSource.matchAll(/from\s+["']\.\.\/assets\/pages\/home\/v1\/(?!approved-home-reference\.(?:png|webp))([^"']+)["']/g)];
 for (const match of importMatches) {
   const rel = path.normalize(`./${match[1]}`);
   assert(listedPaths.has(rel), `Home.tsx imports unlisted Home v1 asset: ${rel}`);
@@ -123,4 +137,4 @@ for (const [name, file] of [['Home.tsx', homePath], ['home-approved-v1.css', hom
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('HEALTH_VISUAL_POLICY_PASS: Home v1 manifest, hashes, image signatures, approval binding, and approved-asset policy are valid.');
+console.log('HEALTH_VISUAL_POLICY_PASS: Home v1 manifest, required individual visual roles, hashes, image signatures, approval binding, and approved-asset policy are valid.');
