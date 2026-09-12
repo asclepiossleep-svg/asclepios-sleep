@@ -21,6 +21,17 @@
   },
   "assets": [
     {
+      "id": "home-hero",
+      "role": "hero",
+      "path": "./web/health-home-hero-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Existing owner-approved Asclepios Health Home hero, copied into the versioned Home v1 asset package; no substitute imagery used."
+    },
+    {
       "id": "home-products-card",
       "role": "products_card",
       "path": "./web/health-home-products-card-v1.webp",
