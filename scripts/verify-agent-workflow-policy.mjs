@@ -14,7 +14,7 @@ function forbidPattern(pattern, message) {
 }
 
 forbidPattern(/dangerously-skip-permissions/, 'manager workflow must never use --dangerously-skip-permissions');
-forbidPattern(/^\s*id-token:\s*write\s*$/m, 'manager workflow must not grant id-token: write unless an approved OIDC exchange is implemented');
+requirePattern(/^\s*id-token:\s*write\s*$/m, 'manager workflow must grant id-token: write because the pinned Claude Code action requires GitHub OIDC to bootstrap its app token');
 requirePattern(/^\s*timeout-minutes:\s*[1-9][0-9]*\s*$/m, 'manager workflow must define a bounded job timeout');
 requirePattern(/anthropics\/claude-code-action@[0-9a-f]{40}\b/, 'Claude Code action must be pinned to a full 40-character commit SHA');
 requirePattern(/actions\/checkout@[0-9a-f]{40}\b/, 'actions/checkout must be pinned to a full 40-character commit SHA');
