@@ -19,9 +19,11 @@ function forbidPattern(content, pattern, message) { if (pattern.test(content)) v
 for (const workflow of privilegedWorkflows) {
   const content = fs.readFileSync(workflow.path, 'utf8');
   const prefix = `${workflow.name} workflow`;
-  requirePattern(content, /^permissions:\s*$/m, `${prefix} must declare explicit top-level GITHUB_TOKEN permissions`);
+  // Explicit permissions may be scoped at workflow or job level. Job-level scoping is
+  // intentionally accepted because it can be narrower than one workflow-wide grant.
+  requirePattern(content, /^\s*permissions:\s*$/m, `${prefix} must declare explicit GITHUB_TOKEN permissions at workflow or job scope`);
   requirePattern(content, /^\s*timeout-minutes:\s*[1-9][0-9]*\s*$/m, `${prefix} must define a bounded job timeout`);
-  forbidPattern(content, /^permissions:\s*write-all\s*$/m, `${prefix} must never use write-all GITHUB_TOKEN permissions`);
+  forbidPattern(content, /^\s*permissions:\s*write-all\s*$/m, `${prefix} must never use write-all GITHUB_TOKEN permissions`);
 }
 
 for (const workflow of claudeWorkflows) {
