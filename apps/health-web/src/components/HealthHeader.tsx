@@ -1,12 +1,20 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { t } from "../i18n";
+import { t, setLocale, SUPPORTED_LOCALES } from "../i18n";
+import { useLocale } from "../i18n/useLocale";
 import brandMark from "../assets/brand/asclepios-mark.webp";
 import SleepAppLink from "./SleepAppLink";
+
+const LOCALE_NAMES: Record<string, string> = {
+  en: "English",
+  "zh-HK": "繁體中文",
+  "zh-CN": "简体中文",
+};
 
 export default function HealthHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const activeLocale = useLocale();
 
   function isActive(path: string) {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
@@ -33,6 +41,18 @@ export default function HealthHeader() {
       </nav>
 
       <div className="health-header-actions">
+        <select
+          className="health-lang-select"
+          aria-label={t("health.language.label")}
+          value={activeLocale}
+          onChange={(event) => setLocale(event.target.value)}
+        >
+          {SUPPORTED_LOCALES.map((locale) => (
+            <option key={locale} value={locale}>
+              {LOCALE_NAMES[locale] ?? locale}
+            </option>
+          ))}
+        </select>
         <button type="button" className="health-icon-button" title={t("health.action.searchPending")} aria-disabled="true">
           <span className="sr-only">{t("health.action.search")}</span>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">

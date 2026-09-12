@@ -118,6 +118,22 @@
   color: var(--hw-teal-dark);
 }
 
+.health-lang-select {
+  height: 34px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--hw-border);
+  background: transparent;
+  color: var(--hw-navy);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.health-lang-select:hover {
+  border-color: var(--hw-teal);
+  color: var(--hw-teal-dark);
+}
+
 .health-nav-mobile {
   width: 100%;
   display: flex;

@@ -4,6 +4,7 @@ import HealthHeader from "../components/HealthHeader";
 import HealthFooter from "../components/HealthFooter";
 import BotanicalAccent from "../components/BotanicalAccent";
 import SleepAppLink from "../components/SleepAppLink";
+import { SLEEP_APP_URL } from "../config";
 import heroPhoto from "../assets/hero/health-hero-sunrise.webp";
 import "../styles/home.css";
 
@@ -70,7 +71,9 @@ export default function Home() {
                 </svg>
               </span>
               <span className="health-destination-body">
-                <span className="health-status">{t("health.status.available")}</span>
+                <span className="health-status">
+                  {t(SLEEP_APP_URL ? "health.status.available" : "health.status.comingSoon")}
+                </span>
                 <h3>{t("health.card.sleepApp.title")}</h3>
                 <p>{t("health.card.sleepApp.body")}</p>
                 <span className="health-card-cta">{t("health.card.sleepApp.cta")} →</span>
