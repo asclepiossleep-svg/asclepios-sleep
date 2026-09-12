@@ -2,8 +2,12 @@
 
 Status: pilot implementation, Goal `HEALTH-VISUAL-PILOT-001`
 Parent: `docs/automation/AMANDA_OS_V1_1.md`
-Enforced by: `scripts/ci/verify-visual-manifest.mjs`, wired into
-`required-build-gate.yml`.
+Enforced by: `scripts/ci/verify-visual-manifest.mjs`, wired into the root
+`npm run build` script (`package.json`'s `verify:visual-manifest` step),
+which `required-build-gate.yml` already runs unmodified on every PR. This
+indirection exists because this automation identity's GitHub App
+installation does not have the `workflows` permission scope needed to edit
+`.github/workflows/*.yml` directly.
 
 ## Purpose
 
@@ -68,19 +72,25 @@ Each check below is named to match the Goal Issue's required check list:
 
 | Check | What it verifies |
 |---|---|
-| `manifest-schema` | every `manifest.json` under the pages root is valid JSON, is an object, and `schema_version` is `"1.1"` |
-| `manifest-required-fields` | every required top-level/nested field from `manifest.schema.json` is present with a legal value/shape |
+| `manifest-schema` | every `manifest.json` under the pages root is evaluated against the real `manifest.schema.json` (types, `const`/`enum`, `pattern`, `required`, `additionalProperties: false` — not a hand-rolled duplicate of the schema) |
+| `manifest-required-fields` | fields the schema evaluator can't express on its own (Goal ID membership, non-empty `assets` when `APPROVED`, etc.) |
 | `asset-naming-version` | the manifest's `page`/`version` fields match the directory it lives in, and the version directory matches `v<N>` |
 | `approved-asset-existence` | every asset path with a recorded (non-null) sha256 exists on disk |
 | `approved-asset-hashes` | the sha256 recomputed from disk matches the value recorded in the manifest |
-| `approved-asset-only` | every image file physically present under the pages root is claimed by some manifest, and lives at an approved root (reference file, or `source/`, `web/`, `mobile/`) |
+| `approved-asset-only` | (a) every image file under the pages root is claimed by some manifest; (b) every asset/reference path is confined (no `../` traversal, no absolute paths) to its version directory, and each asset additionally to its declared role subdirectory (`source/`, `web/`, `mobile/`); (c) any image anywhere else under `apps/health-web/src/assets` is a hard failure unless it is on the explicit pre-contract grandfather list (the existing brand mark and hero photo) — this closes the gap where production code could import an unmanifested local image outside `src/assets/pages` |
 | `no-external-visuals` | no `apps/health-web/src` `.tsx`/`.ts`/`.css` file references a remote `http(s)` image URL |
 | `no-unapproved-generation` | every listed asset (and the reference, once a version is `APPROVED`) carries `owner_approved: true` and a non-empty `approval_record` |
+| `approved-evidence-complete` | an `APPROVED` manifest must carry non-null/non-empty `delivery_evidence.*`, mutually-consistent SHAs across the recorded evidence fields, `verification.visual_desktop`/`visual_mobile` both `PASS`, and a recorded `last_verified_at` — a manifest cannot flip to `APPROVED` on an empty evidence trail |
 
 This script has no third-party dependency and is safe to run inside
 `required-build-gate.yml` for every PR — when `apps/health-web/src/assets/pages`
 has no manifests yet it exits 0 with a note; once manifests exist it fails
-the build on any invariant violation.
+the build on any invariant violation. `verifyManifests()` is exported and
+exercised by `scripts/ci/verify-visual-manifest.test.mjs` (`npm run test`) with
+positive and negative fixtures for every check above, including path
+traversal, role-directory confinement, and incomplete `APPROVED` evidence —
+so the enforcement logic itself is proven, not just its happy path against
+the current empty `PENDING_OWNER_ASSET` manifest.
 
 ## What is intentionally not in this script
 
