@@ -120,3 +120,41 @@ without affecting behavior.
   prior retests — not a code defect, not required for CODE_ONLY evidence.
 - This retest's own commit (recorded below) supersedes `e7c8b41` as the
   new PR #91 head once pushed.
+
+## Second consecutive controller-dispatched cycle (Run 34660644375)
+
+- Manager instruction for this run, verified received and readable
+  verbatim (matches exactly the `Exact Next Action` field of the prior
+  `Rex Outcome: PROGRESS` handoff, Run `34660459558`): confirm PR #91's
+  newest commit (`e91543e6504b9c96769baf91809cd8ccb41290bc`) has CODE_ONLY
+  checks resolved to `pass`, and treat this run as the second consecutive
+  controller-dispatched cycle.
+- Dispatch identity confirmed via `gh api
+  repos/asclepiossleep-svg/asclepios-sleep/actions/runs/34660644375`:
+  `event: workflow_dispatch`, `actor: github-actions[bot]`,
+  `triggering_actor: github-actions[bot]`, `head_branch: main` at
+  `d3b1d5ab44d08c491a9271cb524291b418e7fcc2` (includes PR #95). No new
+  owner `[MANAGER]` comment exists on Goal Issue #87 between the prior
+  `[AMANDA-CONTROLLER] ACTIVE` post (for Run `34660459558`) and this run —
+  this dispatch, like the one before it, is the Amanda Goal Controller's
+  automatic `workflow_dispatch` call. This is the **second consecutive**
+  such cycle (the first being Run `34660459558` itself), which is the
+  specific "repeated cycle" evidence this Goal's acceptance criteria call
+  for.
+- CODE_ONLY check resolution confirmed via `gh pr checks 91` at head
+  `e91543e6504b9c96769baf91809cd8ccb41290bc`: `structural-health`,
+  `browser-smoke-gate`, `required-build-gate`, `visual-regression-gate`,
+  `external-health-contract`, and `verify-deployment` are all `pass` (no
+  longer `pending` as they were at handoff time for the prior run). The
+  three `Vercel – *` deployment checks (`asclepios-health-web`,
+  `asclepios-sleep-api`, `asclepios-sleep-web`) `fail` only on the same
+  pre-existing `build-rate-limit` infra quota condition noted in every
+  prior retest in this record — not a code defect, not required for
+  CODE_ONLY evidence. `Vercel – asclepios-health` and `Vercel Preview
+  Comments` `pass`.
+- This run's own commit (recorded below) supersedes `e91543e` as the new
+  PR #91 head once pushed. With this cycle's checks confirmed green and
+  two consecutive controller-dispatched cycles now proven end to end, the
+  "repeated cycle" acceptance item for Goal `AUTOMATION-LOOP-VALIDATION-001`
+  is satisfied; remaining scope is Owner/controller review before any move
+  to `COMPLETE`.
