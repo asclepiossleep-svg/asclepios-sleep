@@ -1,20 +1,34 @@
 import fs from 'node:fs';
 
-const workflows = [
+const claudeWorkflows = [
   { name: 'manager', path: '.github/workflows/claude-manager-dispatch.yml' },
   { name: 'interactive', path: '.github/workflows/claude.yml' },
+];
+
+const privilegedWorkflows = [
+  ...claudeWorkflows,
+  { name: 'Amanda goal controller', path: '.github/workflows/amanda-goal-controller.yml' },
+  { name: 'Claude quota retry', path: '.github/workflows/claude-quota-retry.yml' },
+  { name: 'deployment verification', path: '.github/workflows/deployment-verification.yml' },
 ];
 
 const violations = [];
 function requirePattern(content, pattern, message) { if (!pattern.test(content)) violations.push(message); }
 function forbidPattern(content, pattern, message) { if (pattern.test(content)) violations.push(message); }
 
-for (const workflow of workflows) {
+for (const workflow of privilegedWorkflows) {
+  const content = fs.readFileSync(workflow.path, 'utf8');
+  const prefix = `${workflow.name} workflow`;
+  requirePattern(content, /^permissions:\s*$/m, `${prefix} must declare explicit top-level GITHUB_TOKEN permissions`);
+  requirePattern(content, /^\s*timeout-minutes:\s*[1-9][0-9]*\s*$/m, `${prefix} must define a bounded job timeout`);
+  forbidPattern(content, /^permissions:\s*write-all\s*$/m, `${prefix} must never use write-all GITHUB_TOKEN permissions`);
+}
+
+for (const workflow of claudeWorkflows) {
   const content = fs.readFileSync(workflow.path, 'utf8');
   const prefix = `${workflow.name} workflow`;
   forbidPattern(content, /^\s*--dangerously-skip-permissions(?:\s|$)/m, `${prefix} must never use --dangerously-skip-permissions`);
   requirePattern(content, /^\s*id-token:\s*write\s*$/m, `${prefix} must grant id-token: write because the pinned Claude Code action requires GitHub OIDC`);
-  requirePattern(content, /^\s*timeout-minutes:\s*[1-9][0-9]*\s*$/m, `${prefix} must define a bounded job timeout`);
   requirePattern(content, /anthropics\/claude-code-action@[0-9a-f]{40}\b/, `${prefix} Claude Code action must be pinned to a full 40-character commit SHA`);
   requirePattern(content, /actions\/checkout@[0-9a-f]{40}\b/, `${prefix} actions/checkout must be pinned to a full 40-character commit SHA`);
   requirePattern(content, /--allowedTools\s+"[^"]+"/, `${prefix} must use an explicit Claude tool allowlist`);
