@@ -1,0 +1,92 @@
+.health-products-intro {
+  padding: 56px 6vw 0;
+}
+
+.health-products-intro h1 {
+  margin: 12px 0 0;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  max-width: 640px;
+  letter-spacing: -0.01em;
+}
+
+.health-products-lead {
+  margin: 16px 0 0;
+  max-width: 560px;
+  color: var(--hw-text);
+  line-height: 1.6;
+}
+
+.health-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 24px 0 0;
+}
+
+.health-chip {
+  border: 1px solid var(--hw-border);
+  background: var(--hw-surface);
+  color: var(--hw-navy);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.health-chip:hover {
+  border-color: var(--hw-teal);
+  color: var(--hw-teal-dark);
+}
+
+.health-chip.is-active {
+  background: var(--hw-teal);
+  border-color: var(--hw-teal);
+  color: #ffffff;
+}
+
+.health-products-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 28px 6vw 0;
+}
+
+.health-product-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 22px 24px;
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-lg);
+  box-shadow: var(--hw-shadow);
+}
+
+.health-product-card h2 {
+  font-size: 1.15rem;
+  margin: 2px 0 0;
+}
+
+.health-product-card p {
+  margin: 0;
+  color: var(--hw-text);
+  line-height: 1.5;
+}
+
+.health-product-timing {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--hw-muted);
+}
+
+.health-products-footnote {
+  padding: 20px 6vw 64px;
+}
+
+@media (min-width: 860px) {
+  .health-products-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
