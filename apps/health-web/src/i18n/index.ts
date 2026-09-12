@@ -27,6 +27,14 @@ function readStoredLocale(): string {
 
 let currentLocale = readStoredLocale();
 
+function applyDocumentLocale(locale: string) {
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = locale;
+  }
+}
+
+applyDocumentLocale(currentLocale);
+
 export function getLocale() {
   return currentLocale;
 }
@@ -43,6 +51,7 @@ export function setLocale(locale: string) {
   if (typeof window !== "undefined") {
     window.localStorage.setItem(STORAGE_KEY, locale);
   }
+  applyDocumentLocale(currentLocale);
   listeners.forEach((listener) => listener());
 }
 
