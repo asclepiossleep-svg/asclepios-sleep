@@ -83,6 +83,11 @@ jobs:
           BASE_URL: http://127.0.0.1:4174
         run: node tests/health-browser-smoke.mjs
 
+      - name: Verify Health locale switch, html[lang] and reload persistence
+        env:
+          BASE_URL: http://127.0.0.1:4174
+        run: node tests/health-locale-switch.mjs
+
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -91,6 +96,7 @@ jobs:
           path: |
             artifacts/browser-smoke/
             artifacts/health-browser-smoke/
+            artifacts/health-locale-switch/
           if-no-files-found: warn
           retention-days: 7
 
