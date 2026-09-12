@@ -15,7 +15,7 @@ jobs:
   visual-regression:
     name: visual-regression-gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -37,15 +37,15 @@ jobs:
           npm install --no-save --package-lock=false --no-audit --no-fund @playwright/test@1.63.0
           npx playwright install --with-deps chromium
 
-      - name: Start built web preview
+      - name: Start built Sleep web preview
         run: |
           nohup npm run preview --workspace=apps/web -- --host 127.0.0.1 --port 4173 > /tmp/asclepios-vite-preview.log 2>&1 &
 
-      - name: Wait for preview checkpoint
+      - name: Wait for Sleep preview checkpoint
         run: |
           for attempt in $(seq 1 30); do
             if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
-              echo "Preview ready on attempt ${attempt}"
+              echo "Sleep preview ready on attempt ${attempt}"
               exit 0
             fi
             sleep 2
@@ -53,18 +53,41 @@ jobs:
           cat /tmp/asclepios-vite-preview.log || true
           exit 1
 
-      - name: Compare against committed visual baselines
+      - name: Compare Sleep against committed visual baselines
         env:
           BASE_URL: http://127.0.0.1:4173
         run: npx playwright test -c playwright.visual.config.mjs
 
-      - name: Upload visual regression evidence on failure
-        if: failure()
+      - name: Start built Health web preview
+        run: |
+          nohup npm run preview --workspace=apps/health-web -- --host 127.0.0.1 --port 4174 > /tmp/asclepios-health-vite-preview.log 2>&1 &
+
+      - name: Wait for Health preview checkpoint
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4174/ > /dev/null; then
+              echo "Health preview ready on attempt ${attempt}"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/asclepios-health-vite-preview.log || true
+          exit 1
+
+      - name: Capture and verify Health desktop/mobile visual evidence
+        env:
+          HEALTH_BASE_URL: http://127.0.0.1:4174
+        run: node tests/health-visual-evidence.mjs
+
+      - name: Upload visual evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: visual-regression-evidence-${{ github.run_id }}
           path: |
             test-results/
+            artifacts/health-visual-evidence/
             /tmp/asclepios-vite-preview.log
+            /tmp/asclepios-health-vite-preview.log
           if-no-files-found: warn
           retention-days: 7
