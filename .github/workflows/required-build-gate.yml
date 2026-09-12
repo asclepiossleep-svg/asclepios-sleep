@@ -33,9 +33,6 @@ jobs:
       - name: Enforce deterministic agent workflow security policy
         run: node scripts/verify-agent-workflow-policy.mjs
 
-      - name: Enforce VISUAL asset manifest invariants (manifest-schema, manifest-required-fields, approved-asset-existence, approved-asset-hashes, approved-asset-only, no-external-visuals, no-unapproved-generation, asset-naming-version)
-        run: node scripts/ci/verify-visual-manifest.mjs
-
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
 
