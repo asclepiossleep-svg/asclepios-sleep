@@ -30,6 +30,9 @@ jobs:
       - name: Enforce immutable workflow action pins
         run: node scripts/ci/check-workflow-pins.mjs
 
+      - name: Enforce deterministic agent workflow security policy
+        run: node scripts/verify-agent-workflow-policy.mjs
+
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
 
