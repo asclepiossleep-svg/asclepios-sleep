@@ -13,7 +13,7 @@
   },
   "approved_reference": {
     "path": "./approved-home-reference.png",
-    "sha256": "8c961f0eff8572fdc8350f8f2d65b6ee16f5a99561de92e0160001c07a5886f8",
+    "sha256": "28211c8b35072fd596f4b21cee93dde1b2ac8adcbd2692de1a8325022ededd4b",
     "viewport": {
       "desktop": { "width": 1440, "height": 1200 },
       "mobile": { "width": 390, "height": 844 }
