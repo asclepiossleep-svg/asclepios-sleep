@@ -4,7 +4,7 @@
   "goal_id": "HEALTH-VISUAL-PILOT-001",
   "page": "home",
   "version": "v1",
-  "status": "IMPLEMENTING",
+  "status": "BLOCKED",
   "owner_approval": {
     "status": "APPROVED",
     "approved_by": "Edmund",
@@ -54,13 +54,13 @@
     "production_evidence": { "status": "NOT_IN_SCOPE_FOR_PILOT", "url": "", "commit_sha": "", "verified_at": "" }
   },
   "verification": {
-    "asset_policy": "PENDING",
+    "asset_policy": "FAILED",
     "manifest_validation": "PENDING",
     "build": "PENDING",
     "browser": "PENDING",
     "visual": "PENDING",
     "commit_consistency": "PENDING",
     "production": "NOT_IN_SCOPE_FOR_PILOT",
-    "final_status": "PENDING"
+    "final_status": "BLOCKED"
   }
 }
