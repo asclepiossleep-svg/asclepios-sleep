@@ -27,8 +27,20 @@ const REQUIRED_FIELDS = [
 const PACKAGING_TYPES = new Set(['PACKAGING', 'LABEL']);
 const PACKAGING_PATH_HINT = /pack(ag(e|ing))?|label/i;
 
+// Every failure is tagged with a category so CI output (and the step
+// summary below) can distinguish "not registered yet" (routine — add a
+// manifest entry) from "registered but the bytes are wrong" (a real
+// corrupt/tampered/invented-asset defect) without anyone needing to open
+// raw job logs. A red build-gate can mean either; the category is what
+// makes that legible to a reader who only sees the checks list.
+const CATEGORY_LABELS = {
+  schema: 'Manifest schema error',
+  checksum: 'Approved binary missing or checksum mismatch',
+  unregistered: 'Referenced image not registered in the manifest',
+  status: 'Referenced image is not in an approved production status',
+};
 const errors = [];
-const fail = (message) => errors.push(message);
+const fail = (category, message) => errors.push({ category, message });
 
 function toPosix(p) {
   return p.split(path.sep).join('/');
@@ -97,26 +109,26 @@ for (const [i, entry] of manifest.assets.entries()) {
   const where = `${MANIFEST_PATH} assets[${i}]`;
   for (const field of REQUIRED_FIELDS) {
     if (entry[field] === undefined || entry[field] === null || entry[field] === '') {
-      fail(`${where}: missing required field "${field}". Required action: complete the manifest entry before it can gate CI.`);
+      fail('schema', `${where}: missing required field "${field}". Required action: complete the manifest entry before it can gate CI.`);
     }
   }
   if (entry.asset_id) {
     if (seenAssetIds.has(entry.asset_id)) {
-      fail(`${where}: duplicate asset_id "${entry.asset_id}". Asset IDs must be immutable and unique.`);
+      fail('schema', `${where}: duplicate asset_id "${entry.asset_id}". Asset IDs must be immutable and unique.`);
     }
     seenAssetIds.add(entry.asset_id);
   }
   if (entry.status && !KNOWN_STATUS.has(entry.status)) {
-    fail(`${where} (asset_id ${entry.asset_id}): unknown status "${entry.status}". Required action: use a controlled status from docs/company/DIGITAL_ASSET_REGISTRY_SCHEMA_V1.md or PRODUCTION_ASSET_ALLOWLIST_GATE_V1.md.`);
+    fail('schema', `${where} (asset_id ${entry.asset_id}): unknown status "${entry.status}". Required action: use a controlled status from docs/company/DIGITAL_ASSET_REGISTRY_SCHEMA_V1.md or PRODUCTION_ASSET_ALLOWLIST_GATE_V1.md.`);
   }
   if (entry.repo_path) {
     if (byRepoPath.has(entry.repo_path)) {
-      fail(`${MANIFEST_PATH}: repo_path "${entry.repo_path}" is registered more than once (asset_id ${entry.asset_id}). Each production file may have only one active manifest entry.`);
+      fail('schema', `${MANIFEST_PATH}: repo_path "${entry.repo_path}" is registered more than once (asset_id ${entry.asset_id}). Each production file may have only one active manifest entry.`);
     }
     byRepoPath.set(entry.repo_path, entry);
   }
   if (ALLOWED_ACTIVE_STATUS.has(entry.status) && entry.rights_status && ['PENDING', 'RESTRICTED'].includes(entry.rights_status)) {
-    fail(`${where} (asset_id ${entry.asset_id}): status is ${entry.status} but rights_status is ${entry.rights_status}. Required action: an APPROVED/PUBLISHED asset must not have pending/restricted usage rights.`);
+    fail('schema', `${where} (asset_id ${entry.asset_id}): status is ${entry.status} but rights_status is ${entry.rights_status}. Required action: an APPROVED/PUBLISHED asset must not have pending/restricted usage rights.`);
   }
 }
 
@@ -126,12 +138,12 @@ for (const entry of manifest.assets) {
   if (!ALLOWED_ACTIVE_STATUS.has(entry.status) || !entry.repo_path) continue;
   const exists = await pathExists(entry.repo_path);
   if (!exists) {
-    fail(`${entry.repo_path}: manifest asset_id ${entry.asset_id} is ${entry.status} but the file is missing from the repository. Required action: restore the approved binary or retire the manifest entry.`);
+    fail('checksum', `${entry.repo_path}: manifest asset_id ${entry.asset_id} is ${entry.status} but the file is missing from the repository. Required action: restore the approved binary or retire the manifest entry.`);
     continue;
   }
   const actualHash = await sha256File(entry.repo_path);
   if (entry.checksum_sha256 && actualHash !== entry.checksum_sha256) {
-    fail(`${entry.repo_path}: committed bytes do not match manifest checksum for asset_id ${entry.asset_id} (expected ${entry.checksum_sha256}, got ${actualHash}). Required action: this file was changed without an approval/version bump — restore the approved binary or register a new asset_id/version through the Drive->repo release contract.`);
+    fail('checksum', `${entry.repo_path}: committed bytes do not match manifest checksum for asset_id ${entry.asset_id} (expected ${entry.checksum_sha256}, got ${actualHash}). Required action: this file was changed without an approval/version bump — restore the approved binary or register a new asset_id/version through the Drive->repo release contract.`);
   }
 }
 
@@ -172,7 +184,7 @@ for (const file of sourceFiles) {
   const content = await fs.readFile(file, 'utf8');
   for (const { ref, line } of extractCandidates(content, file)) {
     if (/^https?:\/\//i.test(ref) || ref.startsWith('data:')) {
-      fail(`${file}:${line}: references an external/inline image "${ref}". Required action: production images must be committed repository assets registered in the manifest, not fetched at runtime from an external host.`);
+      fail('unregistered', `${file}:${line}: references an external/inline image "${ref}". Required action: production images must be committed repository assets registered in the manifest, not fetched at runtime from an external host.`);
       continue;
     }
     let repoPath;
@@ -185,7 +197,7 @@ for (const file of sourceFiles) {
       repoPath = toPosix(path.posix.normalize(path.posix.join(path.posix.dirname(file), ref)));
     }
     if (!(await pathExists(repoPath))) {
-      fail(`${file}:${line}: references "${ref}" which does not resolve to a file in the repository (looked for ${repoPath}).`);
+      fail('unregistered', `${file}:${line}: references "${ref}" which does not resolve to a file in the repository (looked for ${repoPath}).`);
       continue;
     }
     if (!referenced.has(repoPath)) referenced.set(repoPath, []);
@@ -205,6 +217,7 @@ for (const [repoPath, usages] of referenced) {
       ? ' Product packaging must never be invented (docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md).'
       : '';
     fail(
+      'unregistered',
       `${firstUsage.file}:${firstUsage.line}: "${repoPath}" is referenced by apps/health-web but is not registered in ${MANIFEST_PATH}.` +
       ` Required action: add an approved Asset ID entry (status APPROVED/PUBLISHED) via the Drive->repo release contract before this can ship.${packagingNote}`
     );
@@ -225,6 +238,7 @@ for (const [repoPath, usages] of referenced) {
       ? ' Product packaging must never be invented (docs/sum/10_PRODUCT_TRUTH_GOVERNANCE.md).'
       : '';
     fail(
+      'status',
       `${firstUsage.file}:${firstUsage.line}: "${repoPath}" (asset_id ${entry.asset_id}) is ${entry.status}, not an approved production asset: ${guidance}.` +
       ` Required action: resolve before merging.${packagingNote}`
     );
@@ -233,12 +247,43 @@ for (const [repoPath, usages] of referenced) {
 
 // --- Report ---
 
+async function writeStepSummary(lines) {
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+  if (!summaryPath) return;
+  await fs.appendFile(summaryPath, lines.join('\n') + '\n');
+}
+
 if (errors.length > 0) {
   console.error(`FAIL production asset allowlist gate: ${errors.length} issue(s) found.`);
-  for (const e of errors) console.error(`  - ${e}`);
+  for (const e of errors) console.error(`  - ${e.message}`);
+
+  const byCategory = new Map();
+  for (const e of errors) {
+    if (!byCategory.has(e.category)) byCategory.set(e.category, []);
+    byCategory.get(e.category).push(e.message);
+  }
+  const summary = ['## Production asset allowlist gate: FAIL', ''];
+  for (const [category, messages] of byCategory) {
+    summary.push(`### ${CATEGORY_LABELS[category] || category} (${messages.length})`);
+    for (const m of messages) summary.push(`- ${m}`);
+    summary.push('');
+  }
+  summary.push(
+    'A "not registered" finding is routine — it just needs an Asset ID entry ' +
+    'added to the manifest. A "checksum mismatch" or "not an approved status" ' +
+    'finding means the committed bytes themselves are wrong, corrupt, or ' +
+    'unapproved and must not be treated as the same class of fix.'
+  );
+  await writeStepSummary(summary);
+
   process.exit(1);
 }
 
 console.log(
   `PASS production asset allowlist gate: ${referenced.size} referenced image(s) in apps/health-web all resolve to an approved manifest entry with a matching checksum.`
 );
+await writeStepSummary([
+  `## Production asset allowlist gate: PASS`,
+  '',
+  `${referenced.size} referenced image(s) in apps/health-web all resolve to an approved manifest entry with a matching checksum.`,
+]);
