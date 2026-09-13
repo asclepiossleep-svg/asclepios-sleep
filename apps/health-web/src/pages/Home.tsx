@@ -30,10 +30,10 @@ export default function Home() {
             <p className="health-hero-lead">{t("health.hero.lead")}</p>
             <div className="health-hero-actions">
               <Link className="health-button primary" to="/products">
-                {t("health.hero.cta.products")} →
+                {t("health.hero.cta.products")}
               </Link>
               <SleepAppLink className="health-button secondary">
-                {t("health.hero.cta.sleepApp")} →
+                {t("health.hero.cta.sleepApp")}
               </SleepAppLink>
             </div>
           </div>
