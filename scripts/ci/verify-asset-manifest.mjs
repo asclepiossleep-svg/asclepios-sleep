@@ -23,9 +23,14 @@ const REQUIRED_FIELDS = [
   'asset_id', 'title', 'asset_type', 'status', 'repo_path', 'checksum_sha256',
   'approved_at', 'approved_by', 'source_ref', 'rights_status',
   'version', 'owner_role', 'created_at', 'updated_at', 'archive_class',
+  'drive_reference',
 ];
 const PACKAGING_TYPES = new Set(['PACKAGING', 'LABEL']);
 const PACKAGING_PATH_HINT = /pack(ag(e|ing))?|label/i;
+
+// Drive -> repo release contract (docs/company/DRIVE_TO_REPO_ASSET_RELEASE_CONTRACT_V1.md)
+const DRIVE_REFERENCE_SENTINEL = 'NOT_APPLICABLE_PRE_CONTRACT_DIRECT_UPLOAD';
+const DRIVE_REFERENCE_OBJECT_FIELDS = ['drive_file_id', 'drive_folder_path', 'drive_status_at_release', 'captured_at'];
 
 const errors = [];
 const fail = (message) => errors.push(message);
@@ -91,7 +96,39 @@ if (!Array.isArray(manifest.assets)) {
 }
 
 const byRepoPath = new Map();
+const byAssetId = new Map();
 const seenAssetIds = new Set();
+
+function validateDriveReference(entry, where) {
+  const ref = entry.drive_reference;
+  if (ref === undefined || ref === null || ref === '') return; // already reported as missing required field
+  if (ref === DRIVE_REFERENCE_SENTINEL) return;
+  if (typeof ref === 'string') {
+    fail(
+      `${where} (asset_id ${entry.asset_id}): drive_reference "${ref}" is not a recognised value.` +
+      ` Required action: use the controlled Drive-provenance object shape or exactly the sentinel "${DRIVE_REFERENCE_SENTINEL}" (see docs/company/DRIVE_TO_REPO_ASSET_RELEASE_CONTRACT_V1.md).`
+    );
+    return;
+  }
+  if (typeof ref !== 'object' || Array.isArray(ref)) {
+    fail(`${where} (asset_id ${entry.asset_id}): drive_reference must be an object or the "${DRIVE_REFERENCE_SENTINEL}" sentinel.`);
+    return;
+  }
+  for (const field of DRIVE_REFERENCE_OBJECT_FIELDS) {
+    if (!ref[field]) {
+      fail(
+        `${where} (asset_id ${entry.asset_id}): drive_reference is missing required field "${field}".` +
+        ` Required action: complete the Drive release record per docs/company/DRIVE_TO_REPO_ASSET_RELEASE_CONTRACT_V1.md.`
+      );
+    }
+  }
+  if (ref.drive_status_at_release && ref.drive_status_at_release !== 'APPROVED_CURRENT') {
+    fail(
+      `${where} (asset_id ${entry.asset_id}): drive_reference.drive_status_at_release is "${ref.drive_status_at_release}", expected "APPROVED_CURRENT".` +
+      ` Required action: this contract only releases assets from Drive's APPROVED_CURRENT state.`
+    );
+  }
+}
 
 for (const [i, entry] of manifest.assets.entries()) {
   const where = `${MANIFEST_PATH} assets[${i}]`;
@@ -105,6 +142,7 @@ for (const [i, entry] of manifest.assets.entries()) {
       fail(`${where}: duplicate asset_id "${entry.asset_id}". Asset IDs must be immutable and unique.`);
     }
     seenAssetIds.add(entry.asset_id);
+    byAssetId.set(entry.asset_id, entry);
   }
   if (entry.status && !KNOWN_STATUS.has(entry.status)) {
     fail(`${where} (asset_id ${entry.asset_id}): unknown status "${entry.status}". Required action: use a controlled status from docs/company/DIGITAL_ASSET_REGISTRY_SCHEMA_V1.md or PRODUCTION_ASSET_ALLOWLIST_GATE_V1.md.`);
@@ -115,8 +153,46 @@ for (const [i, entry] of manifest.assets.entries()) {
     }
     byRepoPath.set(entry.repo_path, entry);
   }
+  validateDriveReference(entry, where);
   if (ALLOWED_ACTIVE_STATUS.has(entry.status) && entry.rights_status && ['PENDING', 'RESTRICTED'].includes(entry.rights_status)) {
     fail(`${where} (asset_id ${entry.asset_id}): status is ${entry.status} but rights_status is ${entry.rights_status}. Required action: an APPROVED/PUBLISHED asset must not have pending/restricted usage rights.`);
+  }
+}
+
+// --- Replacement-history consistency (docs/company/DRIVE_TO_REPO_ASSET_RELEASE_CONTRACT_V1.md) ---
+
+for (const entry of manifest.assets) {
+  const where = `${MANIFEST_PATH} (asset_id ${entry.asset_id})`;
+
+  if (entry.superseded_by_asset_id) {
+    const newer = byAssetId.get(entry.superseded_by_asset_id);
+    if (!newer) {
+      fail(`${where}: superseded_by_asset_id "${entry.superseded_by_asset_id}" does not match any manifest entry.`);
+    } else if (newer.supersedes_asset_id !== entry.asset_id) {
+      fail(`${where}: superseded_by_asset_id points to "${entry.superseded_by_asset_id}", but that entry's supersedes_asset_id is "${newer.supersedes_asset_id ?? 'null'}", not back to "${entry.asset_id}". Required action: replacement links must be bidirectional.`);
+    } else if (typeof newer.version === 'number' && typeof entry.version === 'number' && newer.version <= entry.version) {
+      fail(`${where}: superseding asset "${entry.superseded_by_asset_id}" has version ${newer.version}, which is not greater than this entry's version ${entry.version}.`);
+    }
+    if (entry.status !== 'REPLACED') {
+      fail(`${where}: has superseded_by_asset_id set but status is "${entry.status}", not "REPLACED". Required action: a superseded entry's status must be REPLACED.`);
+    }
+  }
+
+  if (entry.status === 'REPLACED' && !entry.superseded_by_asset_id) {
+    fail(`${where}: status is REPLACED but superseded_by_asset_id is not set. Required action: record which asset_id replaced it.`);
+  }
+
+  if (entry.supersedes_asset_id) {
+    const older = byAssetId.get(entry.supersedes_asset_id);
+    if (!older) {
+      fail(`${where}: supersedes_asset_id "${entry.supersedes_asset_id}" does not match any manifest entry.`);
+    } else if (older.superseded_by_asset_id !== entry.asset_id) {
+      fail(`${where}: supersedes_asset_id points to "${entry.supersedes_asset_id}", but that entry's superseded_by_asset_id is "${older.superseded_by_asset_id ?? 'null'}", not back to "${entry.asset_id}". Required action: replacement links must be bidirectional.`);
+    }
+  }
+
+  if (entry.superseded_by_asset_id && ALLOWED_ACTIVE_STATUS.has(entry.status)) {
+    fail(`${where}: status is ${entry.status} but superseded_by_asset_id is also set. Required action: an asset cannot be both currently approved and replaced.`);
   }
 }
 
