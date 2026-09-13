@@ -35,10 +35,11 @@ const assets = [
 ];
 
 const hash = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
+const validated = [];
 
+// Phase 1: validate the complete source set before touching governed assets.
 for (const asset of assets) {
   const src = path.resolve(sourceDir, asset.source);
-  const dst = path.join(packageRoot, asset.target);
   const bytes = await fs.readFile(src);
   const actualHash = hash(bytes);
 
@@ -52,9 +53,23 @@ for (const asset of assets) {
     throw new Error(`${asset.source}: RIFF container is not WEBP`);
   }
 
-  await fs.mkdir(path.dirname(dst), { recursive: true });
-  await fs.writeFile(dst, bytes);
-  console.log(`IMPORTED ${asset.target} ${actualHash}`);
+  validated.push({ ...asset, bytes, actualHash });
+  console.log(`VALIDATED ${asset.source} ${actualHash}`);
 }
 
-console.log('HEALTH_HOME_V1_ASSET_IMPORT_PASS: exact owner-approved reference, hero and products binaries installed.');
+// Phase 2: only after every source passed, install the whole set.
+for (const asset of validated) {
+  const dst = path.join(packageRoot, asset.target);
+  await fs.mkdir(path.dirname(dst), { recursive: true });
+  await fs.writeFile(dst, asset.bytes);
+
+  // Re-read the governed target so success cannot be reported from source-only validation.
+  const persisted = await fs.readFile(dst);
+  const persistedHash = hash(persisted);
+  if (persistedHash !== asset.sha256) {
+    throw new Error(`${asset.target}: post-write SHA-256 mismatch; expected ${asset.sha256}, got ${persistedHash}`);
+  }
+  console.log(`IMPORTED_AND_VERIFIED ${asset.target} ${persistedHash}`);
+}
+
+console.log('HEALTH_HOME_V1_ASSET_IMPORT_PASS: complete approved asset set validated first, then installed and post-write verified.');
