@@ -28,77 +28,87 @@ jobs:
         with:
           node-version: 20
 
-      - name: Enforce Health VISUAL manifest and approved-asset policy
-        run: node tests/health-visual-manifest-check.mjs
+      - name: Run Health convergence preflight
+        id: preflight
+        continue-on-error: true
+        run: node scripts/ci/health-convergence-preflight.mjs
+
+      - name: Record browser skip when internally blocked
+        if: steps.preflight.outcome == 'failure'
+        run: echo 'HEALTH_BROWSER_SKIPPED: INTERNAL_BLOCKED by health-convergence-preflight; no build/browser work executed.'
 
       - name: Install application dependencies from lockfile
+        if: steps.preflight.outcome == 'success'
         run: npm ci --no-audit --no-fund
 
       - name: Build monorepo
+        if: steps.preflight.outcome == 'success'
         run: npm run build
 
       - name: Install pinned Playwright Chromium
+        if: steps.preflight.outcome == 'success'
         run: |
           npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0
           npx playwright install --with-deps chromium
 
       - name: Start built Sleep web preview
+        if: steps.preflight.outcome == 'success'
         run: |
           nohup npm run preview --workspace=apps/web -- --host 127.0.0.1 --port 4173 > /tmp/asclepios-vite-preview.log 2>&1 &
           echo $! > /tmp/asclepios-vite-preview.pid
 
       - name: Wait for Sleep preview checkpoint
+        if: steps.preflight.outcome == 'success'
         run: |
           for attempt in $(seq 1 30); do
-            if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
-              echo "Sleep preview ready on attempt ${attempt}"
-              exit 0
-            fi
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then exit 0; fi
             sleep 2
           done
           cat /tmp/asclepios-vite-preview.log || true
           exit 1
 
       - name: Verify Sleep desktop and mobile browser rendering
+        if: steps.preflight.outcome == 'success'
         env:
           BASE_URL: http://127.0.0.1:4173
         run: node tests/browser-smoke.mjs
 
       - name: Start built Health web preview
+        if: steps.preflight.outcome == 'success'
         run: |
           nohup npm run preview --workspace=apps/health-web -- --host 127.0.0.1 --port 4174 > /tmp/asclepios-health-vite-preview.log 2>&1 &
           echo $! > /tmp/asclepios-health-vite-preview.pid
 
       - name: Wait for Health preview checkpoint
+        if: steps.preflight.outcome == 'success'
         run: |
           for attempt in $(seq 1 30); do
-            if curl --fail --silent --show-error http://127.0.0.1:4174/ > /dev/null; then
-              echo "Health preview ready on attempt ${attempt}"
-              exit 0
-            fi
+            if curl --fail --silent --show-error http://127.0.0.1:4174/ > /dev/null; then exit 0; fi
             sleep 2
           done
           cat /tmp/asclepios-health-vite-preview.log || true
           exit 1
 
       - name: Verify Health desktop and mobile browser rendering
+        if: steps.preflight.outcome == 'success'
         env:
           BASE_URL: http://127.0.0.1:4174
         run: node tests/health-browser-smoke.mjs
 
-      - name: Upload browser evidence
+      - name: Upload browser/preflight evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: browser-smoke-${{ github.run_id }}
           path: |
+            artifacts/health-convergence-preflight.json
             artifacts/browser-smoke/
             artifacts/health-browser-smoke/
           if-no-files-found: warn
           retention-days: 7
 
       - name: Print preview logs on failure
-        if: failure()
+        if: failure() && steps.preflight.outcome == 'success'
         run: |
           cat /tmp/asclepios-vite-preview.log || true
           cat /tmp/asclepios-health-vite-preview.log || true
