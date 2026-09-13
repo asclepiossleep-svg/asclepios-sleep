@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "ignoreCommand": "git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- apps/api packages/shared package.json package-lock.json",
   "buildCommand": "npm run vercel-build",
   "functions": {
     "api/index.ts": {
