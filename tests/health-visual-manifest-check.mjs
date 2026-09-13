@@ -7,6 +7,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const manifestPath = path.join(repoRoot, 'apps/health-web/src/assets/pages/home/v1/manifest.json');
 const homePath = path.join(repoRoot, 'apps/health-web/src/pages/Home.tsx');
 const homeCssPath = path.join(repoRoot, 'apps/health-web/src/styles/home-approved-v1.css');
+const enPath = path.join(repoRoot, 'apps/health-web/src/i18n/en.json');
 
 function fail(message) {
   console.error(`HEALTH_VISUAL_POLICY_FAIL: ${message}`);
@@ -128,6 +129,20 @@ for (const match of importMatches) {
   assert(listedPaths.has(rel), `Home.tsx imports unlisted Home v1 asset: ${rel}`);
 }
 
+// Lock the owner-approved Home copy from the execution contract.
+assert(fs.existsSync(enPath), 'English locale file is missing');
+if (fs.existsSync(enPath)) {
+  const en = JSON.parse(fs.readFileSync(enPath, 'utf8'));
+  assert(en['health.hero.title.line1'] === 'Better Sleep.', 'approved hero title line 1 must be exactly "Better Sleep."');
+  assert(en['health.hero.title.line2'] === 'Healthier Living.', 'approved hero title line 2 must be exactly "Healthier Living."');
+  assert(en['health.hero.cta.products'] === 'Explore Products', 'approved primary CTA must be exactly "Explore Products"');
+  assert(en['health.hero.cta.sleepApp'] === 'Enter Sleep App', 'approved secondary CTA must be exactly "Enter Sleep App"');
+}
+assert(
+  !/health\.hero\.cta\.(?:products|sleepApp)"\)\}\s*→/.test(homeSource),
+  'hero CTA labels must not append an unapproved arrow glyph',
+);
+
 // Prohibit remote visual sources in the governed Home implementation.
 for (const [name, file] of [['Home.tsx', homePath], ['home-approved-v1.css', homeCssPath]]) {
   if (!fs.existsSync(file)) continue;
@@ -137,4 +152,4 @@ for (const [name, file] of [['Home.tsx', homePath], ['home-approved-v1.css', hom
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('HEALTH_VISUAL_POLICY_PASS: Home v1 manifest, required individual visual roles, hashes, image signatures, approval binding, and approved-asset policy are valid.');
+console.log('HEALTH_VISUAL_POLICY_PASS: Home v1 manifest, required individual visual roles, hashes, image signatures, approval binding, exact owner-approved hero copy, and approved-asset policy are valid.');
