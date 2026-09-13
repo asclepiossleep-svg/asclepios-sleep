@@ -1,7 +1,7 @@
 {
   "$schemaVersion": 1,
   "app": "health-web",
-  "note": "Repository-readable production asset allowlist for apps/health-web. Every production image imported by apps/health-web must have exactly one entry here with status APPROVED or PUBLISHED and a checksum_sha256 matching the committed binary, or scripts/ci/verify-asset-manifest.mjs fails the build. Schema derived from docs/company/DIGITAL_ASSET_REGISTRY_SCHEMA_V1.md; gate rules documented in docs/company/PRODUCTION_ASSET_ALLOWLIST_GATE_V1.md.",
+  "note": "Repository-readable production asset allowlist for apps/health-web. Every production image imported by apps/health-web must have exactly one entry here with status APPROVED or PUBLISHED and a checksum_sha256 matching the committed binary, or scripts/ci/verify-asset-manifest.mjs fails the build. Schema derived from docs/company/DIGITAL_ASSET_REGISTRY_SCHEMA_V1.md; gate rules documented in docs/company/PRODUCTION_ASSET_ALLOWLIST_GATE_V1.md; drive_reference/replacement-history rules documented in docs/company/DRIVE_TO_REPO_ASSET_RELEASE_CONTRACT_V1.md.",
   "assets": [
     {
       "asset_id": "ASC-HEALTH-BRAND-GFX-0001",
@@ -22,7 +22,8 @@
       "checksum_sha256": "506e5dba7cc330c21bbf04d54950ee53bbcd4c970dadc3aa7aecb1c38cecdf42",
       "archive_class": "HOT",
       "supersedes_asset_id": null,
-      "drive_reference": null,
+      "superseded_by_asset_id": null,
+      "drive_reference": "NOT_APPLICABLE_PRE_CONTRACT_DIRECT_UPLOAD",
       "notes": "Owner-uploaded directly to GitHub via 'Add files via upload' at apps/web/src/assets/brand/asclepios-mark.webp (commit a8dd540); byte-identical copy relocated into apps/health-web's own asset tree in commit da10d3a with no modification."
     },
     {
@@ -44,7 +45,8 @@
       "checksum_sha256": "2dabe3c6298f7177112199cf135dbdf8f5e6e2f3eb1fe980d9cd21d6aa358272",
       "archive_class": "HOT",
       "supersedes_asset_id": null,
-      "drive_reference": null,
+      "superseded_by_asset_id": null,
+      "drive_reference": "NOT_APPLICABLE_PRE_CONTRACT_DIRECT_UPLOAD",
       "notes": "Owner-uploaded directly to GitHub via 'Add files via upload' as apps/web/src/assets/hero/login-hero-photo_1.webp (commit 35afbf6); byte-identical copy relocated into apps/health-web's own asset tree in commit da10d3a with no modification."
     }
   ]
