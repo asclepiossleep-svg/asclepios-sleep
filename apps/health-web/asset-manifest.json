@@ -1,0 +1,51 @@
+{
+  "$schemaVersion": 1,
+  "app": "health-web",
+  "note": "Repository-readable production asset allowlist for apps/health-web. Every production image imported by apps/health-web must have exactly one entry here with status APPROVED or PUBLISHED and a checksum_sha256 matching the committed binary, or scripts/ci/verify-asset-manifest.mjs fails the build. Schema derived from docs/company/DIGITAL_ASSET_REGISTRY_SCHEMA_V1.md; gate rules documented in docs/company/PRODUCTION_ASSET_ALLOWLIST_GATE_V1.md.",
+  "assets": [
+    {
+      "asset_id": "ASC-HEALTH-BRAND-GFX-0001",
+      "title": "Asclepios gold leaf brand mark",
+      "asset_type": "GRAPHIC",
+      "product_code": null,
+      "language": "N-A",
+      "version": 1,
+      "status": "APPROVED",
+      "owner_role": "Owner/Chairman",
+      "created_at": "2026-08-29",
+      "updated_at": "2026-09-10",
+      "approved_at": "2026-08-29",
+      "approved_by": "asclepiossleep-svg",
+      "source_ref": "a8dd54065d8b7dbac288d1c879ceebc00b0bc690",
+      "rights_status": "OWNED",
+      "repo_path": "apps/health-web/src/assets/brand/asclepios-mark.webp",
+      "checksum_sha256": "506e5dba7cc330c21bbf04d54950ee53bbcd4c970dadc3aa7aecb1c38cecdf42",
+      "archive_class": "HOT",
+      "supersedes_asset_id": null,
+      "drive_reference": null,
+      "notes": "Owner-uploaded directly to GitHub via 'Add files via upload' at apps/web/src/assets/brand/asclepios-mark.webp (commit a8dd540); byte-identical copy relocated into apps/health-web's own asset tree in commit da10d3a with no modification."
+    },
+    {
+      "asset_id": "ASC-HEALTH-HOME-IMG-0001",
+      "title": "Home hero sunrise/mountain lifestyle photo",
+      "asset_type": "IMAGE_MASTER",
+      "product_code": null,
+      "language": "N-A",
+      "version": 1,
+      "status": "APPROVED",
+      "owner_role": "Owner/Chairman",
+      "created_at": "2026-08-29",
+      "updated_at": "2026-09-10",
+      "approved_at": "2026-08-29",
+      "approved_by": "asclepiossleep-svg",
+      "source_ref": "35afbf6bc067ca62b6c8db04218e334b09b18d91",
+      "rights_status": "OWNED",
+      "repo_path": "apps/health-web/src/assets/hero/health-hero-sunrise.webp",
+      "checksum_sha256": "2dabe3c6298f7177112199cf135dbdf8f5e6e2f3eb1fe980d9cd21d6aa358272",
+      "archive_class": "HOT",
+      "supersedes_asset_id": null,
+      "drive_reference": null,
+      "notes": "Owner-uploaded directly to GitHub via 'Add files via upload' as apps/web/src/assets/hero/login-hero-photo_1.webp (commit 35afbf6); byte-identical copy relocated into apps/health-web's own asset tree in commit da10d3a with no modification."
+    }
+  ]
+}
