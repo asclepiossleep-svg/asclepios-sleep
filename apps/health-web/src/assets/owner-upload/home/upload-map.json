@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "page": "home",
+  "goal_id": "HEALTH-VISUAL-PILOT-001",
+  "purpose": "Simple owner/admin binary intake for Home visual assets before deterministic release into governed production paths.",
+  "slots": [
+    {
+      "slot": "approved_reference",
+      "filename": "approved-home-reference.png",
+      "required": true,
+      "expected_sha256": "4c85ab47d3e009219d191950ac9990832dd4a2ad696b892445060687f0dffb12",
+      "release_target": "apps/health-web/src/assets/pages/home/v1/approved-home-reference.png"
+    },
+    {
+      "slot": "hero",
+      "filename": "home-hero.jpeg",
+      "required": true,
+      "known_owner_source_sha256": "ed51a2b6d6de513f8696b7e0737f82a5f506a84c67c414d9b52cb6f05398c798",
+      "release_role": "hero"
+    },
+    {
+      "slot": "products_card",
+      "filename": "home-products-card.jpeg",
+      "required": true,
+      "expected_sha256": null,
+      "release_role": "products_card",
+      "owner_approval_required_before_release": true
+    }
+  ],
+  "rules": {
+    "preserve_original_bytes": true,
+    "validate_signature": true,
+    "calculate_sha256": true,
+    "silent_substitution": false,
+    "full_page_reference_crop_for_production": false,
+    "goal_controller": "Amanda"
+  }
+}
