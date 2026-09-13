@@ -188,6 +188,7 @@ jobs:
             Recommended Goal State: ACTIVE | BLOCKED | RECOVERING | COMPLETE
 
       - name: Ensure structured handoff exists
+        id: handoff
         if: always() && steps.preflight.outputs.should_run == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -202,9 +203,11 @@ jobs:
           [ -n "${ISSUE_NUMBER:-}" ] || exit 0
           comments="$(gh api --paginate "repos/$REPO/issues/$ISSUE_NUMBER/comments?per_page=100" --jq '.[].body')"
           if printf '%s\n' "$comments" | grep -Fq "Run ID: $RUN_ID"; then
+            echo "synthesized=false" >> "$GITHUB_OUTPUT"
             echo "Structured handoff already exists for this run."
             exit 0
           fi
+          echo "synthesized=true" >> "$GITHUB_OUTPUT"
           issue_body="$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json body --jq '.body // ""')"
           goal_id="$(printf '%s\n' "$issue_body" | sed -nE 's/^[[:space:]]*(Goal ID|GOAL ID):[[:space:]]*//p' | head -n1)"
           [ -n "$goal_id" ] || goal_id="HEALTH-VISUAL-PILOT-001"
@@ -231,6 +234,13 @@ jobs:
           gh workflow run amanda-goal-controller.yml --repo "$REPO" \
             --ref main \
             -f issue_number="$ISSUE_NUMBER"
+
+      - name: Fail when Rex handoff was synthesized
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.handoff.outputs.synthesized == 'true'
+        shell: bash
+        run: |
+          echo "Rex did not produce the required structured handoff; fallback synthesized NO_PROGRESS." >&2
+          exit 1
 
       - name: Preserve executor failure
         if: steps.preflight.outputs.should_run == 'true' && steps.rex.outputs.conclusion != 'success'
