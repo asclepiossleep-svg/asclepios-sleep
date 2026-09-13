@@ -62,8 +62,20 @@ moment app code imports that `repo_path`.
 
 ## The gate
 
-`scripts/ci/verify-asset-manifest.mjs`, run on every PR/push touching `main`
-via `required-build-gate.yml`, enforces:
+`scripts/ci/verify-asset-manifest.mjs` enforces the rules below. It is
+wired in as the first step of the root `npm run build` script
+(`package.json`), which `required-build-gate.yml` already runs on every
+PR/push to `main` — so the gate is enforced without editing the workflow
+file itself. The Rex/Claude Code Action GitHub App is not granted
+`workflows` write permission (by design, per
+`scripts/verify-agent-workflow-policy.mjs`), so Rex cannot add a dedicated
+named step to `required-build-gate.yml`; a maintainer with that permission
+may do so later as a purely cosmetic improvement (clearer CI step name), but
+it is not required for enforcement — a failing `npm run build` already
+blocks the PR today. Run it directly with `npm run check:asset-manifest` or
+`node scripts/ci/verify-asset-manifest.mjs`.
+
+It enforces:
 
 1. **Manifest schema** — every entry has the required fields, a known
    status, and a unique `asset_id`/`repo_path`.

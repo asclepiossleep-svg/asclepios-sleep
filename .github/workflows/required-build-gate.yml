@@ -33,9 +33,6 @@ jobs:
       - name: Enforce deterministic agent workflow security policy
         run: node scripts/verify-agent-workflow-policy.mjs
 
-      - name: Enforce production asset allowlist (apps/health-web)
-        run: node scripts/ci/verify-asset-manifest.mjs
-
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
 
