@@ -7,38 +7,9 @@ const GLOBAL_REGISTRY = 'apps/health-web/asset-manifest.json';
 const REPORT_PATH = 'artifacts/health-convergence-preflight.json';
 const ACTIVE = new Set(['APPROVED', 'PUBLISHED']);
 
-const generalBlockers = [];
-const assetBlockers = new Map();
-const addGeneral = (code, message, extra = {}) => generalBlockers.push({
-  code,
-  classification: 'INTERNAL_BLOCKED',
-  retryable: false,
-  message,
-  ...extra,
-});
+const findings = [];
+const add = (asset, code, message, extra = {}) => findings.push({ asset, code, classification: 'INTERNAL_BLOCKED', retryable: false, message, ...extra });
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
-
-function assetBlocker(repoPath, label, expectedSha) {
-  if (!assetBlockers.has(repoPath)) {
-    assetBlockers.set(repoPath, {
-      code: 'ASSET_INTEGRITY_FAILURE',
-      classification: 'INTERNAL_BLOCKED',
-      retryable: false,
-      asset: label,
-      repo_path: repoPath,
-      expected_sha256: expectedSha || null,
-      actual_sha256: null,
-      issues: [],
-    });
-  }
-  return assetBlockers.get(repoPath);
-}
-
-function addAssetIssue(repoPath, label, expectedSha, issue, message, extra = {}) {
-  const blocker = assetBlocker(repoPath, label, expectedSha);
-  if (!blocker.issues.some((i) => i.code === issue)) blocker.issues.push({ code: issue, message, ...extra });
-  if (extra.actual_sha256) blocker.actual_sha256 = extra.actual_sha256;
-}
 
 function validSignature(file, buf) {
   const ext = path.extname(file).toLowerCase();
@@ -52,23 +23,19 @@ function validSignature(file, buf) {
 
 async function readJson(file) {
   try { return JSON.parse(await fs.readFile(file, 'utf8')); }
-  catch (error) { addGeneral('MANIFEST_READ_FAIL', `${file}: ${error.message}`); return null; }
+  catch (error) { add(file, 'MANIFEST_READ_FAIL', `${file}: ${error.message}`); return null; }
 }
 
 async function verifyBinary(repoPath, expectedSha, label) {
   let buf;
   try { buf = await fs.readFile(repoPath); }
   catch {
-    addAssetIssue(repoPath, label, expectedSha, 'ASSET_MISSING', `missing ${repoPath}`);
+    add(label, 'ASSET_MISSING', `${label}: missing ${repoPath}`, { repo_path: repoPath, expected_sha256: expectedSha });
     return;
   }
   const actual = sha256(buf);
-  if (actual !== expectedSha) {
-    addAssetIssue(repoPath, label, expectedSha, 'SHA_MISMATCH', 'committed bytes do not match approved SHA-256', { actual_sha256: actual });
-  }
-  if (!validSignature(repoPath, buf)) {
-    addAssetIssue(repoPath, label, expectedSha, 'INVALID_BINARY_SIGNATURE', `invalid ${path.extname(repoPath)} binary signature`);
-  }
+  if (actual !== expectedSha) add(label, 'ASSET_SHA_MISMATCH', `${label}: SHA-256 mismatch`, { repo_path: repoPath, expected_sha256: expectedSha, actual_sha256: actual });
+  if (!validSignature(repoPath, buf)) add(label, 'ASSET_INVALID_BINARY', `${label}: invalid ${path.extname(repoPath)} binary signature`, { repo_path: repoPath });
 }
 
 const page = await readJson(PAGE_MANIFEST);
@@ -76,14 +43,14 @@ const registry = await readJson(GLOBAL_REGISTRY);
 
 if (page && registry) {
   if (page.goal_id !== 'HEALTH-VISUAL-PILOT-001' || page.page !== 'home' || page.version !== 'v1') {
-    addGeneral('GOAL_SCOPE_MISMATCH', 'Home v1 manifest Goal/page/version contract is invalid');
+    add('home-v1-manifest', 'GOAL_SCOPE_MISMATCH', 'Home v1 manifest Goal/page/version contract is invalid');
   }
 
   const pageDir = path.dirname(PAGE_MANIFEST);
   if (page.approved_reference?.path && page.approved_reference?.sha256) {
     await verifyBinary(path.resolve(pageDir, page.approved_reference.path), page.approved_reference.sha256, 'approved-home-reference');
   } else {
-    addGeneral('REFERENCE_METADATA_MISSING', 'approved_reference path/SHA is missing');
+    add('approved-home-reference', 'REFERENCE_METADATA_MISSING', 'approved_reference path/SHA is missing');
   }
 
   const globalByPath = new Map((registry.assets || []).map((a) => [a.repo_path, a]));
@@ -92,31 +59,66 @@ if (page && registry) {
 
   for (const asset of page.assets || []) {
     seenRoles.add(asset.role);
+    const label = asset.id || asset.role || 'asset';
     const absolute = path.resolve(pageDir, asset.path || '');
     const repoPath = path.relative(process.cwd(), absolute).split(path.sep).join('/');
-    await verifyBinary(absolute, asset.sha256, asset.id || asset.role || 'asset');
+
+    if (asset.owner_approved !== true) add(label, 'PAGE_ASSET_NOT_APPROVED', `${label}: owner_approved must be true`, { repo_path: repoPath });
+    if (!asset.approval_record || !asset.provenance) add(label, 'PROVENANCE_MISSING', `${label}: approval_record and provenance are required`, { repo_path: repoPath });
+    await verifyBinary(absolute, asset.sha256, label);
 
     const global = globalByPath.get(repoPath);
     if (!global) {
-      addAssetIssue(absolute, asset.id || asset.role || 'asset', asset.sha256, 'REGISTRY_ENTRY_MISSING', `${repoPath} is absent from global asset registry`);
+      add(label, 'REGISTRY_ENTRY_MISSING', `${label}: ${repoPath} is absent from global asset registry`, { repo_path: repoPath });
       continue;
     }
-    if (!ACTIVE.has(global.status)) {
-      addAssetIssue(absolute, asset.id || asset.role || 'asset', asset.sha256, 'REGISTRY_STATUS_INVALID', `registry status ${global.status} is not production-active`, { asset_id: global.asset_id });
-    }
+    if (!ACTIVE.has(global.status)) add(label, 'REGISTRY_STATUS_INVALID', `${label}: registry status ${global.status} is not production-active`, { asset_id: global.asset_id, repo_path: repoPath });
+    if (!global.source_ref || !global.approved_by || !global.version) add(label, 'REGISTRY_PROVENANCE_MISSING', `${label}: global registry provenance fields are incomplete`, { asset_id: global.asset_id, repo_path: repoPath });
     if (global.checksum_sha256 !== asset.sha256) {
-      addAssetIssue(absolute, asset.id || asset.role || 'asset', asset.sha256, 'REGISTRY_SHA_DIVERGENCE', 'page manifest and global registry disagree on SHA-256', {
+      add(label, 'REGISTRY_SHA_DIVERGENCE', `${label}: page manifest and global registry disagree on SHA-256`, {
+        repo_path: repoPath,
         page_sha256: asset.sha256,
         registry_sha256: global.checksum_sha256,
       });
     }
   }
 
-  for (const role of requiredRoles) if (!seenRoles.has(role)) addGeneral('PAGE_ROLE_MISSING', `Home v1 manifest missing required role: ${role}`);
+  for (const role of requiredRoles) if (!seenRoles.has(role)) add(`role:${role}`, 'PAGE_ROLE_MISSING', `Home v1 manifest missing required role: ${role}`);
 }
 
-const blockers = [...generalBlockers, ...assetBlockers.values()];
-const findingCount = blockers.reduce((sum, blocker) => sum + (Array.isArray(blocker.issues) ? blocker.issues.length : 1), 0);
+const byAsset = new Map();
+for (const finding of findings) {
+  if (!byAsset.has(finding.asset)) byAsset.set(finding.asset, []);
+  byAsset.get(finding.asset).push(finding);
+}
+
+const blockers = [...byAsset.entries()].map(([asset, issues]) => {
+  const expectedSha = issues.find((i) => i.expected_sha256)?.expected_sha256 || null;
+  const hasByteProblem = issues.some((i) => ['ASSET_SHA_MISMATCH','ASSET_INVALID_BINARY','ASSET_MISSING'].includes(i.code));
+  const hasRegistryProblem = issues.some((i) => i.code.startsWith('REGISTRY_'));
+  const remediation = hasByteProblem
+    ? {
+        action: 'RESTORE_EXACT_APPROVED_BYTES_OR_REVERSION_WITH_OWNER_APPROVAL',
+        auto_retry: false,
+        expected_sha256: expectedSha,
+        rule: 'Do not relabel the checksum. Restore exact approved bytes, or create a new version and obtain Amanda/Owner approval before changing the canonical SHA.',
+      }
+    : hasRegistryProblem
+      ? {
+          action: 'SYNCHRONIZE_PAGE_MANIFEST_AND_GLOBAL_REGISTRY',
+          auto_retry: false,
+          expected_sha256: expectedSha,
+          rule: 'One exact production file may have only one approved SHA truth across page manifest and global registry.',
+        }
+      : {
+          action: 'FIX_DETERMINISTIC_METADATA_CONTRACT',
+          auto_retry: false,
+          expected_sha256: expectedSha,
+          rule: 'Resolve the recorded metadata/provenance error before downstream work.',
+        };
+  return { asset, classification: 'INTERNAL_BLOCKED', retryable: false, issues, remediation };
+});
+
 const report = {
   schema_version: '1.1.0',
   goal_id: 'HEALTH-VISUAL-PILOT-001',
@@ -124,11 +126,13 @@ const report = {
   page: 'home',
   version: 'v1',
   status: blockers.length ? 'INTERNAL_BLOCKED' : 'READY_FOR_BUILD',
-  can_run_build_browser_visual: blockers.length === 0,
   root_cause_count: blockers.length,
-  finding_count: findingCount,
+  finding_count: findings.length,
+  can_run_build_browser_visual: blockers.length === 0,
+  downstream_policy: blockers.length ? 'SKIP_BUILD_BROWSER_VISUAL_DEPLOYMENT' : 'ALLOW_INTERNAL_GATES',
   external_deployment: { status: 'NOT_EVALUATED', classification: 'EXTERNAL_DEPENDENCY', provider: 'Vercel' },
   blockers,
+  findings,
 };
 
 await fs.mkdir(path.dirname(REPORT_PATH), { recursive: true });
@@ -136,15 +140,11 @@ await fs.writeFile(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
 console.log(`HEALTH_CONVERGENCE_PREFLIGHT=${JSON.stringify(report)}`);
 
 if (blockers.length) {
-  console.error(`HEALTH_CONVERGENCE_PREFLIGHT_BLOCKED: ${blockers.length} root-cause blocker(s), ${findingCount} finding(s).`);
+  console.error(`HEALTH_CONVERGENCE_PREFLIGHT_BLOCKED: ${blockers.length} root-cause blocker(s), ${findings.length} finding(s).`);
   for (const b of blockers) {
-    if (Array.isArray(b.issues)) {
-      console.error(`- ${b.asset}: ${b.issues.map((i) => i.code).join(', ')}`);
-    } else {
-      console.error(`- ${b.code}: ${b.message}`);
-    }
+    console.error(`- ${b.asset}: ${b.issues.map((i) => i.code).join(', ')} -> ${b.remediation.action}`);
   }
   process.exit(1);
 }
 
-console.log('HEALTH_CONVERGENCE_PREFLIGHT_PASS: internal asset bytes, signatures, page scope and registry synchronization are consistent.');
+console.log('HEALTH_CONVERGENCE_PREFLIGHT_PASS: internal asset bytes, signatures, provenance, page scope and registry synchronization are consistent.');
