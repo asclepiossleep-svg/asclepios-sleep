@@ -13,6 +13,7 @@
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
     "check:asset-manifest": "node scripts/ci/verify-asset-manifest.mjs",
+    "check:health-convergence": "node scripts/ci/health-convergence-preflight.mjs",
     "build": "npm run check:asset-manifest && npm run build --workspace=packages/shared && npm run build --workspace=apps/api && npm run build --workspace=apps/web && npm run build --workspace=apps/health-web"
   },
   "engines": {
