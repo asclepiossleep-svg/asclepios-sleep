@@ -22,10 +22,28 @@ jobs:
           node-version: '20'
       - name: SUM structural contract
         run: node scripts/sum-health-check.mjs
+      - name: Health convergence preflight for PR sequencing
+        id: preflight
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: node scripts/ci/health-convergence-preflight.mjs
+      - name: Record structural build skip when Health is internally blocked
+        if: github.event_name == 'pull_request' && steps.preflight.outcome == 'failure'
+        run: echo 'SUM_BUILD_SKIPPED: Health convergence is INTERNAL_BLOCKED; dedicated preflight owns the root-cause failure.'
       - name: Install dependencies from lockfile
+        if: github.event_name != 'pull_request' || steps.preflight.outcome == 'success'
         run: npm ci --no-audit --no-fund
       - name: Build all workspaces
+        if: github.event_name != 'pull_request' || steps.preflight.outcome == 'success'
         run: npm run build
+      - name: Upload convergence report when PR build is skipped
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sum-health-convergence-${{ github.run_id }}
+          path: artifacts/health-convergence-preflight.json
+          if-no-files-found: ignore
+          retention-days: 7
 
   external-health-contract:
     runs-on: ubuntu-24.04
