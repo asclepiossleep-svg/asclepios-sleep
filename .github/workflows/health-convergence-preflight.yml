@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   preflight:
@@ -38,3 +39,12 @@ jobs:
           path: artifacts/health-convergence-preflight.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Synchronize PR status block from machine-readable preflight
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci/sync-health-pr-status.mjs
