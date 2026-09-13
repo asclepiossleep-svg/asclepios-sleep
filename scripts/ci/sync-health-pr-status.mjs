@@ -45,16 +45,20 @@ const lines = [
   `- State: **${report.status}**`,
   `- Head SHA: \`${headSha || 'unknown'}\``,
   `- Root-cause blockers: **${report.root_cause_count ?? report.blockers?.length ?? 0}**`,
-  `- Findings: **${report.finding_count ?? report.blockers?.length ?? 0}**`,
+  `- Findings: **${report.finding_count ?? report.findings?.length ?? 0}**`,
+  `- Downstream policy: **${report.downstream_policy || (report.can_run_build_browser_visual ? 'ALLOW_INTERNAL_GATES' : 'SKIP_BUILD_BROWSER_VISUAL_DEPLOYMENT')}**`,
   `- Build / browser / visual eligible: **${report.can_run_build_browser_visual ? 'YES' : 'NO'}**`,
   `- External deployment: **${report.external_deployment?.status || 'NOT_EVALUATED'}** (${report.external_deployment?.classification || 'EXTERNAL_DEPENDENCY'})`,
 ];
 
 if (Array.isArray(report.blockers) && report.blockers.length) {
-  lines.push('', 'Root causes:');
+  lines.push('', 'Root causes and deterministic next actions:');
   for (const blocker of report.blockers) {
     const issueCodes = Array.isArray(blocker.issues) ? blocker.issues.map((i) => i.code).join(', ') : blocker.code;
     lines.push(`- \`${blocker.asset || blocker.code}\`: ${issueCodes}`);
+    if (blocker.remediation?.action) lines.push(`  - Action: \`${blocker.remediation.action}\``);
+    if (blocker.remediation?.expected_sha256) lines.push(`  - Expected SHA-256: \`${blocker.remediation.expected_sha256}\``);
+    if (blocker.remediation?.auto_retry === false) lines.push('  - Auto-retry: **NO**');
   }
 }
 lines.push('', '_Generated from `artifacts/health-convergence-preflight.json`; do not hand-edit this block._', markerEnd);
