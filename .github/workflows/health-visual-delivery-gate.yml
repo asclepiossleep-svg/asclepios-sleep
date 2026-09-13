@@ -22,7 +22,8 @@ jobs:
       - name: Checkout PR head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - name: Verify Goal/manifest/PR SHA contract
+      - name: Verify Goal/manifest/PR SHA contract and delivery readiness
+        id: contract
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -37,14 +38,13 @@ jobs:
           if (m.page !== 'home' || m.version !== 'v1') fail('page/version mismatch');
           if (m.owner_approval?.status !== 'APPROVED') fail('owner approval missing');
           const d = m.delivery_evidence || {};
-          if (['VERIFYING','COMPLETE'].includes(m.status)) {
-            if (!d.commit_sha) fail('delivery_evidence.commit_sha required in VERIFYING/COMPLETE');
-            if (d.commit_sha !== process.env.PR_HEAD_SHA) fail(`manifest commit ${d.commit_sha} != PR head ${process.env.PR_HEAD_SHA}`);
-            if (Number(d.pr_number) !== Number(process.env.PR_NUMBER)) fail('manifest PR number mismatch');
-            if (d.pr_url !== process.env.PR_URL) fail('manifest PR URL mismatch');
-          } else if (d.commit_sha && d.commit_sha !== process.env.PR_HEAD_SHA) {
-            fail(`stale manifest commit ${d.commit_sha} != PR head ${process.env.PR_HEAD_SHA}`);
+          if (!['VERIFYING','COMPLETE'].includes(m.status)) {
+            fail(`page status ${m.status} is not delivery-eligible; resolve local asset/build/browser/visual blockers before querying Vercel`);
           }
+          if (!d.commit_sha) fail('delivery_evidence.commit_sha required in VERIFYING/COMPLETE');
+          if (d.commit_sha !== process.env.PR_HEAD_SHA) fail(`manifest commit ${d.commit_sha} != PR head ${process.env.PR_HEAD_SHA}`);
+          if (Number(d.pr_number) !== Number(process.env.PR_NUMBER)) fail('manifest PR number mismatch');
+          if (d.pr_url !== process.env.PR_URL) fail('manifest PR URL mismatch');
           console.log(`HEALTH_VISUAL_SHA_BINDING_PASS: PR #${process.env.PR_NUMBER} head ${process.env.PR_HEAD_SHA}`);
           NODE
 
