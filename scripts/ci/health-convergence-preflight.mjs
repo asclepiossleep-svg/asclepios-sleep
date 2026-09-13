@@ -7,9 +7,38 @@ const GLOBAL_REGISTRY = 'apps/health-web/asset-manifest.json';
 const REPORT_PATH = 'artifacts/health-convergence-preflight.json';
 const ACTIVE = new Set(['APPROVED', 'PUBLISHED']);
 
-const blockers = [];
-const add = (code, message, extra = {}) => blockers.push({ code, classification: 'INTERNAL_BLOCKED', retryable: false, message, ...extra });
+const generalBlockers = [];
+const assetBlockers = new Map();
+const addGeneral = (code, message, extra = {}) => generalBlockers.push({
+  code,
+  classification: 'INTERNAL_BLOCKED',
+  retryable: false,
+  message,
+  ...extra,
+});
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
+
+function assetBlocker(repoPath, label, expectedSha) {
+  if (!assetBlockers.has(repoPath)) {
+    assetBlockers.set(repoPath, {
+      code: 'ASSET_INTEGRITY_FAILURE',
+      classification: 'INTERNAL_BLOCKED',
+      retryable: false,
+      asset: label,
+      repo_path: repoPath,
+      expected_sha256: expectedSha || null,
+      actual_sha256: null,
+      issues: [],
+    });
+  }
+  return assetBlockers.get(repoPath);
+}
+
+function addAssetIssue(repoPath, label, expectedSha, issue, message, extra = {}) {
+  const blocker = assetBlocker(repoPath, label, expectedSha);
+  if (!blocker.issues.some((i) => i.code === issue)) blocker.issues.push({ code: issue, message, ...extra });
+  if (extra.actual_sha256) blocker.actual_sha256 = extra.actual_sha256;
+}
 
 function validSignature(file, buf) {
   const ext = path.extname(file).toLowerCase();
@@ -23,16 +52,23 @@ function validSignature(file, buf) {
 
 async function readJson(file) {
   try { return JSON.parse(await fs.readFile(file, 'utf8')); }
-  catch (error) { add('MANIFEST_READ_FAIL', `${file}: ${error.message}`); return null; }
+  catch (error) { addGeneral('MANIFEST_READ_FAIL', `${file}: ${error.message}`); return null; }
 }
 
 async function verifyBinary(repoPath, expectedSha, label) {
   let buf;
   try { buf = await fs.readFile(repoPath); }
-  catch { add('ASSET_MISSING', `${label}: missing ${repoPath}`, { repo_path: repoPath, expected_sha256: expectedSha }); return; }
+  catch {
+    addAssetIssue(repoPath, label, expectedSha, 'ASSET_MISSING', `missing ${repoPath}`);
+    return;
+  }
   const actual = sha256(buf);
-  if (actual !== expectedSha) add('ASSET_SHA_MISMATCH', `${label}: SHA-256 mismatch`, { repo_path: repoPath, expected_sha256: expectedSha, actual_sha256: actual });
-  if (!validSignature(repoPath, buf)) add('ASSET_INVALID_BINARY', `${label}: invalid ${path.extname(repoPath)} binary signature`, { repo_path: repoPath });
+  if (actual !== expectedSha) {
+    addAssetIssue(repoPath, label, expectedSha, 'SHA_MISMATCH', 'committed bytes do not match approved SHA-256', { actual_sha256: actual });
+  }
+  if (!validSignature(repoPath, buf)) {
+    addAssetIssue(repoPath, label, expectedSha, 'INVALID_BINARY_SIGNATURE', `invalid ${path.extname(repoPath)} binary signature`);
+  }
 }
 
 const page = await readJson(PAGE_MANIFEST);
@@ -40,14 +76,14 @@ const registry = await readJson(GLOBAL_REGISTRY);
 
 if (page && registry) {
   if (page.goal_id !== 'HEALTH-VISUAL-PILOT-001' || page.page !== 'home' || page.version !== 'v1') {
-    add('GOAL_SCOPE_MISMATCH', 'Home v1 manifest Goal/page/version contract is invalid');
+    addGeneral('GOAL_SCOPE_MISMATCH', 'Home v1 manifest Goal/page/version contract is invalid');
   }
 
   const pageDir = path.dirname(PAGE_MANIFEST);
   if (page.approved_reference?.path && page.approved_reference?.sha256) {
     await verifyBinary(path.resolve(pageDir, page.approved_reference.path), page.approved_reference.sha256, 'approved-home-reference');
   } else {
-    add('REFERENCE_METADATA_MISSING', 'approved_reference path/SHA is missing');
+    addGeneral('REFERENCE_METADATA_MISSING', 'approved_reference path/SHA is missing');
   }
 
   const globalByPath = new Map((registry.assets || []).map((a) => [a.repo_path, a]));
@@ -62,30 +98,35 @@ if (page && registry) {
 
     const global = globalByPath.get(repoPath);
     if (!global) {
-      add('REGISTRY_ENTRY_MISSING', `${asset.id}: ${repoPath} is absent from global asset registry`, { repo_path: repoPath });
+      addAssetIssue(absolute, asset.id || asset.role || 'asset', asset.sha256, 'REGISTRY_ENTRY_MISSING', `${repoPath} is absent from global asset registry`);
       continue;
     }
-    if (!ACTIVE.has(global.status)) add('REGISTRY_STATUS_INVALID', `${asset.id}: registry status ${global.status} is not production-active`, { asset_id: global.asset_id });
+    if (!ACTIVE.has(global.status)) {
+      addAssetIssue(absolute, asset.id || asset.role || 'asset', asset.sha256, 'REGISTRY_STATUS_INVALID', `registry status ${global.status} is not production-active`, { asset_id: global.asset_id });
+    }
     if (global.checksum_sha256 !== asset.sha256) {
-      add('REGISTRY_SHA_DIVERGENCE', `${asset.id}: page manifest and global registry disagree on SHA-256`, {
-        repo_path: repoPath,
+      addAssetIssue(absolute, asset.id || asset.role || 'asset', asset.sha256, 'REGISTRY_SHA_DIVERGENCE', 'page manifest and global registry disagree on SHA-256', {
         page_sha256: asset.sha256,
         registry_sha256: global.checksum_sha256,
       });
     }
   }
 
-  for (const role of requiredRoles) if (!seenRoles.has(role)) add('PAGE_ROLE_MISSING', `Home v1 manifest missing required role: ${role}`);
+  for (const role of requiredRoles) if (!seenRoles.has(role)) addGeneral('PAGE_ROLE_MISSING', `Home v1 manifest missing required role: ${role}`);
 }
 
+const blockers = [...generalBlockers, ...assetBlockers.values()];
+const findingCount = blockers.reduce((sum, blocker) => sum + (Array.isArray(blocker.issues) ? blocker.issues.length : 1), 0);
 const report = {
-  schema_version: '1.0.0',
+  schema_version: '1.1.0',
   goal_id: 'HEALTH-VISUAL-PILOT-001',
   pr: 116,
   page: 'home',
   version: 'v1',
   status: blockers.length ? 'INTERNAL_BLOCKED' : 'READY_FOR_BUILD',
   can_run_build_browser_visual: blockers.length === 0,
+  root_cause_count: blockers.length,
+  finding_count: findingCount,
   external_deployment: { status: 'NOT_EVALUATED', classification: 'EXTERNAL_DEPENDENCY', provider: 'Vercel' },
   blockers,
 };
@@ -95,8 +136,14 @@ await fs.writeFile(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
 console.log(`HEALTH_CONVERGENCE_PREFLIGHT=${JSON.stringify(report)}`);
 
 if (blockers.length) {
-  console.error(`HEALTH_CONVERGENCE_PREFLIGHT_BLOCKED: ${blockers.length} deterministic internal blocker(s).`);
-  for (const b of blockers) console.error(`- ${b.code}: ${b.message}`);
+  console.error(`HEALTH_CONVERGENCE_PREFLIGHT_BLOCKED: ${blockers.length} root-cause blocker(s), ${findingCount} finding(s).`);
+  for (const b of blockers) {
+    if (Array.isArray(b.issues)) {
+      console.error(`- ${b.asset}: ${b.issues.map((i) => i.code).join(', ')}`);
+    } else {
+      console.error(`- ${b.code}: ${b.message}`);
+    }
+  }
   process.exit(1);
 }
 
