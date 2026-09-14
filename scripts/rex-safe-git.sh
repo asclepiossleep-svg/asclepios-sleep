@@ -11,6 +11,7 @@ if [[ ! "$issue" =~ ^[0-9]+$ ]]; then
 fi
 
 expected_prefix="rex/${issue}-"
+canonical_visual_branch="visual/home-v1-pilot-${issue}"
 current_branch() { git rev-parse --abbrev-ref HEAD; }
 require_rex_branch() {
   local branch
@@ -28,19 +29,24 @@ require_rex_branch() {
 case "$op" in
   init)
     slug="${1:-work}"
+    base_ref="${2:-main}"
     if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
       echo "invalid branch slug" >&2
       exit 2
     fi
+    if [[ "$base_ref" != "main" && "$base_ref" != "$canonical_visual_branch" ]]; then
+      echo "refusing unsupported base ref: $base_ref (allowed: main or $canonical_visual_branch)" >&2
+      exit 3
+    fi
     branch="${expected_prefix}${slug}"
-    git fetch origin main
+    git fetch origin "$base_ref"
     if git show-ref --verify --quiet "refs/heads/$branch"; then
       git checkout "$branch"
     elif git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
       git fetch origin "$branch:$branch"
       git checkout "$branch"
     else
-      git checkout -b "$branch" origin/main
+      git checkout -b "$branch" "origin/$base_ref"
     fi
     ;;
   sync-main)
