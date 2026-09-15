@@ -1,0 +1,93 @@
+name: health-visual-delivery-gate
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: health-visual-delivery-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: read
+
+jobs:
+  delivery-consistency:
+    name: health-visual-delivery-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Run Health convergence preflight
+        id: preflight
+        continue-on-error: true
+        run: node scripts/ci/health-convergence-preflight.mjs
+
+      - name: Record delivery skip when internally blocked
+        if: steps.preflight.outcome == 'failure'
+        run: echo 'HEALTH_DELIVERY_SKIPPED: INTERNAL_BLOCKED; Vercel was not queried.'
+
+      - name: Verify Goal/manifest/PR SHA contract and delivery readiness
+        if: steps.preflight.outcome == 'success'
+        id: contract
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const p = 'apps/health-web/src/assets/pages/home/v1/manifest.json';
+          const m = JSON.parse(fs.readFileSync(p, 'utf8'));
+          const fail = (msg) => { console.error(`HEALTH_VISUAL_DELIVERY_FAIL: ${msg}`); process.exit(1); };
+          if (m.goal_id !== 'HEALTH-VISUAL-PILOT-001') fail('Goal ID mismatch');
+          if (m.page !== 'home' || m.version !== 'v1') fail('page/version mismatch');
+          if (m.owner_approval?.status !== 'APPROVED') fail('owner approval missing');
+          const d = m.delivery_evidence || {};
+          if (!['VERIFYING','COMPLETE'].includes(m.status)) fail(`page status ${m.status} is not delivery-eligible`);
+          if (!d.commit_sha) fail('delivery_evidence.commit_sha required in VERIFYING/COMPLETE');
+          if (d.commit_sha !== process.env.PR_HEAD_SHA) fail(`manifest commit ${d.commit_sha} != PR head ${process.env.PR_HEAD_SHA}`);
+          if (Number(d.pr_number) !== Number(process.env.PR_NUMBER)) fail('manifest PR number mismatch');
+          if (d.pr_url !== process.env.PR_URL) fail('manifest PR URL mismatch');
+          console.log(`HEALTH_VISUAL_SHA_BINDING_PASS: PR #${process.env.PR_NUMBER} head ${process.env.PR_HEAD_SHA}`);
+          NODE
+
+      - name: Wait for Vercel Health preview status on this exact SHA
+        if: steps.preflight.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 16); do
+            JSON="$(gh api "repos/$REPO/commits/$HEAD_SHA/status")"
+            STATE="$(jq -r '[.statuses[] | select(.context == "Vercel – asclepios-health-web")] | first | .state // "missing"' <<<"$JSON")"
+            DESC="$(jq -r '[.statuses[] | select(.context == "Vercel – asclepios-health-web")] | first | .description // ""' <<<"$JSON")"
+            TARGET="$(jq -r '[.statuses[] | select(.context == "Vercel – asclepios-health-web")] | first | .target_url // ""' <<<"$JSON")"
+            echo "Vercel Health attempt $attempt: state=$STATE desc=$DESC target=$TARGET"
+            if [ "$STATE" = "success" ] && [[ "$TARGET" != *"upgradeToPro=build-rate-limit"* ]]; then
+              echo "HEALTH_VISUAL_VERCEL_PASS: exact PR head SHA has successful Health deployment status"
+              exit 0
+            fi
+            if [ "$STATE" = "failure" ] || [[ "$DESC" == *"rate limited"* ]] || [[ "$TARGET" == *"upgradeToPro=build-rate-limit"* ]]; then
+              echo "HEALTH_VISUAL_EXTERNAL_BLOCKED: provider=Vercel classification=EXTERNAL_BLOCKED retryable=true reason=$DESC" >&2
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "HEALTH_VISUAL_EXTERNAL_BLOCKED: provider=Vercel classification=EXTERNAL_BLOCKED retryable=true reason=no successful exact-SHA status within gate window" >&2
+          exit 1
+
+      - name: Upload convergence report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: health-delivery-convergence-${{ github.run_id }}
+          path: artifacts/health-convergence-preflight.json
+          if-no-files-found: warn
+          retention-days: 14

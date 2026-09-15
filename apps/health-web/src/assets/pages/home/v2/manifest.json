@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "1.2.0",
+  "goal_id": "HEALTH-VISUAL-PILOT-001",
+  "page": "home",
+  "version": "v2",
+  "status": "OWNER_APPROVED",
+  "owner_approval": {
+    "status": "APPROVED",
+    "approved_by": "Edmund",
+    "approved_at": "2026-09-14T03:53:00Z",
+    "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5658747865"
+  },
+  "approved_reference": {
+    "path": "./approved-home-reference-v2.png",
+    "sha256": "9bd1cc1b9bba55d5f133b463dbbeb04e43289172de5a9818d034ca9e1bb1c304",
+    "viewport": {
+      "desktop": { "width": 1440, "height": 1200 },
+      "mobile": { "width": 390, "height": 844 }
+    }
+  },
+  "assets": [
+    {
+      "id": "home-hero-v2",
+      "role": "hero",
+      "path": "./web/health-home-hero-v2.webp",
+      "version": "v2",
+      "format": "webp",
+      "sha256": "5ab156327c71778b662620780d979c4c2e37da48470575141dbb1ce708ab103b",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5658747865",
+      "provenance": "Owner-approved v2 recovery candidate derived from the approved Home visual direction: rear-view person facing mountain/lake sunrise."
+    },
+    {
+      "id": "home-products-card-v2",
+      "role": "products_card",
+      "path": "./web/health-home-products-card-v2.webp",
+      "version": "v2",
+      "format": "webp",
+      "sha256": "aa4e011523f262b5b1dec467a597fa4b5d7d971387fe8a6c920293ab089a4f98",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5658747865",
+      "provenance": "Owner-approved v2 recovery candidate using real existing Asclepios product packaging rather than invented placeholder product imagery."
+    },
+    {
+      "id": "home-sleep-app-card",
+      "role": "sleep_app_card",
+      "path": "../v1/web/health-home-sleep-app-card-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "b24cd1b3b4b5246936265b01a92c8ee2ea9fb1fa371557fce9075453111844e8",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Unchanged owner-approved Sleep App card from Home v1."
+    },
+    {
+      "id": "home-learning-card",
+      "role": "learning_card",
+      "path": "../v1/web/health-home-learning-card-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "93b0fb8ce5a906cbf6f568978e237f2593563401505f9898ef5bf1858295dec9",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Unchanged owner-approved Learning & Courses card from Home v1."
+    }
+  ],
+  "implementation": {
+    "allowed_asset_roots": [
+      "apps/health-web/src/assets/brand/",
+      "apps/health-web/src/assets/pages/home/v1/",
+      "apps/health-web/src/assets/pages/home/v2/",
+      "apps/health-web/src/assets/products/"
+    ],
+    "external_urls_allowed": false,
+    "generated_substitutions_allowed": false
+  },
+  "activation": {
+    "production_active": false,
+    "rule": "Do not switch Home.tsx, global registry production paths, or convergence preflight to v2 until all three v2 candidate binaries are committed and byte-verified against this manifest."
+  },
+  "pilot_completion_rule": "A verified Vercel Preview using the approved commit SHA is sufficient for pilot deployed visual verification; production verification is required only after approved merge and production deployment.",
+  "final_authority_rule": "The page manifest may record page-level COMPLETE, but only the existing Amanda Goal Controller may transition the Goal to COMPLETE.",
+  "delivery_evidence": {
+    "commit_sha": "",
+    "pr_number": 116,
+    "pr_url": "https://github.com/asclepiossleep-svg/asclepios-sleep/pull/116",
+    "vercel_preview_url": "",
+    "vercel_deployment_id": "",
+    "desktop_evidence": { "status": "PENDING", "screenshot_path": "", "sha256": "", "verified_at": "" },
+    "mobile_evidence": { "status": "PENDING", "screenshot_path": "", "sha256": "", "verified_at": "" },
+    "production_evidence": { "status": "NOT_IN_SCOPE_FOR_PILOT", "url": "", "commit_sha": "", "verified_at": "" }
+  },
+  "verification": {
+    "asset_policy": "PENDING_BINARY_INSTALL",
+    "manifest_validation": "PENDING",
+    "build": "PENDING",
+    "browser": "PENDING",
+    "visual": "PENDING",
+    "commit_consistency": "PENDING",
+    "production": "NOT_IN_SCOPE_FOR_PILOT",
+    "final_status": "OWNER_APPROVED"
+  }
+}

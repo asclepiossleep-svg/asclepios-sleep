@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "1.2.0",
+  "goal_id": "HEALTH-VISUAL-PILOT-001",
+  "page": "home",
+  "version": "v1",
+  "status": "BLOCKED",
+  "owner_approval": {
+    "status": "APPROVED",
+    "approved_by": "Edmund",
+    "approved_at": "2026-09-12T22:00:00Z",
+    "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600"
+  },
+  "approved_reference": {
+    "path": "./approved-home-reference.png",
+    "sha256": "4c85ab47d3e009219d191950ac9990832dd4a2ad696b892445060687f0dffb12",
+    "viewport": {
+      "desktop": { "width": 1440, "height": 1200 },
+      "mobile": { "width": 390, "height": 844 }
+    }
+  },
+  "assets": [
+    {
+      "id": "home-hero",
+      "role": "hero",
+      "path": "./web/health-home-hero-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "b3b9a4c4df319fb68b8035f52d5bf6fcfaa74c39c5dc7f690218d40e7cbe25af",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Extracted from the owner-approved Home reference; no substitute imagery used."
+    },
+    {
+      "id": "home-products-card",
+      "role": "products_card",
+      "path": "./web/health-home-products-card-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "a44f04a181f33675009ea2279c8079c1c267c72162baf834674e3d98f99e8045",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Extracted from the owner-approved Home reference; no substitute imagery used."
+    },
+    {
+      "id": "home-sleep-app-card",
+      "role": "sleep_app_card",
+      "path": "./web/health-home-sleep-app-card-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "b24cd1b3b4b5246936265b01a92c8ee2ea9fb1fa371557fce9075453111844e8",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Extracted from the owner-approved Home reference; no substitute imagery used."
+    },
+    {
+      "id": "home-learning-card",
+      "role": "learning_card",
+      "path": "./web/health-home-learning-card-v1.webp",
+      "version": "v1",
+      "format": "webp",
+      "sha256": "93b0fb8ce5a906cbf6f568978e237f2593563401505f9898ef5bf1858295dec9",
+      "owner_approved": true,
+      "approval_record": "https://github.com/asclepiossleep-svg/asclepios-sleep/issues/114#issuecomment-5649112600",
+      "provenance": "Extracted from the owner-approved Home mobile reference; no substitute imagery used."
+    }
+  ],
+  "implementation": {
+    "allowed_asset_roots": [
+      "apps/health-web/src/assets/brand/",
+      "apps/health-web/src/assets/pages/home/v1/",
+      "apps/health-web/src/assets/products/"
+    ],
+    "external_urls_allowed": false,
+    "generated_substitutions_allowed": false
+  },
+  "pilot_completion_rule": "A verified Vercel Preview using the approved commit SHA is sufficient for pilot deployed visual verification; production verification is required only after approved merge and production deployment.",
+  "final_authority_rule": "The page manifest may record page-level COMPLETE, but only the existing Amanda Goal Controller may transition the Goal to COMPLETE.",
+  "delivery_evidence": {
+    "commit_sha": "",
+    "pr_number": 116,
+    "pr_url": "https://github.com/asclepiossleep-svg/asclepios-sleep/pull/116",
+    "vercel_preview_url": "",
+    "vercel_deployment_id": "",
+    "desktop_evidence": { "status": "PENDING", "screenshot_path": "", "sha256": "", "verified_at": "" },
+    "mobile_evidence": { "status": "PENDING", "screenshot_path": "", "sha256": "", "verified_at": "" },
+    "production_evidence": { "status": "NOT_IN_SCOPE_FOR_PILOT", "url": "", "commit_sha": "", "verified_at": "" }
+  },
+  "verification": {
+    "asset_policy": "FAILED",
+    "manifest_validation": "PENDING",
+    "build": "PENDING",
+    "browser": "PENDING",
+    "visual": "PENDING",
+    "commit_consistency": "PENDING",
+    "production": "NOT_IN_SCOPE_FOR_PILOT",
+    "final_status": "BLOCKED"
+  }
+}
