@@ -29,7 +29,9 @@ jobs:
           node-version: 20
 
       - name: Run deterministic Health convergence preflight
-        run: node scripts/ci/health-convergence-preflight.mjs
+        run: |
+          node scripts/ci/health-convergence-preflight.mjs
+          node tests/health-visual-manifest-check.mjs
 
       - name: Upload machine-readable preflight report
         if: always()

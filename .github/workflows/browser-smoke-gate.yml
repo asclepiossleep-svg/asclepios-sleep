@@ -31,7 +31,9 @@ jobs:
       - name: Run Health convergence preflight
         id: preflight
         continue-on-error: true
-        run: node scripts/ci/health-convergence-preflight.mjs
+        run: |
+          node scripts/ci/health-convergence-preflight.mjs
+          node tests/health-visual-manifest-check.mjs
 
       - name: Record browser skip when internally blocked
         if: steps.preflight.outcome == 'failure'
