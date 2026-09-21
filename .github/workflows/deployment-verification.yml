@@ -43,6 +43,36 @@ jobs:
       - name: Verify deployed routes with bounded retries
         run: node scripts/verify-deployment.mjs
 
+      - name: Install pinned Playwright Chromium for production evidence capture
+        if: contains(env.DEPLOYMENT_URL, 'health') || env.VERIFY_PROFILE == 'health'
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Capture canonical production evidence (Health)
+        if: contains(env.DEPLOYMENT_URL, 'health') || env.VERIFY_PROFILE == 'health'
+        env:
+          CANONICAL_URL: ${{ env.DEPLOYMENT_URL }}
+          EXPECTED_COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set +e
+          node scripts/ci/verify-production-evidence.mjs
+          status=$?
+          if [ "$status" -eq 2 ]; then
+            echo "::warning::Production evidence capture was blocked by an external provider rate limit, not a verification failure. See the uploaded evidence artifact."
+            exit 0
+          fi
+          exit "$status"
+
+      - name: Upload production evidence artifact
+        if: always() && (contains(env.DEPLOYMENT_URL, 'health') || env.VERIFY_PROFILE == 'health')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-evidence-${{ github.run_id }}
+          path: artifacts/production-verification/
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Resolve recovered deployment blocker
         if: ${{ success() }}
         env:
