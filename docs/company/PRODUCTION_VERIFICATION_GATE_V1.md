@@ -79,8 +79,10 @@ Fields, and why each exists:
 - `http_status` / `matched_markers` / `missing_markers` — the actual
   browser-observed result, not a raw `fetch()` against a client-rendered
   SPA shell.
-- `screenshot` — full-page PNG, uploaded as a CI artifact; the visual proof
-  a stale-content claim or a `LIVE_COMPLETE` claim can be checked against.
+- `screenshot` — full-page PNG written alongside `evidence.json`; the
+  visual proof a stale-content claim or a `LIVE_COMPLETE` claim can be
+  checked against once a maintainer wires durable artifact upload (see
+  "Wiring" below for why Rex cannot add that step itself).
 - `state` — one of `LIVE_COMPLETE`, `STALE_OR_WRONG`, `UNREACHABLE`,
   `RATE_LIMIT_BLOCKED` (see below).
 
@@ -94,30 +96,54 @@ containing "rate limit") that survives every attempt produces
 `state: "RATE_LIMIT_BLOCKED"` and exit code `2` — distinct from
 `UNREACHABLE` (exit `1`, a real defect) and from `LIVE_COMPLETE` (exit `0`).
 **`RATE_LIMIT_BLOCKED` is never treated as proof of success, and never
-silently swallowed as a generic failure** — the calling workflow step
-reports it as an explicit external-blocker warning and still uploads
-whatever partial evidence it captured, rather than inventing a pass.
+silently swallowed as a generic failure** — the calling script
+(`scripts/verify-deployment.mjs`) logs it as an explicit external-blocker
+message and does not fail the job for it, while `evidence.json` still
+records exactly what was observed, rather than inventing a pass.
 
 ## Wiring
 
-`.github/workflows/deployment-verification.yml` already runs on every real
-Vercel `deployment_status` success event (webhook-driven, not a guess about
-when a deploy happened) and on manual `workflow_dispatch`. For a deployment
-whose URL resolves to the `health` profile, it now additionally:
+The Rex/Claude Code Action GitHub App has no `workflows` write permission
+(`scripts/verify-agent-workflow-policy.mjs` deliberately locks this down —
+confirmed live when a push touching
+`.github/workflows/deployment-verification.yml` was rejected outright by
+GitHub during this bounded item, the same constraint
+`PRODUCTION_ASSET_ALLOWLIST_GATE_V1.md` hit for `required-build-gate.yml`).
+So, like that gate, this one is wired into a script the existing workflow
+already runs unmodified, rather than into the protected workflow file
+itself:
 
-1. installs the pinned Playwright Chromium build;
-2. runs `scripts/ci/verify-production-evidence.mjs` with
-   `EXPECTED_COMMIT_SHA` set to the triggering commit's SHA;
-3. converts a `RATE_LIMIT_BLOCKED` exit code (`2`) into a step warning
-   without failing the job (an external blocker is not a verification
-   defect) while still uploading the evidence/screenshot;
-4. lets a real `STALE_OR_WRONG`/`UNREACHABLE` result (exit `1`) fail the
-   job, which the workflow's existing "Escalate failed deployment
-   verification" step turns into an `[AMANDA-BLOCKER]` issue with an exact
-   next action;
-5. uploads `artifacts/production-verification/` as a build artifact on
-   every run (`if: always()`), so evidence exists whether the probe passed,
-   failed, or was rate-limited.
+`.github/workflows/deployment-verification.yml` already runs
+`node scripts/verify-deployment.mjs` on every real Vercel `deployment_status`
+success event (webhook-driven, not a guess about when a deploy happened)
+and on manual `workflow_dispatch`. `scripts/verify-deployment.mjs` now, once
+its existing lightweight route checks pass for a URL that resolves to the
+`health` profile:
+
+1. installs the pinned Playwright Chromium build at runtime
+   (`npm install --no-save playwright@1.63.0` + `playwright install
+   --with-deps chromium`) — no new workflow step needed, since this all
+   happens inside the one `run:` line that already exists;
+2. shells out to `scripts/ci/verify-production-evidence.mjs` with
+   `CANONICAL_URL` set to the deployment URL and `EXPECTED_COMMIT_SHA` set
+   to `VERCEL_GIT_COMMIT_SHA`/`GITHUB_SHA` from the run's own environment;
+3. treats a `RATE_LIMIT_BLOCKED` exit code (`2`) as a logged external
+   blocker without failing the overall script (an external blocker is not a
+   verification defect);
+4. lets a real `STALE_OR_WRONG`/`UNREACHABLE` result (exit `1`), or a failed
+   Playwright install, fail the overall script, which the workflow's
+   existing "Escalate failed deployment verification" step turns into an
+   `[AMANDA-BLOCKER]` issue with an exact next action.
+
+`evidence.json` and the full-page screenshot are written to
+`artifacts/production-verification/` on the runner, exactly as they would
+be if invoked locally. **They are not currently uploaded as a durable CI
+artifact** — `actions/upload-artifact` needs a new workflow step, which
+needs `workflows` permission Rex does not have. A maintainer can add that
+one step later; until then, the evidence is fully visible in the job's
+`stdout` (the script prints the full `evidence.json` to the log) even
+though the screenshot PNG itself does not survive past the run. This is a
+known, documented gap — not a silent one.
 
 ## Manual / on-demand use
 
