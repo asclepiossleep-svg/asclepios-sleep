@@ -121,6 +121,14 @@ jobs:
           ANOTHER_RUN="$(field 'Another Rex Run Required')"
           RECOMMENDED_STATE="$(field 'Recommended Goal State')"
 
+          # Rex handoffs sometimes append an explanatory clause after YES/NO
+          # (for example: "YES -- once permission is restored"). Normalize the
+          # control token so valid continuation requests are not misclassified.
+          case "$ANOTHER_RUN" in
+            YES*) ANOTHER_RUN="YES" ;;
+            NO*) ANOTHER_RUN="NO" ;;
+          esac
+
           if [ -z "$OUTCOME" ] || [ -z "$GOAL_ID" ] || [ -z "$RUN_ID" ] || [ -z "$NEXT_ACTION" ] || [ -z "$RECOMMENDED_STATE" ]; then
             printf -v body '%s\n' \
               '[AMANDA-CONTROLLER] BLOCKED' \
