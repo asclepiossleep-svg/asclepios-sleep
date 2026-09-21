@@ -84,7 +84,7 @@ forbidPattern(manager, /Bash\(git merge:\*\)/, 'manager workflow must not grant 
 
 const safeGit = fs.readFileSync('scripts/rex-safe-git.sh', 'utf8');
 requirePattern(safeGit, /expected_prefix="rex\/\$\{issue\}-"/, 'safe git wrapper must bind writes to rex/<issue>- branches');
-requirePattern(safeGit, /refusing direct main write/, 'safe git wrapper must explicitly reject main writes');
+requirePattern(safeGit, /refusing direct protected\/canonical write/, 'safe git wrapper must explicitly reject main/canonical-branch writes');
 requirePattern(safeGit, /git push origin "HEAD:\$branch"/, 'safe git wrapper must push only current validated Rex branch');
 forbidPattern(safeGit, /--force|-f\b/, 'safe git wrapper must not permit force push');
 
