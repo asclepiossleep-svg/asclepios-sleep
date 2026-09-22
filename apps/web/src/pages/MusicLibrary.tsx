@@ -99,6 +99,7 @@ export default function MusicLibrary() {
       <PageHeader
         title={t("music.title")}
         subtitle={selectingForTonight ? t("music.selectForTonightSubtitle") : t("music.subtitle")}
+        onBack={selectingForTonight}
       />
 
       <div>
