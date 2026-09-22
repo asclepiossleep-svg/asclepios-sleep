@@ -47,8 +47,8 @@ Each entry carries:
 | `repo_path` | yes | exact committed path, repo-root relative |
 | `checksum_sha256` | yes | binds the asset ID to the exact committed bytes |
 | `archive_class` | yes | `HOT` / `WARM` / `COLD` |
-| `supersedes_asset_id` / `superseded_by_asset_id` | optional | replacement history, kept even after retirement |
-| `drive_reference` | optional | reserved for the Drive->repo release contract (work item 2); not required to be populated yet |
+| `supersedes_asset_id` / `superseded_by_asset_id` | optional | replacement history, kept even after retirement; must be bidirectionally consistent — see `DRIVE_TO_REPO_ASSET_RELEASE_CONTRACT_V1.md` |
+| `drive_reference` | yes | either the controlled Drive-provenance object or the `NOT_APPLICABLE_PRE_CONTRACT_DIRECT_UPLOAD` sentinel — see `DRIVE_TO_REPO_ASSET_RELEASE_CONTRACT_V1.md` |
 
 ### Status enum (superset of the registry schema, for this gate)
 
@@ -124,14 +124,12 @@ release contract below.
 
 ## Relationship to work item 2 (Drive -> repo release contract)
 
-This gate assumes manifest entries already exist with real
-`source_ref`/`approved_by`/`checksum_sha256` values. It intentionally does
-not define *how* a new Drive `APPROVED_CURRENT` asset becomes a new
-manifest entry — that minimal release/sync contract (preserving asset ID,
-version, approval date/source, production filename, and replacement
-history, without requiring runtime Drive access) is the next bounded work
-item under Issue #120 and will populate the `drive_reference` field this
-schema already reserves.
+`docs/company/DRIVE_TO_REPO_ASSET_RELEASE_CONTRACT_V1.md` (Issue #120
+bounded work item 2) defines how a Drive `APPROVED_CURRENT` asset becomes a
+new manifest entry: it fixes the `drive_reference` schema, the
+`supersedes_asset_id`/`superseded_by_asset_id` replacement-history rule, and
+extends this gate's script to enforce both structurally, with no runtime
+Drive access required.
 
 ## Local usage
 
