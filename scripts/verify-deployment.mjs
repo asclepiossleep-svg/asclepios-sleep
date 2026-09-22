@@ -18,9 +18,15 @@ if (!baseUrl) {
 // workflow file edit. A maintainer with `workflows` permission can later add
 // a real `actions/upload-artifact` step for durable screenshot storage —
 // see docs/company/PRODUCTION_VERIFICATION_GATE_V1.md.
+const CANONICAL_HEALTH_HOST = 'asclepios-health.vercel.app';
+
 function captureProductionEvidence() {
   const hostname = new URL(baseUrl).hostname.toLowerCase();
-  if (!hostname.includes('health') && !hostname.includes('asclepioshealth')) return;
+  // Scoped to exactly the canonical Health production URL (Issue #120 item 3),
+  // not every health-profile preview: preview deployments don't need the heavy
+  // Playwright install/probe this triggers, and a preview mismatching production
+  // marker/commit expectations is not a production defect worth escalating.
+  if (hostname !== CANONICAL_HEALTH_HOST) return;
 
   console.log(`Capturing production evidence for ${baseUrl}...`);
   try {
