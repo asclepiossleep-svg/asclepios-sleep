@@ -34,7 +34,9 @@ jobs:
         run: node scripts/verify-agent-workflow-policy.mjs
 
       - name: Run Health convergence preflight before build
-        run: node scripts/ci/health-convergence-preflight.mjs
+        run: |
+          node scripts/ci/health-convergence-preflight.mjs
+          node tests/health-visual-manifest-check.mjs
 
       - name: Upload convergence report on failure
         if: failure()
