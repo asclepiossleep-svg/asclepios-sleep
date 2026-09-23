@@ -14,6 +14,10 @@
     "db:seed": "npm run db:seed --workspace=apps/api",
     "check:asset-manifest": "node scripts/ci/verify-asset-manifest.mjs",
     "check:health-convergence": "node scripts/ci/health-convergence-preflight.mjs",
+    "check:health-visual-policy": "node tests/health-visual-manifest-check.mjs",
+    "check:health-visual-delivery-contract": "node scripts/ci/verify-health-visual-delivery-contract.mjs",
+    "test:health-visual-policy": "node tests/health-visual-manifest-check.contract.mjs",
+    "test:health-visual-delivery-contract": "node tests/verify-health-visual-delivery-contract.contract.mjs",
     "build": "npm run check:asset-manifest && npm run build --workspace=packages/shared && npm run build --workspace=apps/api && npm run build --workspace=apps/web && npm run build --workspace=apps/health-web"
   },
   "engines": {

@@ -9,11 +9,18 @@ const fail = (msg) => {
 };
 
 async function readJsonIfExists(file) {
+  let raw;
   try {
-    return JSON.parse(await fs.readFile(file, 'utf8'));
+    raw = await fs.readFile(file, 'utf8');
   } catch (error) {
     if (error.code === 'ENOENT') return null;
     throw error;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    fail(`${file} is not valid JSON: ${error.message}`);
+    return null;
   }
 }
 
