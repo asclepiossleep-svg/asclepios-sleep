@@ -2,8 +2,9 @@
 
 Owner: Amanda
 Status: IMPLEMENTATION-READY, WIRED INTO `deployment-verification.yml`
-Scope: `https://asclepios-health.vercel.app/` (the Asclepios Health canonical production URL)
+Scope: `https://asclepios-health.vercel.app/` (the Asclepios Health canonical production URL — exact HTTPS origin and path, not a hostname substring match)
 Goal: Amanda OS v1.0 completion (Issue #120), bounded work item 3
+Decision logic: `scripts/ci/production-evidence-lib.mjs` (pure, unit-tested — `scripts/ci/production-evidence-lib.test.mjs`, run via `npm run test:production-verification-gate`)
 
 ## Purpose
 
@@ -56,6 +57,7 @@ elsewhere in this repo — see `tests/health-browser-smoke.mjs`) and writes
   "deployed_commit_sha": "fb43dbe20b973eb7f63b4cc16c14e94449f7ba52",
   "expected_commit_sha": "fb43dbe20b973eb7f63b4cc16c14e94449f7ba52",
   "commit_mismatch": false,
+  "commit_unknown_but_required": false,
   "screenshot": "artifacts/production-verification/production-home.png",
   "state": "LIVE_COMPLETE"
 }
@@ -73,12 +75,29 @@ Fields, and why each exists:
 - `deployed_commit_sha` — read from a `<meta name="asclepios-commit-sha">`
   tag injected at build time by `apps/health-web/vite.config.ts`, sourced
   from Vercel's own `VERCEL_GIT_COMMIT_SHA` build environment variable (or
-  `GITHUB_SHA` when built in Actions). If neither is set, the tag reads
-  `"unknown"` and the gate reports `deployed_commit_sha: "UNKNOWN"` rather
-  than guessing.
+  `GITHUB_SHA` when built in Actions — that fallback is safe at *build*
+  time, since it is Vercel/Actions building the exact commit being
+  deployed). If neither is set, the tag reads `"unknown"` and the gate
+  reports `deployed_commit_sha: "UNKNOWN"` rather than guessing.
+- `expected_commit_sha` — bound to the actual deployment identity, never to
+  an unrelated Actions checkout SHA. See "SHA binding" below for how the
+  *caller* (`scripts/verify-deployment.mjs`) resolves this value — the gate
+  itself only compares whatever it is given.
+- `commit_mismatch` — `true` only when both a valid expected SHA and a
+  valid deployed SHA were observed and they disagree (short/full SHA
+  prefixes are compared safely; see `compareShas` in
+  `production-evidence-lib.mjs`).
+- `commit_unknown_but_required` — `true` when an expected SHA was required
+  but the deployed page's SHA meta tag was missing/`"unknown"`/malformed.
+  This is treated exactly like a mismatch: **a missing or unknown deployed
+  SHA never yields `LIVE_COMPLETE`** when a SHA was expected — it yields
+  `STALE_OR_WRONG`, because identity was never actually confirmed.
 - `http_status` / `matched_markers` / `missing_markers` — the actual
   browser-observed result, not a raw `fetch()` against a client-rendered
-  SPA shell.
+  SPA shell. Markers are matched against the rendered page's **visible**
+  `innerText` only — a marker that exists only in raw HTML (a hidden node,
+  a `<script>`/`<style>` block, an attribute, a comment) does not count as
+  present.
 - `screenshot` — full-page PNG written alongside `evidence.json`; the
   visual proof a stale-content claim or a `LIVE_COMPLETE` claim can be
   checked against once a maintainer wires durable artifact upload (see
@@ -96,10 +115,30 @@ containing "rate limit") that survives every attempt produces
 `state: "RATE_LIMIT_BLOCKED"` and exit code `2` — distinct from
 `UNREACHABLE` (exit `1`, a real defect) and from `LIVE_COMPLETE` (exit `0`).
 **`RATE_LIMIT_BLOCKED` is never treated as proof of success, and never
-silently swallowed as a generic failure** — the calling script
+silently swallowed as a pass** — the calling script
 (`scripts/verify-deployment.mjs`) logs it as an explicit external-blocker
-message and does not fail the job for it, while `evidence.json` still
-records exactly what was observed, rather than inventing a pass.
+message and then **fails its own process with a distinct exit code (`3`)**,
+so `deployment-verification.yml`'s "Resolve recovered deployment blocker"
+step (which only runs `if: success()`) can never close an existing
+`[AMANDA-BLOCKER]` issue as "recovered" on the strength of a rate limit it
+never actually got past. `evidence.json` still records exactly what was
+observed, rather than inventing a pass.
+
+### SHA binding — never an unrelated Actions SHA
+
+`scripts/verify-deployment.mjs` resolves `EXPECTED_COMMIT_SHA` by reading
+the GitHub Actions event payload at `$GITHUB_EVENT_PATH` (a standard runner
+env var present on every job — no workflow file edit needed) and extracting
+`deployment_status.sha` (falling back to `deployment.sha`) — the commit
+GitHub/Vercel actually associated with *this specific deployment*. It
+deliberately does **not** fall back to `GITHUB_SHA`: that is the commit
+checked out for *this Actions run*, which is not necessarily the commit
+that was deployed (for example, after the `ignoreCommand` fan-out skip
+lands, a later run's checkout can be ahead of the deployment it is meant to
+verify). When the triggering event carries no deployment payload (e.g. a
+manual `workflow_dispatch`), `EXPECTED_COMMIT_SHA` resolves to `''`
+(`NOT_PROVIDED`) rather than a guessed value — SHA verification is then
+correctly skipped (`ShaComparison.NOT_REQUIRED`), not silently satisfied.
 
 ## Wiring
 
@@ -126,14 +165,23 @@ its existing lightweight route checks pass for a URL that resolves to the
    happens inside the one `run:` line that already exists;
 2. shells out to `scripts/ci/verify-production-evidence.mjs` with
    `CANONICAL_URL` set to the deployment URL and `EXPECTED_COMMIT_SHA` set
-   to `VERCEL_GIT_COMMIT_SHA`/`GITHUB_SHA` from the run's own environment;
-3. treats a `RATE_LIMIT_BLOCKED` exit code (`2`) as a logged external
-   blocker without failing the overall script (an external blocker is not a
-   verification defect);
-4. lets a real `STALE_OR_WRONG`/`UNREACHABLE` result (exit `1`), or a failed
-   Playwright install, fail the overall script, which the workflow's
-   existing "Escalate failed deployment verification" step turns into an
-   `[AMANDA-BLOCKER]` issue with an exact next action.
+   to the deployment's own `sha` read from `$GITHUB_EVENT_PATH` (see "SHA
+   binding" above) — never to `GITHUB_SHA`;
+3. only runs the canonical-URL-bound production probe when `DEPLOYMENT_URL`
+   is an **exact** match for `https://asclepios-health.vercel.app/`
+   (`isCanonicalHealthUrl` — https scheme, exact host, path `/`, no
+   query/fragment); a preview URL that merely contains the canonical
+   hostname as a substring is not treated as canonical;
+4. treats a `RATE_LIMIT_BLOCKED` exit code (`2`) as a logged external
+   blocker and fails its own process with a distinct exit code (`3`) — not
+   the same code as a real defect, but still never a silent success;
+5. lets a real `STALE_OR_WRONG`/`UNREACHABLE` result (exit `1`), or a failed
+   Playwright install, fail the overall script with exit code `1`, which the
+   workflow's existing "Escalate failed deployment verification" step turns
+   into an `[AMANDA-BLOCKER]` issue with an exact next action. Either
+   non-zero exit (`1` or `3`) also means the "Resolve recovered deployment
+   blocker" step (`if: success()`) does not run, so neither a real defect
+   nor a rate limit can be misreported as recovered/verified.
 
 `evidence.json` and the full-page screenshot are written to
 `artifacts/production-verification/` on the runner, exactly as they would
@@ -144,6 +192,41 @@ one step later; until then, the evidence is fully visible in the job's
 `stdout` (the script prints the full `evidence.json` to the log) even
 though the screenshot PNG itself does not survive past the run. This is a
 known, documented gap — not a silent one.
+
+## Tests
+
+`scripts/ci/production-evidence-lib.mjs` holds every decision rule as a
+pure, dependency-free function so it can be exercised without Playwright,
+network access or a GitHub Actions runtime:
+
+- `isCanonicalHealthUrl` — positive (exact canonical URL) and negative
+  (http instead of https, wrong path, query/fragment present, a hostname
+  that merely contains the canonical host as a substring, a preview-branch
+  host) cases.
+- `compareShas` / `normalizeSha` — expected-not-provided, deployed
+  missing/`"unknown"`, full-vs-full match, short-vs-full and full-vs-short
+  prefix matches, a same-length wrong SHA, a short wrong SHA that is not a
+  genuine prefix, and malformed non-hex input.
+- `matchVisibleMarkers` — a marker present in visible text, a marker absent
+  from visible text (simulating HTML-only presence), and empty input.
+- `decideState` — every combination of missing markers / SHA comparison
+  result, explicitly asserting a missing/unknown required SHA resolves to
+  `STALE_OR_WRONG`, never `LIVE_COMPLETE`.
+- `extractDeploymentShaFromEvent` — `deployment_status.sha`,
+  `deployment.sha` fallback, a `workflow_dispatch`-shaped payload with no
+  deployment data (yields `''`, never a guess), and a malformed non-string
+  `sha` field.
+
+Run locally or in CI with:
+
+```bash
+npm run test:production-verification-gate
+```
+
+This is wired into the root `build` script (`package.json`), the same
+no-workflow-edit pattern `check:asset-manifest` already uses, so
+`required-build-gate.yml` exercises it on every PR/push to `main` without
+any `.github/workflows/*.yml` change.
 
 ## Manual / on-demand use
 

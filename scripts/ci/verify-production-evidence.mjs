@@ -1,23 +1,34 @@
 // Deterministic production evidence gate for a single canonical URL.
 //
 // Distinguishes, with real evidence rather than assumption:
-//   LIVE_COMPLETE      — reachable, all expected markers present, and (when an
-//                        expected commit SHA was supplied) the deployed page's
-//                        commit-SHA meta tag matches it.
-//   STALE_OR_WRONG     — reachable but missing expected markers, or serving a
-//                        different commit than expected. A real defect.
+//   LIVE_COMPLETE      — reachable, all expected markers visibly present, and
+//                        (when a validated expected commit SHA was supplied)
+//                        the deployed page's commit-SHA meta tag matches it.
+//   STALE_OR_WRONG     — reachable but missing expected visible markers, or
+//                        serving a different/unknown commit while a commit
+//                        was required. A real defect — never LIVE_COMPLETE.
 //   UNREACHABLE        — did not respond successfully after bounded retries,
 //                        for a reason other than a provider rate limit.
 //   RATE_LIMIT_BLOCKED — bounded retries were exhausted against a rate-limit
 //                        shaped response. This is an external deployment
-//                        blocker, never treated as proof of success or failure.
+//                        blocker: never proof of success, and never silently
+//                        swallowed as a pass by the caller.
 //
 // See docs/company/PRODUCTION_VERIFICATION_GATE_V1.md for the CODE_DONE /
 // MERGED / LIVE_COMPLETE contract this script exists to satisfy.
 import { chromium } from "playwright";
 import fs from "node:fs/promises";
+import {
+  CANONICAL_HEALTH_URL,
+  ShaComparison,
+  VerificationState,
+  compareShas,
+  decideState,
+  isRateLimitShaped,
+  matchVisibleMarkers,
+} from "./production-evidence-lib.mjs";
 
-const CANONICAL_URL = process.env.CANONICAL_URL || "https://asclepios-health.vercel.app/";
+const CANONICAL_URL = process.env.CANONICAL_URL || CANONICAL_HEALTH_URL;
 const EXPECTED_COMMIT_SHA = process.env.EXPECTED_COMMIT_SHA || "";
 const EXPECTED_MARKERS = (process.env.EXPECTED_MARKERS || "Asclepios Health|Better Health.|Explore Products")
   .split("|")
@@ -31,11 +42,6 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function isRateLimitShaped(status, text) {
-  if (status === 429) return true;
-  return typeof text === "string" && /rate.?limit/i.test(text);
-}
-
 function extractCommitSha(html) {
   const match = html.match(/<meta[^>]+name="asclepios-commit-sha"[^>]+content="([0-9a-f]{7,40}|unknown)"/i);
   return match ? match[1] : "UNKNOWN";
@@ -44,7 +50,7 @@ function extractCommitSha(html) {
 await fs.mkdir(EVIDENCE_DIR, { recursive: true });
 
 let result = null;
-let lastFailureKind = "UNREACHABLE";
+let lastFailureKind = VerificationState.UNREACHABLE;
 let lastFailureDetail = "exhausted retries with no successful attempt";
 
 const browser = await chromium.launch();
@@ -64,24 +70,28 @@ try {
 
       if (!response || !response.ok()) {
         const rateLimited = isRateLimitShaped(status, bodyText) || isRateLimitShaped(status, html);
-        lastFailureKind = rateLimited ? "RATE_LIMIT_BLOCKED" : "UNREACHABLE";
+        lastFailureKind = rateLimited ? VerificationState.RATE_LIMIT_BLOCKED : VerificationState.UNREACHABLE;
         lastFailureDetail = `HTTP ${status}`;
         throw new Error(lastFailureDetail);
       }
 
       const deployedCommitSha = extractCommitSha(html);
-      const missingMarkers = EXPECTED_MARKERS.filter(
-        (marker) => !bodyText.includes(marker) && !html.includes(marker),
-      );
-      const matchedMarkers = EXPECTED_MARKERS.filter((marker) => !missingMarkers.includes(marker));
+      // Visible-content-only: matched against the rendered body's innerText,
+      // never against raw HTML (a marker hidden in a <script>, a comment or
+      // an attribute must not count as present).
+      const { matched: matchedMarkers, missing: missingMarkers } = matchVisibleMarkers(bodyText, EXPECTED_MARKERS);
 
       const screenshotPath = `${EVIDENCE_DIR}/production-home.png`;
       await page.screenshot({ path: screenshotPath, fullPage: true });
 
-      const commitMismatch =
-        Boolean(EXPECTED_COMMIT_SHA) && deployedCommitSha !== "UNKNOWN" && deployedCommitSha !== EXPECTED_COMMIT_SHA;
+      const shaComparison = compareShas(deployedCommitSha, EXPECTED_COMMIT_SHA);
+      const commitMismatch = shaComparison === ShaComparison.MISMATCH;
+      // A missing/unknown deployed SHA while an expected SHA was required is
+      // never proof of identity — decideState treats it the same as a real
+      // mismatch (STALE_OR_WRONG), not LIVE_COMPLETE.
+      const commitUnknownButRequired = shaComparison === ShaComparison.DEPLOYED_UNKNOWN;
 
-      const state = missingMarkers.length > 0 || commitMismatch ? "STALE_OR_WRONG" : "LIVE_COMPLETE";
+      const state = decideState({ missingMarkersCount: missingMarkers.length, shaComparison });
 
       result = {
         canonical_url: CANONICAL_URL,
@@ -95,6 +105,7 @@ try {
         deployed_commit_sha: deployedCommitSha,
         expected_commit_sha: EXPECTED_COMMIT_SHA || "NOT_PROVIDED",
         commit_mismatch: commitMismatch,
+        commit_unknown_but_required: commitUnknownButRequired,
         screenshot: screenshotPath,
         state,
       };
@@ -133,6 +144,7 @@ if (!result) {
     deployed_commit_sha: "UNKNOWN",
     expected_commit_sha: EXPECTED_COMMIT_SHA || "NOT_PROVIDED",
     commit_mismatch: false,
+    commit_unknown_but_required: false,
     screenshot: null,
     state: lastFailureKind,
     error: lastFailureDetail,
@@ -142,10 +154,10 @@ if (!result) {
 await fs.writeFile(`${EVIDENCE_DIR}/evidence.json`, JSON.stringify(result, null, 2));
 console.log(JSON.stringify(result, null, 2));
 
-if (result.state === "LIVE_COMPLETE") {
+if (result.state === VerificationState.LIVE_COMPLETE) {
   console.log(`LIVE_COMPLETE: ${CANONICAL_URL} verified at commit ${result.deployed_commit_sha}.`);
   process.exit(0);
-} else if (result.state === "RATE_LIMIT_BLOCKED") {
+} else if (result.state === VerificationState.RATE_LIMIT_BLOCKED) {
   console.error(
     `RATE_LIMIT_BLOCKED: an external provider rate limit prevented verification of ${CANONICAL_URL}. ` +
       "This is an external deployment blocker, not evidence of success or failure.",
@@ -157,6 +169,9 @@ if (result.state === "LIVE_COMPLETE") {
       `Missing markers: ${result.missing_markers.join(", ") || "none"}.` +
       (result.commit_mismatch
         ? ` Deployed commit ${result.deployed_commit_sha} does not match expected ${result.expected_commit_sha}.`
+        : "") +
+      (result.commit_unknown_but_required
+        ? ` Deployed commit is ${result.deployed_commit_sha} but expected ${result.expected_commit_sha} was required — an unknown deployed SHA is never accepted as a match.`
         : ""),
   );
   process.exit(1);

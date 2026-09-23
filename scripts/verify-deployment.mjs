@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { isCanonicalHealthUrl, extractDeploymentShaFromEvent } from './ci/production-evidence-lib.mjs';
 
 const baseUrl = process.env.DEPLOYMENT_URL;
 
@@ -18,15 +20,34 @@ if (!baseUrl) {
 // workflow file edit. A maintainer with `workflows` permission can later add
 // a real `actions/upload-artifact` step for durable screenshot storage —
 // see docs/company/PRODUCTION_VERIFICATION_GATE_V1.md.
-const CANONICAL_HEALTH_HOST = 'asclepios-health.vercel.app';
+
+// GITHUB_EVENT_PATH is a standard Actions runner env var present on every
+// job without any workflow file edit. Reading the deployment_status/
+// deployment payload directly binds the expected commit SHA to the actual
+// validated deployment identity GitHub/Vercel reported — never to
+// GITHUB_SHA (the Actions checkout SHA for this run, which is not
+// necessarily the commit that was deployed, especially once the
+// ignoreCommand fan-out skip can leave a later run's checkout ahead of the
+// deployment it is verifying).
+function resolveExpectedCommitSha() {
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (!eventPath) return '';
+  try {
+    const event = JSON.parse(readFileSync(eventPath, 'utf8'));
+    return extractDeploymentShaFromEvent(event);
+  } catch (error) {
+    console.error(`Could not read deployment event payload for SHA binding: ${error.message}`);
+    return '';
+  }
+}
 
 function captureProductionEvidence() {
-  const hostname = new URL(baseUrl).hostname.toLowerCase();
-  // Scoped to exactly the canonical Health production URL (Issue #120 item 3),
-  // not every health-profile preview: preview deployments don't need the heavy
-  // Playwright install/probe this triggers, and a preview mismatching production
+  // Exact HTTPS canonical origin + path match (Issue #120 item 3) — not a
+  // hostname-only check. Preview deployments (different host, or a
+  // different path/query on the same host) don't need the heavy Playwright
+  // install/probe this triggers, and a preview mismatching production
   // marker/commit expectations is not a production defect worth escalating.
-  if (hostname !== CANONICAL_HEALTH_HOST) return;
+  if (!isCanonicalHealthUrl(baseUrl)) return;
 
   console.log(`Capturing production evidence for ${baseUrl}...`);
   try {
@@ -47,13 +68,19 @@ function captureProductionEvidence() {
       env: {
         ...process.env,
         CANONICAL_URL: baseUrl,
-        EXPECTED_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || '',
+        EXPECTED_COMMIT_SHA: resolveExpectedCommitSha(),
       },
     });
   } catch (error) {
     const status = typeof error.status === 'number' ? error.status : 1;
     if (status === 2) {
-      console.error('RATE_LIMIT_BLOCKED: treating as an external deployment blocker, not a verification failure.');
+      // RATE_LIMIT_BLOCKED is an external deployment blocker, never proof of
+      // success — it must still fail this script (a distinct, non-1 exit
+      // code) so the calling workflow's "recovered/verified" step, which
+      // only runs on success, can never interpret an unreached probe as
+      // verified production evidence.
+      console.error('RATE_LIMIT_BLOCKED: an external provider rate limit prevented verification. Treating as a blocking, non-success result — not as proof of success or a real defect.');
+      process.exitCode = 3;
       return;
     }
     console.error(`Production evidence capture reported a real defect (exit ${status}).`);
