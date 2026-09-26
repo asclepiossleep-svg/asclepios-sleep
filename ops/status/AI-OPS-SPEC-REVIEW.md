@@ -39,7 +39,7 @@ edmund_required: NO
 
 last_material_change_at: 2026-09-26T12:59:35Z
 last_material_change_note: Document-only specification review completed; canonical status synchronized. No operational implementation evidence exists.
-next_action: Manus reviews the synchronized status and identifies one bounded next document or implementation-readiness task; implementation repository selection remains pending
+next_action: Manus reviews the synchronized status and identifies one bounded next document or implementation-readiness task; no operational implementation is authorized yet
 next_report_trigger:
 - state changes
 - new commit
