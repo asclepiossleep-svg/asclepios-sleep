@@ -34,6 +34,47 @@
       }
     }
   },
+  "profile_source": {
+    "id": "git-blob:profile:1",
+    "url": "https://fixture.invalid/repo/blob/cccccccccccccccccccccccccccccccccccccccc/ops/profiles/example-visual-v1.json",
+    "repository": "asclepiossleep-svg/asclepios-sleep",
+    "path": "ops/profiles/example-visual-v1.json",
+    "commit_sha": "cccccccccccccccccccccccccccccccccccccccc",
+    "content_sha256": "0f9ee50b42398f78a77f7525e06ff4433855d9c406f2cf23057701216f3582f0",
+    "raw_content": "{\"id\":\"goal-profile:1\",\"goal_id\":\"EXAMPLE-VISUAL-001\",\"version\":\"v1\",\"locked_at\":\"2026-09-25T12:00:00Z\",\"required\":{\"asset_manifest\":true,\"desktop\":true,\"mobile\":true,\"deployment\":true,\"owner_approval\":true},\"required_checks\":[\"required-build-gate\",\"visual-regression-gate\"],\"required_assets\":[{\"id\":\"hero\",\"version\":\"v1\"}],\"asset_manifest_path\":\"apps/example/assets/pages/home/v1/manifest.json\",\"vercel_project_id\":\"project:401\",\"viewports\":{\"desktop\":{\"width\":1440,\"height\":1200},\"mobile\":{\"width\":390,\"height\":844}}}"
+  },
+  "issue_pointer": {
+    "source_id": "issue:1",
+    "source_url": "https://fixture.invalid/issue/1",
+    "repository": "asclepiossleep-svg/asclepios-sleep",
+    "path": "ops/profiles/example-visual-v1.json",
+    "commit_sha": "cccccccccccccccccccccccccccccccccccccccc",
+    "content_sha256": "0f9ee50b42398f78a77f7525e06ff4433855d9c406f2cf23057701216f3582f0",
+    "profile_id": "goal-profile:1",
+    "version": "v1",
+    "goal_id": "EXAMPLE-VISUAL-001",
+    "approval_record_id": "issue-comment:9008"
+  },
+  "profile_approval": {
+    "id": "issue-comment:9008",
+    "source_url": "https://fixture.invalid/issue/1/comment/9008",
+    "approver": "Edmund",
+    "approved_at": "2026-09-25T11:00:00Z",
+    "scope": {
+      "goal_id": "EXAMPLE-VISUAL-001",
+      "profile_id": "goal-profile:1",
+      "version": "v1",
+      "content_sha256": "0f9ee50b42398f78a77f7525e06ff4433855d9c406f2cf23057701216f3582f0"
+    }
+  },
+  "execution_start": {
+    "id": "run:8000",
+    "source_url": "https://fixture.invalid/actions/runs/8000",
+    "started_at": "2026-09-26T10:00:00Z",
+    "profile_commit_sha": "cccccccccccccccccccccccccccccccccccccccc",
+    "profile_content_sha256": "0f9ee50b42398f78a77f7525e06ff4433855d9c406f2cf23057701216f3582f0",
+    "profile_locked_at": "2026-09-25T12:00:00Z"
+  },
   "handoff": {
     "id": "issue-comment:9001",
     "run_id": "run:8001",
@@ -147,6 +188,9 @@
     }
   },
   "scenarios": {
+    "unauthorized-not-applicable": {"profile":{"id":"goal-profile:1","goal_id":"EXAMPLE-VISUAL-001","version":"v1","locked_at":"2026-09-25T12:00:00Z","required":{"asset_manifest":true,"desktop":true,"mobile":false,"deployment":true,"owner_approval":true},"required_checks":["required-build-gate","visual-regression-gate"],"required_assets":[{"id":"hero","version":"v1"}],"asset_manifest_path":"apps/example/assets/pages/home/v1/manifest.json","vercel_project_id":"project:401","viewports":{"desktop":{"width":1440,"height":1200},"mobile":{"width":390,"height":844}}},"visual_artifacts":[{"id":"artifact:201","kind":"desktop","source_run_id":"run:8002","url":"https://fixture.invalid/artifact/201","sha256":"3333333333333333333333333333333333333333333333333333333333333333","capture_commit_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","deployment_id":"deployment:301","viewport":{"width":1440,"height":1200},"verification_status":"PASSED"}]},
+    "profile-changed-after-start": {"profile_source":{"id":"git-blob:profile:1","url":"https://fixture.invalid/repo/blob/cccccccccccccccccccccccccccccccccccccccc/ops/profiles/example-visual-v1.json","repository":"asclepiossleep-svg/asclepios-sleep","path":"ops/profiles/example-visual-v1.json","commit_sha":"cccccccccccccccccccccccccccccccccccccccc","content_sha256":"39155590c73f81db02a323708e82dfefca31478472d3ffbb900e7b6cb14e1452","raw_content":"{\"id\":\"goal-profile:1\",\"goal_id\":\"EXAMPLE-VISUAL-001\",\"version\":\"v1\",\"locked_at\":\"2026-09-25T12:00:00Z\",\"required\":{\"asset_manifest\":true,\"desktop\":true,\"mobile\":false,\"deployment\":true,\"owner_approval\":true},\"required_checks\":[\"required-build-gate\",\"visual-regression-gate\"],\"required_assets\":[{\"id\":\"hero\",\"version\":\"v1\"}],\"asset_manifest_path\":\"apps/example/assets/pages/home/v1/manifest.json\",\"vercel_project_id\":\"project:401\",\"viewports\":{\"desktop\":{\"width\":1440,\"height\":1200},\"mobile\":{\"width\":390,\"height\":844}}}"}},
+    "undeclared-applicability": {"profile":{"id":"goal-profile:1","goal_id":"EXAMPLE-VISUAL-001","version":"v1","locked_at":"2026-09-25T12:00:00Z","required":{"asset_manifest":true,"desktop":true,"mobile":null,"deployment":true,"owner_approval":true},"required_checks":["required-build-gate","visual-regression-gate"],"required_assets":[{"id":"hero","version":"v1"}],"asset_manifest_path":"apps/example/assets/pages/home/v1/manifest.json","vercel_project_id":"project:401","viewports":{"desktop":{"width":1440,"height":1200},"mobile":{"width":390,"height":844}}},"profile_source":{"id":"git-blob:profile:1","url":"https://fixture.invalid/repo/blob/cccccccccccccccccccccccccccccccccccccccc/ops/profiles/example-visual-v1.json","repository":"asclepiossleep-svg/asclepios-sleep","path":"ops/profiles/example-visual-v1.json","commit_sha":"cccccccccccccccccccccccccccccccccccccccc","content_sha256":"1d0da2fc059180d60a5089601f098aaade4cd44f6c838612180475ddc2373334","raw_content":"{\"id\":\"goal-profile:1\",\"goal_id\":\"EXAMPLE-VISUAL-001\",\"version\":\"v1\",\"locked_at\":\"2026-09-25T12:00:00Z\",\"required\":{\"asset_manifest\":true,\"desktop\":true,\"mobile\":null,\"deployment\":true,\"owner_approval\":true},\"required_checks\":[\"required-build-gate\",\"visual-regression-gate\"],\"required_assets\":[{\"id\":\"hero\",\"version\":\"v1\"}],\"asset_manifest_path\":\"apps/example/assets/pages/home/v1/manifest.json\",\"vercel_project_id\":\"project:401\",\"viewports\":{\"desktop\":{\"width\":1440,\"height\":1200},\"mobile\":{\"width\":390,\"height\":844}}}"},"issue_pointer":{"source_id":"issue:1","source_url":"https://fixture.invalid/issue/1","repository":"asclepiossleep-svg/asclepios-sleep","path":"ops/profiles/example-visual-v1.json","commit_sha":"cccccccccccccccccccccccccccccccccccccccc","content_sha256":"1d0da2fc059180d60a5089601f098aaade4cd44f6c838612180475ddc2373334","profile_id":"goal-profile:1","version":"v1","goal_id":"EXAMPLE-VISUAL-001","approval_record_id":"issue-comment:9008"},"profile_approval":{"id":"issue-comment:9008","source_url":"https://fixture.invalid/issue/1/comment/9008","approver":"Edmund","approved_at":"2026-09-25T11:00:00Z","scope":{"goal_id":"EXAMPLE-VISUAL-001","profile_id":"goal-profile:1","version":"v1","content_sha256":"1d0da2fc059180d60a5089601f098aaade4cd44f6c838612180475ddc2373334"}},"execution_start":{"id":"run:8000","source_url":"https://fixture.invalid/actions/runs/8000","started_at":"2026-09-26T10:00:00Z","profile_commit_sha":"cccccccccccccccccccccccccccccccccccccccc","profile_content_sha256":"1d0da2fc059180d60a5089601f098aaade4cd44f6c838612180475ddc2373334","profile_locked_at":"2026-09-25T12:00:00Z"}},
     "deployment-sha-mismatch": {
       "deployment": {
         "id": "deployment:301",

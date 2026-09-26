@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 // Offline contract pilot. The second input is a mocked source-record bundle,
 // never an agent assertion or a live API response.
@@ -35,7 +36,75 @@ if (flag) {
   else for (const [key, value] of Object.entries(override)) records[key] = value;
 }
 
-const profile = records.profile ?? {};
+const profileSource = records.profile_source ?? {};
+const pointer = records.issue_pointer ?? {};
+const profileApproval = records.profile_approval ?? {};
+const execution = records.execution_start ?? {};
+let profile = {};
+if (!present(profileSource.id) || !url(profileSource.url) ||
+    !present(profileSource.repository) || !present(profileSource.path) ||
+    typeof profileSource.raw_content !== 'string') {
+  fail('PROFILE_SOURCE_MISSING', 'EVIDENCE_INCOMPLETE', 'commit-pinned profile source ID, URL, repository, path and raw bytes are required');
+} else {
+  try {
+    profile = JSON.parse(profileSource.raw_content);
+    if (!profile || typeof profile !== 'object' || Array.isArray(profile)) throw new Error('profile is not an object');
+  } catch {
+    profile = {};
+    fail('PROFILE_SOURCE_MISSING', 'INVALID', 'commit-pinned profile bytes must contain a JSON object');
+  }
+}
+if (!sha(profileSource.commit_sha) || !sha(pointer.commit_sha) || !sha(execution.profile_commit_sha)) {
+  fail('PROFILE_COMMIT_MISSING', 'EVIDENCE_INCOMPLETE', 'profile source, Issue pointer and execution snapshot require full commit SHAs');
+}
+const contentDigest = typeof profileSource.raw_content === 'string'
+  ? createHash('sha256').update(profileSource.raw_content, 'utf8').digest('hex') : null;
+if (!digest(profileSource.content_sha256) || contentDigest !== profileSource.content_sha256 ||
+    !digest(pointer.content_sha256) || pointer.content_sha256 !== profileSource.content_sha256) {
+  fail('PROFILE_CONTENT_SHA_MISMATCH', 'MISMATCHED', 'raw profile bytes must match source and Goal Issue pointer SHA-256');
+}
+if (!present(pointer.source_id) || !url(pointer.source_url) || !present(pointer.approval_record_id) ||
+    !present(execution.id) || !url(execution.source_url)) {
+  fail('PROFILE_SOURCE_MISSING', 'EVIDENCE_INCOMPLETE', 'Goal Issue pointer and execution start need immutable source IDs and URLs');
+}
+for (const key of ['repository', 'path', 'commit_sha']) {
+  eq(pointer[key], profileSource[key], 'PROFILE_SOURCE_MISMATCH', `Goal Issue pointer ${key} differs from pinned profile source`);
+}
+eq(pointer.goal_id, profile.goal_id, 'PROFILE_GOAL_MISMATCH', 'Goal Issue pointer covers another Goal');
+eq(pointer.profile_id, profile.id, 'PROFILE_SOURCE_MISMATCH', 'Goal Issue pointer identifies another profile');
+eq(pointer.version, profile.version, 'PROFILE_VERSION_MISMATCH', 'Goal Issue pointer identifies another version');
+if (!present(profileApproval.id) || !url(profileApproval.source_url) ||
+    !present(profileApproval.approver) || !Number.isFinite(Date.parse(profileApproval.approved_at)) ||
+    pointer.approval_record_id !== profileApproval.id || profileApproval.approver !== 'Edmund' ||
+    profileApproval.scope?.goal_id !== profile.goal_id ||
+    profileApproval.scope?.profile_id !== profile.id ||
+    profileApproval.scope?.version !== profile.version ||
+    profileApproval.scope?.content_sha256 !== contentDigest) {
+  fail('PROFILE_NOT_APPROVED', 'BLOCKED', 'pre-execution approval must cover exact Goal, profile version and bytes');
+}
+if (execution.profile_commit_sha !== profileSource.commit_sha ||
+    execution.profile_content_sha256 !== contentDigest ||
+    execution.profile_commit_sha !== pointer.commit_sha ||
+    execution.profile_content_sha256 !== pointer.content_sha256) {
+  fail('PROFILE_CHANGED_AFTER_START', 'MISMATCHED', 'current profile source or Issue pointer differs from execution snapshot');
+}
+const approvedAt = Date.parse(profileApproval.approved_at);
+const lockedAt = Date.parse(profile.locked_at);
+const startedAt = Date.parse(execution.started_at);
+const handoffAt = Date.parse(handoff.created_at);
+if (![approvedAt, lockedAt, startedAt, handoffAt].every(Number.isFinite) ||
+    approvedAt > lockedAt || lockedAt >= startedAt || startedAt > handoffAt ||
+    execution.profile_locked_at !== profile.locked_at) {
+  fail('PROFILE_LOCKED_AFTER_EXECUTION', 'BLOCKED', 'approval and lock must precede source-reported execution start and handoff');
+}
+const inlineProfile = records.profile ?? {};
+if (JSON.stringify(inlineProfile) !== JSON.stringify(profile)) {
+  if (Object.keys(profile.required ?? {}).some(key => profile.required[key] === true && inlineProfile.required?.[key] === false)) {
+    fail('UNAUTHORIZED_NOT_APPLICABLE', 'BLOCKED', 'inline/mock profile attempts to waive a required item');
+  } else {
+    fail('PROFILE_CONTENT_SHA_MISMATCH', 'MISMATCHED', 'inline/mock profile differs from commit-pinned profile bytes');
+  }
+}
 const commit = handoff.implementation_commit_sha;
 if (!sha(commit)) fail('COMMIT_INVALID', 'INVALID', 'implementation_commit_sha must be a full 40-character SHA');
 if (!present(handoff.handoff_id) || !present(handoff.run_id)) {
@@ -48,6 +117,11 @@ if (!present(profile.id) || !present(profile.goal_id) || !present(profile.locked
 }
 eq(handoff.goal_id, profile.goal_id, 'GOAL_ID_MISMATCH', 'handoff Goal ID differs from authoritative Goal profile');
 const applicability = profile.required ?? {};
+if (handoff.not_applicable != null && !Array.isArray(handoff.not_applicable)) {
+  fail('UNAUTHORIZED_NOT_APPLICABLE', 'INVALID', 'Rex waiver claims must be an array');
+} else for (const key of handoff.not_applicable ?? []) {
+  if (applicability[key] !== false) fail('UNAUTHORIZED_NOT_APPLICABLE', 'BLOCKED', `Rex cannot waive ${key} required by pinned profile`);
+}
 for (const key of ['asset_manifest', 'desktop', 'mobile', 'deployment', 'owner_approval']) {
   if (typeof applicability[key] !== 'boolean') {
     fail('APPLICABILITY_UNDECLARED', 'EVIDENCE_INCOMPLETE', `Goal profile must declare ${key} before execution`);
@@ -182,9 +256,9 @@ if (applicability.owner_approval === true) {
   }
 }
 
-for (const note of notes) console.log(note);
 if (errors.length) {
   for (const error of errors) console.error(`RESULT=BLOCKED EVIDENCE_STATUS=${error.status} CODE=${error.code}: ${error.detail}`);
   process.exit(1);
 }
+for (const note of notes) console.log(note);
 console.log(`PASS VERIFIED: mocked source records bind Goal ${profile.goal_id} to commit ${commit}; Rex recommendation ${handoff.recommendation ?? 'NONE'} was not treated as proof`);
