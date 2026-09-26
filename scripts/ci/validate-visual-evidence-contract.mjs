@@ -169,6 +169,7 @@ if (applicability.owner_approval === true) {
       !present(approval.source_url)) {
     fail('OWNER_APPROVAL_MISSING', 'EVIDENCE_INCOMPLETE', 'source approval ID, approver, timestamp and URL are required');
   } else {
+    if (!url(approval.source_url)) fail('APPROVAL_SOURCE_INVALID', 'EVIDENCE_INCOMPLETE', 'final approval source must be a valid HTTPS URL');
     eq(handoff.owner_approval_record_id, approval.id, 'APPROVAL_ID_MISMATCH', 'handoff approval ID differs from source');
     eq(approval.approver, 'Edmund', 'APPROVER_MISMATCH', 'approval is not from Edmund');
     eq(approval.scope?.goal_id, profile.goal_id, 'APPROVAL_GOAL_MISMATCH', 'approval covers another Goal');

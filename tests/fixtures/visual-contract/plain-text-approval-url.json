@@ -1,0 +1,208 @@
+{
+  "profile": {
+    "id": "goal-profile:1",
+    "goal_id": "EXAMPLE-VISUAL-001",
+    "version": "v1",
+    "locked_at": "2026-09-25T12:00:00Z",
+    "required": {
+      "asset_manifest": true,
+      "desktop": true,
+      "mobile": true,
+      "deployment": true,
+      "owner_approval": true
+    },
+    "required_checks": [
+      "required-build-gate",
+      "visual-regression-gate"
+    ],
+    "required_assets": [
+      {
+        "id": "hero",
+        "version": "v1"
+      }
+    ],
+    "asset_manifest_path": "apps/example/assets/pages/home/v1/manifest.json",
+    "vercel_project_id": "project:401",
+    "viewports": {
+      "desktop": {
+        "width": 1440,
+        "height": 1200
+      },
+      "mobile": {
+        "width": 390,
+        "height": 844
+      }
+    }
+  },
+  "handoff": {
+    "id": "issue-comment:9001",
+    "run_id": "run:8001",
+    "goal_id": "EXAMPLE-VISUAL-001",
+    "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "url": "https://fixture.invalid/issue/1/comment/9001"
+  },
+  "pr": {
+    "id": "pr:10",
+    "number": 10,
+    "url": "https://fixture.invalid/pr/10",
+    "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "checks": [
+    {
+      "id": "check:101",
+      "name": "required-build-gate",
+      "url": "https://fixture.invalid/check/101",
+      "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "conclusion": "SUCCESS"
+    },
+    {
+      "id": "check:102",
+      "name": "visual-regression-gate",
+      "url": "https://fixture.invalid/check/102",
+      "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "conclusion": "SUCCESS"
+    }
+  ],
+  "manifest": {
+    "id": "manifest:1",
+    "path": "apps/example/assets/pages/home/v1/manifest.json",
+    "goal_id": "EXAMPLE-VISUAL-001",
+    "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "assets": [
+      {
+        "id": "hero",
+        "version": "v1",
+        "path": "apps/example/assets/hero-v1.webp",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "approval_record_id": "issue-comment:9009"
+      }
+    ],
+    "url": "https://fixture.invalid/repo/blob/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/apps/example/assets/pages/home/v1/manifest.json"
+  },
+  "committed_assets": [
+    {
+      "path": "apps/example/assets/hero-v1.webp",
+      "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "visual_runs": [
+    {
+      "id": "run:8002",
+      "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "url": "https://fixture.invalid/actions/runs/8002",
+      "conclusion": "SUCCESS"
+    }
+  ],
+  "visual_artifacts": [
+    {
+      "id": "artifact:201",
+      "kind": "desktop",
+      "source_run_id": "run:8002",
+      "url": "https://fixture.invalid/artifact/201",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "capture_commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "deployment_id": "deployment:301",
+      "viewport": {
+        "width": 1440,
+        "height": 1200
+      },
+      "verification_status": "PASSED"
+    },
+    {
+      "id": "artifact:202",
+      "kind": "mobile",
+      "source_run_id": "run:8002",
+      "url": "https://fixture.invalid/artifact/202",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "capture_commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "deployment_id": "deployment:301",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "verification_status": "PASSED"
+    }
+  ],
+  "deployment": {
+    "id": "deployment:301",
+    "project_id": "project:401",
+    "url": "https://fixture.invalid/deployment/301",
+    "deployed_commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "status": "READY"
+  },
+  "approval": {
+    "id": "issue-comment:9010",
+    "approver": "Edmund",
+    "approved_at": "2026-09-26T11:00:00Z",
+    "source_url": "approved",
+    "scope": {
+      "goal_id": "EXAMPLE-VISUAL-001",
+      "profile_id": "goal-profile:1",
+      "version": "v1",
+      "deployment_id": "deployment:301",
+      "desktop_artifact_id": "artifact:201",
+      "mobile_artifact_id": "artifact:202",
+      "implementation_commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "scenarios": {
+    "deployment-sha-mismatch": {
+      "deployment": {
+        "id": "deployment:301",
+        "project_id": "project:401",
+        "url": "https://fixture.invalid/deployment/301",
+        "deployed_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "status": "READY"
+      }
+    },
+    "asset-sha-mismatch": {
+      "committed_assets": [
+        {
+          "path": "apps/example/assets/hero-v1.webp",
+          "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ]
+    },
+    "skipped-required-check": {
+      "checks": [
+        {
+          "id": "check:101",
+          "name": "required-build-gate",
+          "url": "https://fixture.invalid/check/101",
+          "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "conclusion": "SUCCESS"
+        },
+        {
+          "id": "check:102",
+          "name": "visual-regression-gate",
+          "url": "https://fixture.invalid/check/102",
+          "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "conclusion": "SKIPPED"
+        }
+      ]
+    },
+    "url-only-deployment": {
+      "deployment": {
+        "id": null,
+        "project_id": null,
+        "url": "https://fixture.invalid/deployment/301",
+        "deployed_commit_sha": null,
+        "status": "READY"
+      }
+    }
+  },
+  "asset_approvals": [
+    {
+      "id": "issue-comment:9009",
+      "approver": "Edmund",
+      "source_url": "https://fixture.invalid/issue/1/comment/9009",
+      "scope": {
+        "asset_id": "hero",
+        "version": "v1",
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    }
+  ]
+}
