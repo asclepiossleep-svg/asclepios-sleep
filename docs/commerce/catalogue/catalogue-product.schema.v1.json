@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asclepios.health/schemas/catalogue-product.schema.v1.json",
+  "title": "Asclepios catalogue product v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "productKey",
+    "status",
+    "source",
+    "names",
+    "productClass",
+    "positioning",
+    "medicalTreatmentClaim",
+    "intendedUse",
+    "commerce",
+    "suitability",
+    "claims",
+    "stopUse",
+    "contentSurfaces",
+    "publicationGate",
+    "notes"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "productKey": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["COMING_SOON", "ACTIVE", "PAUSED", "DISCONTINUED"] },
+    "source": { "type": "string", "minLength": 1 },
+    "names": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["en", "zh-HK", "zh-CN"],
+      "properties": {
+        "en": { "type": "string", "minLength": 1 },
+        "zh-HK": { "type": "string", "minLength": 1 },
+        "zh-CN": { "type": "string", "minLength": 1 }
+      }
+    },
+    "productClass": { "type": "string", "minLength": 1 },
+    "positioning": { "type": "string", "minLength": 1 },
+    "medicalTreatmentClaim": { "type": "boolean" },
+    "launchGeographyAssumption": { "type": ["string", "null"] },
+    "intendedUse": { "type": "string", "minLength": 1 },
+    "commerce": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purchasable",
+        "price",
+        "currency",
+        "taxVat",
+        "sku",
+        "barcode",
+        "packSize",
+        "inventoryQuantity",
+        "stockLeadTime",
+        "shippingCountries",
+        "shippingMethod",
+        "shippingCost",
+        "paymentProvider",
+        "activationEntitlement"
+      ],
+      "properties": {
+        "purchasable": { "type": "boolean" },
+        "price": { "type": ["number", "null"], "minimum": 0 },
+        "currency": { "type": ["string", "null"] },
+        "taxVat": { "type": ["number", "string", "null"] },
+        "sku": { "type": ["string", "null"] },
+        "barcode": { "type": ["string", "null"] },
+        "packSize": { "type": ["string", "number", "null"] },
+        "inventoryQuantity": { "type": ["integer", "null"], "minimum": 0 },
+        "stockLeadTime": { "type": ["string", "null"] },
+        "shippingCountries": {
+          "anyOf": [
+            { "type": "null" },
+            { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+          ]
+        },
+        "shippingMethod": { "type": ["string", "null"] },
+        "shippingCost": { "type": ["number", "string", "null"] },
+        "paymentProvider": { "type": ["string", "null"] },
+        "activationEntitlement": { "type": ["string", "null"] }
+      }
+    },
+    "suitability": { "type": "object" },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["green", "amber", "red"],
+      "properties": {
+        "green": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "amber": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "red": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "stopUse": { "type": "array", "items": { "type": "string" }, "minItems": 1, "uniqueItems": true },
+    "contentSurfaces": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "publicationGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finalSkuMaterialsSpecification",
+        "packInstructionsReconciled",
+        "packSizeBarcodePriceInventoryIdentity",
+        "finalClaimsLegalRegulatoryReview"
+      ],
+      "properties": {
+        "finalSkuMaterialsSpecification": { "type": "boolean" },
+        "packInstructionsReconciled": { "type": "boolean" },
+        "packSizeBarcodePriceInventoryIdentity": { "type": "boolean" },
+        "finalClaimsLegalRegulatoryReview": { "type": "boolean" }
+      }
+    },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "commerce": {
+            "properties": { "purchasable": { "const": true } },
+            "required": ["purchasable"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "status": { "const": "ACTIVE" },
+          "commerce": {
+            "required": ["price", "currency", "sku", "packSize", "inventoryQuantity", "shippingCountries", "shippingMethod", "paymentProvider"],
+            "properties": {
+              "price": { "type": "number" },
+              "currency": { "type": "string", "minLength": 3 },
+              "sku": { "type": "string", "minLength": 1 },
+              "packSize": { "not": { "type": "null" } },
+              "inventoryQuantity": { "type": "integer", "minimum": 0 },
+              "shippingCountries": { "type": "array", "minItems": 1 },
+              "shippingMethod": { "type": "string", "minLength": 1 },
+              "paymentProvider": { "type": "string", "minLength": 1 }
+            }
+          },
+          "publicationGate": {
+            "properties": {
+              "finalSkuMaterialsSpecification": { "const": true },
+              "packInstructionsReconciled": { "const": true },
+              "packSizeBarcodePriceInventoryIdentity": { "const": true },
+              "finalClaimsLegalRegulatoryReview": { "const": true }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

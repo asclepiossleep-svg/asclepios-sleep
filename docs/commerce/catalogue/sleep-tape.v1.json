@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "productKey": "sleep_tape",
+  "status": "COMING_SOON",
+  "source": "docs/product/SLEEP_TAPE_PRODUCT_KNOWLEDGE_OBJECT_V1.md",
+  "names": {
+    "en": "Sleep Tape",
+    "zh-HK": "睡得貼",
+    "zh-CN": "睡得贴"
+  },
+  "productClass": "external_adhesive_mouth_support_sleep_routine_accessory",
+  "positioning": "behavioural_sleep_routine_accessory",
+  "medicalTreatmentClaim": false,
+  "launchGeographyAssumption": "UK-first",
+  "intendedUse": "A gentle physical cue intended for suitable adults who can breathe comfortably through the nose, used as part of a bedtime routine.",
+  "commerce": {
+    "purchasable": false,
+    "price": null,
+    "currency": null,
+    "taxVat": null,
+    "sku": null,
+    "barcode": null,
+    "packSize": null,
+    "inventoryQuantity": null,
+    "stockLeadTime": null,
+    "shippingCountries": null,
+    "shippingMethod": null,
+    "shippingCost": null,
+    "paymentProvider": null,
+    "activationEntitlement": null
+  },
+  "suitability": {
+    "requiresComfortableNasalBreathing": true,
+    "blockedNose": "DO_NOT_USE",
+    "osaOrSleepDisorderedBreathing": "CLINICAL_ADVICE_NOT_SELF_TREATMENT"
+  },
+  "claims": {
+    "green": [
+      "gentle_physical_cue",
+      "bedtime_routine_support"
+    ],
+    "amber": [
+      "reduced_morning_dry_mouth",
+      "encourages_nasal_breathing",
+      "comfort_or_skin_claims"
+    ],
+    "red": [
+      "treats_osa",
+      "replaces_cpap",
+      "treats_snoring",
+      "improves_oxygen_saturation",
+      "guarantees_sleep_quality"
+    ]
+  },
+  "stopUse": [
+    "breathing_restriction",
+    "air_hunger_or_gasping",
+    "significant_anxiety",
+    "significant_skin_reaction",
+    "repeated_sleep_disruption"
+  ],
+  "contentSurfaces": [
+    "website_product_page",
+    "faq",
+    "customer_service",
+    "app_guidance",
+    "sleep_intelligence",
+    "growth_video"
+  ],
+  "publicationGate": {
+    "finalSkuMaterialsSpecification": false,
+    "packInstructionsReconciled": false,
+    "packSizeBarcodePriceInventoryIdentity": false,
+    "finalClaimsLegalRegulatoryReview": false
+  },
+  "notes": [
+    "Do not mark purchasable or launch-ready while critical commerce facts remain unknown.",
+    "Do not use this product to claim diagnosis, prevention, treatment or cure of OSA, snoring, nasal obstruction or another disease.",
+    "Final product-page, packaging and checkout copy must be reconciled with the finished SKU and supplier IFU before publication."
+  ]
+}
