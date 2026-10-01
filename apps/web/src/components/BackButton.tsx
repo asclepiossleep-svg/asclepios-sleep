@@ -14,7 +14,7 @@ import { t } from "../i18n";
  * can be reached without history (e.g. a deep link) and needs a fixed
  * fallback destination instead.
  */
-export default function BackButton({ to }: { to?: string }) {
+export default function BackButton({ to, inverse = false }: { to?: string; inverse?: boolean }) {
   const navigate = useNavigate();
   return (
     <button
@@ -28,16 +28,18 @@ export default function BackButton({ to }: { to?: string }) {
         justifyContent: "center",
         minWidth: "var(--touch-target-min)",
         minHeight: "var(--touch-target-min)",
-        background: "transparent",
+        gap: "0.35rem",
+        background: inverse ? "rgba(255,255,255,0.16)" : "transparent",
         border: "none",
-        color: "var(--color-text)",
-        padding: 0,
-        marginLeft: "-0.6rem",
+        borderRadius: "999px",
+        color: inverse ? "#fff" : "var(--color-text)",
+        padding: "0 0.65rem",
       }}
     >
       <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M12.5 4.5 6.8 10l5.7 5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
+      <span style={{ fontSize: "0.9rem", fontWeight: 650 }}>{t("nav.back")}</span>
     </button>
   );
 }
