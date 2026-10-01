@@ -62,7 +62,7 @@ export default function Home() {
               </span>
             </Link>
 
-            <SleepAppLink className="health-destination-card">
+            <Link className="health-destination-card" to="/sleep">
               <span className="health-destination-media sleep-app" aria-hidden="true">
                 <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
                   <rect x="7" y="3" width="10" height="18" rx="2.4" stroke="currentColor" strokeWidth="1.5" />
@@ -78,7 +78,7 @@ export default function Home() {
                 <p>{t("health.card.sleepApp.body")}</p>
                 <span className="health-card-cta">{t("health.card.sleepApp.cta")} →</span>
               </span>
-            </SleepAppLink>
+            </Link>
 
             <Link className="health-destination-card" to="/learn">
               <span className="health-destination-media learning" aria-hidden="true">

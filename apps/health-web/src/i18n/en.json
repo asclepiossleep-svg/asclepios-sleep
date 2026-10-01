@@ -64,5 +64,22 @@
   "health.placeholder.backHome": "Back to Home",
   "health.footer.brandLine": "Better People · A Brighter Tomorrow",
   "health.footer.home": "Home",
-  "health.footer.rights": "All rights reserved."
+  "health.footer.rights": "All rights reserved.",
+  "health.sleep.kicker": "THE ASCLEPIOS SLEEP APP",
+  "health.sleep.title": "Your night, organised.",
+  "health.sleep.lead": "A calm, mobile-first companion that turns sleep science into a short nightly routine — never homework.",
+  "health.sleep.cta.startTonight": "Start Tonight's Plan",
+  "health.sleep.focus.kicker": "Today's Sleep Focus",
+  "health.sleep.focus.title": "A Calmer Evening",
+  "health.sleep.feature.tonight.title": "Tonight's Plan",
+  "health.sleep.feature.tonight.body": "Up to three prioritised steps for tonight — never more than you need.",
+  "health.sleep.feature.programme.title": "30-Day Programme",
+  "health.sleep.feature.programme.body": "A guided path that adjusts as your nights change.",
+  "health.sleep.feature.intelligence.title": "Sleep Intelligence",
+  "health.sleep.feature.intelligence.body": "Rhythm, calm, body and support — read together, not as isolated data points.",
+  "health.sleep.feature.history.title": "History",
+  "health.sleep.feature.history.body": "A simple morning check-in becomes a clear picture over time.",
+  "health.sleep.banner.title": "Ready for tonight?",
+  "health.sleep.banner.body": "Create a free account and get your first plan in minutes.",
+  "health.sleep.banner.cta": "Get Started"
 }

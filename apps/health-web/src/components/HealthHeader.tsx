@@ -34,7 +34,9 @@ export default function HealthHeader() {
         <Link to="/products" className={isActive("/products") ? "is-active" : undefined}>
           {t("health.nav.products")}
         </Link>
-        <SleepAppLink className="health-nav-link">{t("health.nav.sleepApp")}</SleepAppLink>
+        <Link to="/sleep" className={isActive("/sleep") ? "is-active" : undefined}>
+          {t("health.nav.sleepApp")}
+        </Link>
         <Link to="/learn" className={isActive("/learn") ? "is-active" : undefined}>
           {t("health.nav.learn")}
         </Link>
@@ -92,7 +94,9 @@ export default function HealthHeader() {
           <Link to="/products" onClick={() => setMenuOpen(false)}>
             {t("health.nav.products")}
           </Link>
-          <SleepAppLink className="health-nav-mobile-link">{t("health.nav.sleepApp")}</SleepAppLink>
+          <Link to="/sleep" onClick={() => setMenuOpen(false)}>
+            {t("health.nav.sleepApp")}
+          </Link>
           <Link to="/learn" onClick={() => setMenuOpen(false)}>
             {t("health.nav.learn")}
           </Link>
