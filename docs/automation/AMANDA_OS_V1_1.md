@@ -52,10 +52,19 @@ Workflow success without this handoff is incomplete.
 4. Only the newest structured handoff is reconciled.
 5. If work remains and no genuine blocker exists, the controller dispatches the next bounded Rex run automatically.
 6. Repeated NO_PROGRESS is converted to BLOCKED after the pilot limit.
-7. COMPLETE requires concrete commit SHA, PR, matching preview and visual evidence.
+7. COMPLETE requirements are determined by the Goal Issue's declared Evidence Profile (see Evidence Profiles below).
 8. Monitor output is non-authoritative until its destination and permissions are verified.
 9. A monitor may report a suspected blocker; only the authoritative controller may change the Goal state.
 10. No automatic production merge.
+11. A synthetic fallback handoff is posted with the default `GITHUB_TOKEN`, which cannot reliably trigger another workflow's `issue_comment` event. Immediately after posting that fallback handoff, the dispatcher explicitly re-invokes the controller via `workflow_dispatch` for the same Goal Issue number, instead of relying on the comment itself to fire reconciliation.
+
+## Evidence Profiles
+
+The controller reads an explicit `Evidence Profile:` field from the authoritative Goal Issue body. Profile is never inferred from prose.
+
+- **VISUAL** — COMPLETE requires Commit SHA, PR, Preview URL and Visual Evidence, then verifies PR head matches the recorded Commit SHA.
+- **CODE_ONLY** — COMPLETE requires Commit SHA, PR and a non-empty/non-`NONE` Checks field, then verifies PR head matches the recorded Commit SHA. Preview URL and Visual Evidence may be `NONE` and do not block completion.
+- **Missing/unknown profile** fails safe to VISUAL (the strict default).
 
 ## Evidence binding
 
