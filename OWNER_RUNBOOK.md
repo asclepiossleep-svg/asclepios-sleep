@@ -59,6 +59,19 @@ already done.
    a GitHub Actions secret, if the real photos already exist on the
    Shopify draft listings.)
 
+5. **Not yet done — current single blocking action (separate from #4
+   above, tracked on issue #120 / Amanda OS v1.0 completion):** review and
+   merge pull request
+   [#123](https://github.com/asclepiossleep-svg/asclepios-sleep/pull/123)
+   on GitHub — its required checks are all green (the three "Vercel"
+   checks that show red are a separate, pre-existing account build-rate
+   quota limit, not a defect in this PR). Once that's merged, do the same
+   for pull request
+   [#122](https://github.com/asclepiossleep-svg/asclepios-sleep/pull/122)
+   whenever convenient — same all-green required checks, same unrelated
+   Vercel quota note. Nothing else is needed from you for either PR: just
+   open the link, check the required checks are green, and click Merge.
+
 Each of these gets asked for on its own, only once the previous one is
 done — never all three at once.
 
