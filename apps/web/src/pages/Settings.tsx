@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../state/session";
@@ -6,14 +6,6 @@ import { t, setLocale, SUPPORTED_LOCALES, useLocale } from "../i18n";
 import BottomNav from "../components/BottomNav";
 import PageHeader from "../components/PageHeader";
 
-// 31 Aug 2026 fix — Edmund's feedback: the original 7-zone curated list
-// ("enough to cover this project's current markets") was too narrow once
-// real users outside those markets started signing up. `Intl.supportedValuesOf`
-// gives the browser's full official IANA list (~400 zones, every country)
-// on any reasonably current browser (Chrome 99+/Safari 15.4+/2022 onward) —
-// no server round trip, always current. FALLBACK_TIMEZONES only kicks in on
-// an older browser that lacks `supportedValuesOf`, so nobody sees an empty
-// dropdown; it's a broad country-by-country spread, not just our 3 markets.
 const FALLBACK_TIMEZONES = [
   "Pacific/Midway", "Pacific/Honolulu", "America/Anchorage", "America/Los_Angeles", "America/Tijuana",
   "America/Denver", "America/Phoenix", "America/Chicago", "America/Mexico_City", "America/New_York",
@@ -38,6 +30,50 @@ function getTimezones(): string[] {
 }
 
 const TIMEZONES = getTimezones();
+
+const sectionStyle: CSSProperties = {
+  borderRadius: "1.35rem",
+  padding: "1rem",
+  background: "color-mix(in srgb, var(--color-surface) 94%, white 6%)",
+  border: "1px solid color-mix(in srgb, var(--color-border) 78%, transparent)",
+  boxShadow: "0 10px 30px rgba(25, 54, 61, 0.06)",
+};
+
+const fieldStyle: CSSProperties = {
+  width: "100%",
+  minHeight: "3rem",
+  padding: "0.78rem 0.9rem",
+  marginTop: "0.5rem",
+  borderRadius: "0.9rem",
+  border: "1px solid var(--color-border)",
+  background: "var(--color-surface)",
+  color: "var(--color-text)",
+  fontSize: "1rem",
+};
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  fontWeight: 650,
+  fontSize: "0.98rem",
+  letterSpacing: "0.01em",
+};
+
+const statusStyle: CSSProperties = {
+  margin: "0.6rem 0 0",
+  fontSize: "0.9rem",
+};
+
+const preferenceLinkStyle: CSSProperties = {
+  ...sectionStyle,
+  minHeight: "3.65rem",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "0.75rem",
+  textDecoration: "none",
+  color: "var(--color-text)",
+  fontWeight: 650,
+};
 
 export default function Settings() {
   const { user, updateUser, logout } = useSession();
@@ -65,13 +101,6 @@ export default function Settings() {
     }
   }
 
-  // Language persistence (5 Sep 2026) — previously the only place to set
-  // locale was the pre-login Login page's selector; there was no way to
-  // change it once signed in short of logging out and registering again in
-  // another language. setLocale() flips the whole app (App.tsx remounts on
-  // it) immediately; the PATCH persists it to the account so it survives
-  // refresh/reopen/logout-login/PWA relaunch on any device, the same way
-  // timezone already does above.
   async function changeLanguage(next: string) {
     const previous = locale;
     setLocale(next);
@@ -85,10 +114,6 @@ export default function Settings() {
     }
   }
 
-  // 31 Aug 2026 — Edmund's feedback: the app never asked for a name and
-  // greeted people with their email prefix instead. Lets an existing
-  // account (his own real one included) set or change it any time; blank
-  // clears it back to the email-prefix fallback on Home.
   async function saveName() {
     setNameSaved(false);
     setNameError(false);
@@ -102,74 +127,104 @@ export default function Settings() {
   }
 
   return (
-    <div className="screen">
+    <div className="screen" style={{ paddingBottom: "6.5rem" }}>
       <PageHeader title={t("settings.title")} />
 
-      <div className="card">
-        <label htmlFor="displayName">{t("settings.name")}</label>
-        <input
-          id="displayName"
-          type="text"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setNameSaved(false);
+      <div
+        style={{
+          display: "grid",
+          gap: "0.85rem",
+          width: "100%",
+          maxWidth: "42rem",
+          margin: "0 auto",
+        }}
+      >
+        <section style={sectionStyle}>
+          <label htmlFor="displayName" style={labelStyle}>{t("settings.name")}</label>
+          <input
+            id="displayName"
+            type="text"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setNameSaved(false);
+            }}
+            placeholder={t("login.namePlaceholder")}
+            style={fieldStyle}
+          />
+          <button
+            className="primary"
+            onClick={saveName}
+            style={{ width: "100%", minHeight: "3rem", marginTop: "0.7rem", borderRadius: "0.9rem" }}
+          >
+            {t("settings.save")}
+          </button>
+          <div aria-live="polite">
+            {nameSaved && <p className="muted" style={statusStyle}>{t("settings.saved")}</p>}
+            {nameError && <p style={{ ...statusStyle, color: "var(--color-danger)" }}>{t("settings.saveError")}</p>}
+          </div>
+        </section>
+
+        <section style={sectionStyle}>
+          <label htmlFor="language" style={labelStyle}>{t("settings.language")}</label>
+          <select
+            id="language"
+            value={locale}
+            onChange={(e) => changeLanguage(e.target.value)}
+            style={fieldStyle}
+          >
+            {SUPPORTED_LOCALES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+          <div aria-live="polite">
+            {languageError && <p style={{ ...statusStyle, color: "var(--color-danger)" }}>{t("settings.saveError")}</p>}
+          </div>
+        </section>
+
+        <section style={sectionStyle}>
+          <label htmlFor="timezone" style={labelStyle}>{t("settings.timezone")}</label>
+          <select
+            id="timezone"
+            value={timezone}
+            onChange={(e) => saveTimezone(e.target.value)}
+            style={fieldStyle}
+          >
+            {TIMEZONES.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz.replace(/_/g, " ")}
+              </option>
+            ))}
+          </select>
+          <div aria-live="polite">
+            {saved && <p className="muted" style={statusStyle}>{t("settings.saved")}</p>}
+            {timezoneError && <p style={{ ...statusStyle, color: "var(--color-danger)" }}>{t("settings.saveError")}</p>}
+          </div>
+        </section>
+
+        <Link to="/wallpaper" style={preferenceLinkStyle}>
+          <span>{t("settings.wallpaper")}</span>
+          <span aria-hidden="true" style={{ fontSize: "1.45rem", opacity: 0.55 }}>›</span>
+        </Link>
+        <Link to="/theme" style={preferenceLinkStyle}>
+          <span>{t("settings.theme")}</span>
+          <span aria-hidden="true" style={{ fontSize: "1.45rem", opacity: 0.55 }}>›</span>
+        </Link>
+
+        <button
+          onClick={logout}
+          style={{
+            minHeight: "3.15rem",
+            marginTop: "0.2rem",
+            borderRadius: "0.95rem",
+            fontWeight: 650,
           }}
-          placeholder={t("login.namePlaceholder")}
-          style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", marginTop: "0.5rem" }}
-        />
-        <button className="primary" onClick={saveName} style={{ marginTop: "0.5rem" }}>
-          {t("settings.save")}
+        >
+          {t("settings.logout")}
         </button>
-        {nameSaved && <p className="muted">{t("settings.saved")}</p>}
-        {nameError && <p style={{ color: "var(--color-danger)", fontSize: "0.9rem" }}>{t("settings.saveError")}</p>}
       </div>
-
-      <div className="card">
-        <label htmlFor="language">{t("settings.language")}</label>
-        <select
-          id="language"
-          value={locale}
-          onChange={(e) => changeLanguage(e.target.value)}
-          style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", marginTop: "0.5rem" }}
-        >
-          {SUPPORTED_LOCALES.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.label}
-            </option>
-          ))}
-        </select>
-        {languageError && <p style={{ color: "var(--color-danger)", fontSize: "0.9rem" }}>{t("settings.saveError")}</p>}
-      </div>
-
-      <div className="card">
-        <label htmlFor="timezone">{t("settings.timezone")}</label>
-        <select
-          id="timezone"
-          value={timezone}
-          onChange={(e) => saveTimezone(e.target.value)}
-          style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", marginTop: "0.5rem" }}
-        >
-          {TIMEZONES.map((tz) => (
-            <option key={tz} value={tz}>
-              {tz.replace(/_/g, " ")}
-            </option>
-          ))}
-        </select>
-        {saved && <p className="muted">{t("settings.saved")}</p>}
-        {timezoneError && <p style={{ color: "var(--color-danger)", fontSize: "0.9rem" }}>{t("settings.saveError")}</p>}
-      </div>
-
-      <Link to="/wallpaper" className="card" style={{ textDecoration: "none", color: "var(--color-text)" }}>
-        {t("settings.wallpaper")}
-      </Link>
-      <Link to="/theme" className="card" style={{ textDecoration: "none", color: "var(--color-text)" }}>
-        {t("settings.theme")}
-      </Link>
-
-      <button onClick={logout} style={{ marginTop: "auto" }}>
-        {t("settings.logout")}
-      </button>
 
       <BottomNav />
     </div>
