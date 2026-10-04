@@ -5,6 +5,23 @@ const baseURL = process.env.BASE_URL || 'http://127.0.0.1:4174';
 const outputDir = 'artifacts/health-browser-smoke';
 await fs.mkdir(outputDir, { recursive: true });
 
+// Shipped V1 locales (AGENTS.md §3). Read straight from the i18n resource
+// files so this test checks the hero against whatever copy actually ships,
+// not a second hardcoded copy of the strings.
+const LOCALES = ['en', 'zh-HK', 'zh-CN'];
+const LOCALE_STORAGE_KEY = 'health.locale'; // apps/health-web/src/i18n/index.ts STORAGE_KEY
+
+const heroCopy = {};
+for (const locale of LOCALES) {
+  const resource = JSON.parse(await fs.readFile(`apps/health-web/src/i18n/${locale}.json`, 'utf8'));
+  heroCopy[locale] = {
+    line1: resource['health.hero.title.line1'],
+    line2: resource['health.hero.title.line2'],
+    primaryCta: resource['health.hero.cta.products'],
+    secondaryCta: resource['health.hero.cta.sleepApp'],
+  };
+}
+
 const scenarios = [
   { name: 'desktop', context: { viewport: { width: 1440, height: 900 } } },
   { name: 'mobile', context: devices['iPhone 13'] },
@@ -12,6 +29,21 @@ const scenarios = [
 
 const browser = await chromium.launch();
 let failed = false;
+
+async function assertVisibleFocus(locator, label) {
+  await locator.focus();
+  const style = await locator.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return { outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth, boxShadow: cs.boxShadow };
+  });
+  const hasOutline = style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0;
+  const hasBoxShadow = style.boxShadow !== 'none';
+  if (!hasOutline && !hasBoxShadow) {
+    throw new Error(
+      `${label} has no visible keyboard focus indicator (outline: ${style.outlineStyle} ${style.outlineWidth}, box-shadow: ${style.boxShadow})`,
+    );
+  }
+}
 
 for (const scenario of scenarios) {
   const context = await browser.newContext(scenario.context);
@@ -55,6 +87,82 @@ for (const scenario of scenarios) {
     });
 
     console.log(`PASS health ${scenario.name}: HTTP ${response.status()}, visible chars ${bodyText.length}, no horizontal overflow, no runtime console errors, no failed network requests`);
+
+    for (const locale of LOCALES) {
+      await page.evaluate(
+        ({ key, value }) => window.localStorage.setItem(key, value),
+        { key: LOCALE_STORAGE_KEY, value: locale },
+      );
+      const localeResponse = await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 30_000 });
+      if (!localeResponse || !localeResponse.ok()) {
+        throw new Error(`[${locale}] homepage returned HTTP ${localeResponse?.status() ?? 'no response'}`);
+      }
+
+      const copy = heroCopy[locale];
+      const heroHeading = page.locator('.health-hero-content h1');
+      await heroHeading.waitFor({ state: 'visible', timeout: 10_000 });
+      const headingText = (await heroHeading.innerText()).trim();
+      const expectedHeading = `${copy.line1}\n${copy.line2}`;
+      if (headingText !== expectedHeading) {
+        throw new Error(`[${locale}] hero headline mismatch: expected ${JSON.stringify(expectedHeading)}, got ${JSON.stringify(headingText)}`);
+      }
+
+      const primaryCta = page.locator('.health-hero-actions a.health-button.primary');
+      await primaryCta.waitFor({ state: 'visible', timeout: 5_000 });
+      const primaryText = (await primaryCta.innerText()).trim();
+      if (primaryText !== copy.primaryCta) {
+        throw new Error(`[${locale}] primary CTA text mismatch: expected ${JSON.stringify(copy.primaryCta)}, got ${JSON.stringify(primaryText)}`);
+      }
+      const primaryHref = await primaryCta.getAttribute('href');
+      if (!primaryHref || !primaryHref.endsWith('/products')) {
+        throw new Error(`[${locale}] primary CTA does not point to the existing /products destination (href=${primaryHref})`);
+      }
+      await assertVisibleFocus(primaryCta, `[${locale}] primary CTA`);
+
+      const secondaryCta = page.locator('.health-hero-actions .health-button.secondary');
+      await secondaryCta.waitFor({ state: 'visible', timeout: 5_000 });
+      const secondaryText = (await secondaryCta.innerText()).trim();
+      if (secondaryText !== copy.secondaryCta) {
+        throw new Error(`[${locale}] secondary CTA text mismatch: expected ${JSON.stringify(copy.secondaryCta)}, got ${JSON.stringify(secondaryText)}`);
+      }
+      // SleepAppLink renders a real <a href> once VITE_SLEEP_APP_URL is configured,
+      // and an honestly aria-disabled <span> (no invented URL) until then — assert
+      // whichever is actually shipped rather than assuming one shape.
+      const secondaryTag = await secondaryCta.evaluate((el) => el.tagName.toLowerCase());
+      if (secondaryTag === 'a') {
+        const secondaryHref = await secondaryCta.getAttribute('href');
+        if (!secondaryHref) {
+          throw new Error(`[${locale}] secondary CTA renders as a link with no destination href`);
+        }
+        await assertVisibleFocus(secondaryCta, `[${locale}] secondary CTA`);
+      } else {
+        const ariaDisabled = await secondaryCta.getAttribute('aria-disabled');
+        if (ariaDisabled !== 'true') {
+          throw new Error(`[${locale}] secondary CTA is neither a real link nor honestly marked aria-disabled`);
+        }
+      }
+
+      const localeOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      if (localeOverflow) {
+        throw new Error(`[${locale}] homepage has horizontal overflow`);
+      }
+
+      if (pageErrors.length > 0) throw new Error(`[${locale}] uncaught browser error(s): ${pageErrors.join(' | ')}`);
+      if (consoleErrors.length > 0) throw new Error(`[${locale}] console error(s): ${consoleErrors.join(' | ')}`);
+      if (requestFailures.length > 0) throw new Error(`[${locale}] failed network request(s): ${requestFailures.join(' | ')}`);
+
+      await page.screenshot({
+        path: `${outputDir}/${scenario.name}-${locale}-homepage.png`,
+        fullPage: true,
+      });
+
+      console.log(
+        `PASS health ${scenario.name} ${locale}: hero headline/CTA copy matches shipped i18n resource, CTAs point to existing destinations, no horizontal overflow, visible keyboard focus, no runtime console errors, no failed network requests`,
+      );
+    }
+
+    // Reset to English before the existing English-only products-page assertions below.
+    await page.evaluate((key) => window.localStorage.setItem(key, 'en'), LOCALE_STORAGE_KEY);
 
     const productsResponse = await page.goto(`${baseURL}/products`, { waitUntil: 'networkidle', timeout: 30_000 });
     if (!productsResponse || !productsResponse.ok()) {
