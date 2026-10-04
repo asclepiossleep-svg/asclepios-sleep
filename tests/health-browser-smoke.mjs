@@ -158,14 +158,15 @@ for (const scenario of scenarios) {
       return { viewportWidth, scrollWidth, offenders: offenders.slice(0, 15) };
     });
 
-    console.log(
-      `DIAGNOSTIC ${scenario.name} ops console: scrollWidth=${opsConsoleOverflowDiagnostics.scrollWidth}px clientWidth=${opsConsoleOverflowDiagnostics.viewportWidth}px`
-    );
-    for (const offender of opsConsoleOverflowDiagnostics.offenders) {
-      console.log(
-        `DIAGNOSTIC ${scenario.name} offender: ${offender.selector} left=${offender.left} right=${offender.right} width=${offender.width} overflow-x=${offender.overflowX} min-width=${offender.minWidth} white-space="${offender.whiteSpace}"`
-      );
-    }
+    const diagnosticLines = [
+      `DIAGNOSTIC ${scenario.name} ops console: scrollWidth=${opsConsoleOverflowDiagnostics.scrollWidth}px clientWidth=${opsConsoleOverflowDiagnostics.viewportWidth}px`,
+      ...opsConsoleOverflowDiagnostics.offenders.map(
+        offender =>
+          `DIAGNOSTIC ${scenario.name} offender: ${offender.selector} left=${offender.left} right=${offender.right} width=${offender.width} overflow-x=${offender.overflowX} min-width=${offender.minWidth} white-space="${offender.whiteSpace}"`
+      ),
+    ];
+    for (const line of diagnosticLines) console.log(line);
+    await fs.writeFile(`${outputDir}/${scenario.name}-ops-console-diagnostics.txt`, diagnosticLines.join('\n') + '\n');
 
     const opsConsoleOverflow = opsConsoleOverflowDiagnostics.scrollWidth > opsConsoleOverflowDiagnostics.viewportWidth + 1;
     if (opsConsoleOverflow) {

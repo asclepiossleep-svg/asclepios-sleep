@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   browser-smoke:
@@ -82,6 +83,21 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:4174
         run: node tests/health-browser-smoke.mjs
+
+      - name: Post ops console overflow diagnostics to PR
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for f in artifacts/health-browser-smoke/*-ops-console-diagnostics.txt; do
+            [ -f "$f" ] || continue
+            {
+              echo "SUM diagnostic (temporary, recovery-only) — ops console overflow measurement from run ${GITHUB_RUN_ID}:"
+              echo '```'
+              cat "$f"
+              echo '```'
+            } | gh pr comment "${{ github.event.pull_request.number }}" --body-file -
+          done
 
       - name: Upload browser evidence
         if: always()
