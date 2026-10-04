@@ -33,6 +33,39 @@ jobs:
       - name: Enforce deterministic agent workflow security policy
         run: node scripts/verify-agent-workflow-policy.mjs
 
+      - name: Validate VISUAL evidence contract fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          VALIDATOR="scripts/ci/validate-visual-evidence-contract.mjs"
+          FIXTURES="tests/fixtures/visual-contract"
+          SOURCES="$FIXTURES/source-records.json"
+
+          node "$VALIDATOR" "$FIXTURES/valid.json" "$SOURCES"
+
+          for fixture in \
+            missing-mobile.json \
+            deployment-sha-mismatch.json \
+            goal-id-mismatch.json \
+            asset-sha-mismatch.json \
+            skipped-required-check.json
+          do
+            if node "$VALIDATOR" "$FIXTURES/$fixture" "$SOURCES"; then
+              echo "Expected $fixture to be rejected, but validator returned success." >&2
+              exit 1
+            fi
+          done
+
+          if node "$VALIDATOR" "$FIXTURES/rex-mobile-waiver.json" "$SOURCES"; then
+            echo "Expected rex-mobile-waiver.json to be rejected, but validator returned success." >&2
+            exit 1
+          fi
+
+          if node "$VALIDATOR" "$FIXTURES/plain-text-approval-url.json" "$SOURCES"; then
+            echo "Expected plain-text-approval-url.json to be rejected, but validator returned success." >&2
+            exit 1
+          fi
+
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
 
