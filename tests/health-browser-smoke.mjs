@@ -129,9 +129,52 @@ for (const scenario of scenarios) {
     await page.locator('.ooc-action-btn', { hasText: 'Mark fulfilment exception resolved' }).click();
     await page.locator('.ooc-log li', { hasText: 'Marked fulfilment exception resolved: DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
 
-    const opsConsoleOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    const opsConsoleOverflowDiagnostics = await page.evaluate(() => {
+      const root = document.documentElement;
+      const viewportWidth = root.clientWidth;
+      const scrollWidth = root.scrollWidth;
+      const offenders = [];
+      document.querySelectorAll('*').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
+        if (rect.right > viewportWidth + 1 || rect.left < -1) {
+          const computed = getComputedStyle(el);
+          const classAttr = typeof el.className === 'string' ? el.className.trim() : '';
+          const selector = el.tagName.toLowerCase() +
+            (el.id ? `#${el.id}` : '') +
+            (classAttr ? `.${classAttr.split(/\s+/).join('.')}` : '');
+          offenders.push({
+            selector,
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            overflowX: computed.overflowX,
+            minWidth: computed.minWidth,
+            whiteSpace: computed.whiteSpace,
+          });
+        }
+      });
+      offenders.sort((a, b) => b.right - a.right);
+      return { viewportWidth, scrollWidth, offenders: offenders.slice(0, 15) };
+    });
+
+    console.log(
+      `DIAGNOSTIC ${scenario.name} ops console: scrollWidth=${opsConsoleOverflowDiagnostics.scrollWidth}px clientWidth=${opsConsoleOverflowDiagnostics.viewportWidth}px`
+    );
+    for (const offender of opsConsoleOverflowDiagnostics.offenders) {
+      console.log(
+        `DIAGNOSTIC ${scenario.name} offender: ${offender.selector} left=${offender.left} right=${offender.right} width=${offender.width} overflow-x=${offender.overflowX} min-width=${offender.minWidth} white-space="${offender.whiteSpace}"`
+      );
+    }
+
+    const opsConsoleOverflow = opsConsoleOverflowDiagnostics.scrollWidth > opsConsoleOverflowDiagnostics.viewportWidth + 1;
     if (opsConsoleOverflow) {
-      throw new Error('ops console has horizontal overflow');
+      const offenderSummary = opsConsoleOverflowDiagnostics.offenders
+        .map(offender => `${offender.selector}(right=${offender.right}px,width=${offender.width}px,min-width=${offender.minWidth})`)
+        .join(', ') || 'no element bounding rect crossed the viewport';
+      throw new Error(
+        `ops console has horizontal overflow (scrollWidth=${opsConsoleOverflowDiagnostics.scrollWidth}px > clientWidth=${opsConsoleOverflowDiagnostics.viewportWidth}px); offenders: ${offenderSummary}`
+      );
     }
 
     if (pageErrors.length > 0) throw new Error(`uncaught browser error(s) on ops console: ${pageErrors.join(' | ')}`);
