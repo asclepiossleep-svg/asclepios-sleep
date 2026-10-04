@@ -84,6 +84,7 @@
 }
 
 .ooc-list {
+  min-width: 0;
   background: var(--hw-surface);
   border: 1px solid var(--hw-border);
   border-radius: var(--hw-radius-md);
