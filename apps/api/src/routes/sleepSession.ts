@@ -64,6 +64,21 @@ router.post("/start", async (req: AuthedRequest, res) => {
   res.json({ session, timeline, wakeCurve: WAKE_STYLE_CURVES[session.wakeStyle as keyof typeof WAKE_STYLE_CURVES] });
 });
 
+// P0 continuity requirement (6 Sep 2026 owner directive) — lets the app
+// resume an in-progress sleep session on cold entry (refresh, browser
+// restart, PWA relaunch) instead of dropping the user on Home/first step.
+// Mirrors checkin.ts's /pending-session lookup pattern. ACTIVE = still
+// sleeping; WOKEN = awake but hasn't continued to Morning Check-in yet —
+// both still have an unfinished player experience to return to. Must be
+// declared before GET /:id, or Express would treat "active" as an :id.
+router.get("/active", async (req: AuthedRequest, res) => {
+  const session = await prisma.sleepSession.findFirst({
+    where: { userId: req.userId!, status: { in: ["ACTIVE", "WOKEN"] } },
+    orderBy: { windDownStart: "desc" },
+  });
+  res.json({ session });
+});
+
 // Requirement Recovery Matrix #29 — lets the Sleep Player recover session
 // details (track/duration/fade-out) after a page refresh, not just via the
 // navigate() state passed at Start Sleep time.
