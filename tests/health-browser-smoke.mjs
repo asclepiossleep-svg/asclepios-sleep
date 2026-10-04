@@ -105,6 +105,45 @@ for (const scenario of scenarios) {
     });
 
     console.log(`PASS health ${scenario.name} products: heading + all three Phase-1 product names render, "Sleep" chip shows all three, "Calm" chip shows honest empty state, "All Products" restores all three, no horizontal overflow, no runtime console errors, no failed network requests`);
+
+    const opsConsoleResponse = await page.goto(`${baseURL}/internal/ops-console`, { waitUntil: 'networkidle', timeout: 30_000 });
+    if (!opsConsoleResponse || !opsConsoleResponse.ok()) {
+      throw new Error(`ops console route returned HTTP ${opsConsoleResponse?.status() ?? 'no response'}`);
+    }
+
+    await page.locator('h1', { hasText: 'Owner Operations Console' }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.locator('.ooc-banner', { hasText: 'Internal preview' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const summaryLabels = ['Orders needing action', 'Fulfilment exceptions', 'Returns / refunds pending'];
+    for (const label of summaryLabels) {
+      await page.locator('.ooc-summary-card', { hasText: label }).waitFor({ state: 'visible', timeout: 5_000 });
+    }
+
+    await page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1003' }).first().click();
+    await page.locator('.ooc-detail h2', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    for (const label of ['Order', 'Payment', 'Inventory', 'Fulfilment', 'Delivery', 'Entitlement', 'Support']) {
+      await page.locator('.ooc-chain-label', { hasText: label }).waitFor({ state: 'visible', timeout: 5_000 });
+    }
+
+    await page.locator('.ooc-action-btn', { hasText: 'Mark fulfilment exception resolved' }).click();
+    await page.locator('.ooc-log li', { hasText: 'Marked fulfilment exception resolved: DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const opsConsoleOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    if (opsConsoleOverflow) {
+      throw new Error('ops console has horizontal overflow');
+    }
+
+    if (pageErrors.length > 0) throw new Error(`uncaught browser error(s) on ops console: ${pageErrors.join(' | ')}`);
+    if (consoleErrors.length > 0) throw new Error(`console error(s) on ops console: ${consoleErrors.join(' | ')}`);
+    if (requestFailures.length > 0) throw new Error(`failed network request(s) on ops console: ${requestFailures.join(' | ')}`);
+
+    await page.screenshot({
+      path: `${outputDir}/${scenario.name}-ops-console.png`,
+      fullPage: true,
+    });
+
+    console.log(`PASS health ${scenario.name} ops console: /internal/ops-console renders summary cards + order list + lifecycle chain, local-only action updates session log, no horizontal overflow, no runtime console errors, no failed network requests`);
   } catch (error) {
     failed = true;
     await page.screenshot({
