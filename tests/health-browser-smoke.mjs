@@ -105,6 +105,36 @@ for (const scenario of scenarios) {
     });
 
     console.log(`PASS health ${scenario.name} products: heading + all three Phase-1 product names render, "Sleep" chip shows all three, "Calm" chip shows honest empty state, "All Products" restores all three, no horizontal overflow, no runtime console errors, no failed network requests`);
+
+    const consoleResponse = await page.goto(`${baseURL}/internal/visual-console`, { waitUntil: 'networkidle', timeout: 30_000 });
+    if (!consoleResponse || !consoleResponse.ok()) {
+      throw new Error(`visual console route returned HTTP ${consoleResponse?.status() ?? 'no response'}`);
+    }
+
+    await page.locator('h1', { hasText: 'Visual Workflow Console' }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.locator('.vwc-banner', { hasText: 'Internal preview' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    for (const label of ['Approve version', 'Request changes', 'Mark reference only']) {
+      await page.locator('.vwc-action-btn', { hasText: label }).waitFor({ state: 'visible', timeout: 5_000 });
+    }
+
+    await page.locator('.vwc-list-item', { hasText: 'v1 (legacy reference capture)' }).first().waitFor({ state: 'visible', timeout: 5_000 });
+
+    const consoleOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    if (consoleOverflow) {
+      throw new Error('visual console has horizontal overflow');
+    }
+
+    if (pageErrors.length > 0) throw new Error(`uncaught browser error(s) on visual console: ${pageErrors.join(' | ')}`);
+    if (consoleErrors.length > 0) throw new Error(`console error(s) on visual console: ${consoleErrors.join(' | ')}`);
+    if (requestFailures.length > 0) throw new Error(`failed network request(s) on visual console: ${requestFailures.join(' | ')}`);
+
+    await page.screenshot({
+      path: `${outputDir}/${scenario.name}-visual-console.png`,
+      fullPage: true,
+    });
+
+    console.log(`PASS health ${scenario.name} visual console: /internal/visual-console renders version list + action buttons, no horizontal overflow, no runtime console errors, no failed network requests`);
   } catch (error) {
     failed = true;
     await page.screenshot({
