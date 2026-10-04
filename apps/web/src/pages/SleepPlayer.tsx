@@ -17,10 +17,23 @@ const DEFAULT_PLAYER_WALLPAPER = "/wallpapers/moonlit-lake.webp";
 
 interface SleepSessionData {
   id: string;
+  windDownStart: string;
+  status: "ACTIVE" | "WOKEN" | "ENDED";
   sleepAudioId: string | null;
   sleepAudioDurationSeconds: number | null;
   sleepAudioFadeOutSeconds: number;
   wakeStyle: "GENTLE" | "NORMAL" | "STRONG";
+}
+
+// P0 continuity requirement (6 Sep 2026 owner directive) — a refresh/relaunch
+// used to reset the countdown to the full duration every time, because it
+// was seeded from sleepAudioDurationSeconds alone. windDownStart is a fixed
+// anchor set once at session creation, so real elapsed time since then gives
+// the actual remaining time regardless of how many times the page reloads.
+function computeRemaining(session: SleepSessionData): number | null {
+  if (session.sleepAudioDurationSeconds === null) return null;
+  const elapsedSeconds = Math.floor((Date.now() - new Date(session.windDownStart).getTime()) / 1000);
+  return Math.max(0, session.sleepAudioDurationSeconds - elapsedSeconds);
 }
 
 interface LibraryTrackLite {
@@ -65,7 +78,7 @@ export default function SleepPlayer() {
   const location = useLocation();
   const [session, setSession] = useState<SleepSessionData | null>((location.state as any)?.session ?? null);
   const [sessionLoadFailed, setSessionLoadFailed] = useState(false);
-  const [woken, setWoken] = useState(false);
+  const [woken, setWoken] = useState(session?.status === "WOKEN");
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -88,6 +101,16 @@ export default function SleepPlayer() {
       .catch(() => setSessionLoadFailed(true));
   }, [session, sessionId]);
 
+  // P0 continuity requirement (6 Sep 2026) — resuming after the user already
+  // tapped "I'm Awake" (server status WOKEN) must show the wake/snooze card
+  // again, not silently reset to the still-sleeping screen with a chime that
+  // never fires. `woken`'s initial value already covers the location.state
+  // case (fresh navigation from imAwake()); this covers the refetch-on-refresh
+  // case, where session only becomes available after this component mounts.
+  useEffect(() => {
+    if (session?.status === "WOKEN") setWoken(true);
+  }, [session?.status]);
+
   // A real Music Library track id needs its audioUrl/title/artwork resolved
   // before it can be played — the session row only ever stores the id.
   useEffect(() => {
@@ -99,8 +122,10 @@ export default function SleepPlayer() {
 
   // Start real audio the moment we know what to play — unless the user
   // chose "🔇 Off" on Sleep Setting, in which case there's nothing to start.
+  // Also nothing to start for a session resumed in its ENDED state (see the
+  // sessionEnded screen below) — there's no countdown/audio left to resume.
   useEffect(() => {
-    if (!session) return;
+    if (!session || session.status === "ENDED") return;
     if (isRealTrack) {
       if (!realTrack?.audioUrl) return; // still resolving, or track vanished
       musicPlayer.playTrack({ id: realTrack.id, title: realTrack.title, artist: realTrack.artist, audioUrl: realTrack.audioUrl, artworkUrl: realTrack.artworkUrl });
@@ -113,7 +138,7 @@ export default function SleepPlayer() {
         setPlaying(true);
       }
     }
-    setRemaining(session.sleepAudioDurationSeconds ?? null);
+    setRemaining(computeRemaining(session));
     return () => {
       engineRef.current.stop();
       if (isRealTrack) musicPlayer.stop();
@@ -124,7 +149,7 @@ export default function SleepPlayer() {
   // Countdown + automatic fade-out near the end. A null sleepAudioDurationSeconds
   // (UNTIL_WAKE / ALL_NIGHT) means open-ended — no countdown, no auto-stop.
   useEffect(() => {
-    if (!session || woken || session.sleepAudioDurationSeconds === null) return;
+    if (!session || woken || session.status === "ENDED" || session.sleepAudioDurationSeconds === null) return;
     const interval = setInterval(() => {
       setRemaining((prev) => {
         if (prev === null) return prev;
@@ -245,9 +270,11 @@ export default function SleepPlayer() {
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))",
         }}
       >
-        {sessionLoadFailed ? (
+        {sessionLoadFailed || session?.status === "ENDED" ? (
           <div style={{ textAlign: "center", margin: "auto 0" }}>
-            <p style={{ color: "#f6f5fa", opacity: 0.85, marginBottom: "1rem" }}>{t("player.sessionLoadFailed")}</p>
+            <p style={{ color: "#f6f5fa", opacity: 0.85, marginBottom: "1rem" }}>
+              {sessionLoadFailed ? t("player.sessionLoadFailed") : t("player.sessionEnded")}
+            </p>
             <button className="primary" onClick={() => navigate("/tonight")}>
               {t("player.backToTonight")}
             </button>
