@@ -33,6 +33,57 @@ jobs:
       - name: Enforce deterministic agent workflow security policy
         run: node scripts/verify-agent-workflow-policy.mjs
 
+      - name: Validate VISUAL evidence contract fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          VALIDATOR="scripts/ci/validate-visual-evidence-contract.mjs"
+          FIXTURES="tests/fixtures/visual-contract"
+          SOURCES="$FIXTURES/source-records.json"
+
+          node "$VALIDATOR" "$FIXTURES/valid.json" "$SOURCES"
+
+          expect_reject() {
+            local expected_status="$1"
+            local expected_code="$2"
+            shift 2
+
+            local output
+            local exit_code
+            set +e
+            output=$("$@" 2>&1)
+            exit_code=$?
+            set -e
+            printf '%s\n' "$output"
+
+            if [ "$exit_code" -eq 0 ]; then
+              echo "Expected validator rejection, but command returned success: $*" >&2
+              return 1
+            fi
+
+            if ! grep -Fq "RESULT=BLOCKED EVIDENCE_STATUS=$expected_status CODE=$expected_code:" <<<"$output"; then
+              echo "Validator rejected for an unexpected reason; expected status=$expected_status code=$expected_code" >&2
+              return 1
+            fi
+          }
+
+          expect_reject EVIDENCE_INCOMPLETE MOBILE_EVIDENCE_MISSING node "$VALIDATOR" "$FIXTURES/missing-mobile.json" "$SOURCES"
+          expect_reject MISMATCHED GOAL_ID_MISMATCH node "$VALIDATOR" "$FIXTURES/goal-id-mismatch.json" "$SOURCES"
+          expect_reject BLOCKED UNAUTHORIZED_NOT_APPLICABLE node "$VALIDATOR" "$FIXTURES/rex-mobile-waiver.json" "$SOURCES"
+
+          expect_reject MISMATCHED DEPLOYMENT_SHA_MISMATCH node "$VALIDATOR" "$FIXTURES/valid.json" "$SOURCES" --scenario deployment-sha-mismatch
+          expect_reject MISMATCHED ASSET_SHA_MISMATCH node "$VALIDATOR" "$FIXTURES/valid.json" "$SOURCES" --scenario asset-sha-mismatch
+          expect_reject BLOCKED REQUIRED_CHECK_NOT_SUCCESS node "$VALIDATOR" "$FIXTURES/valid.json" "$SOURCES" --scenario skipped-required-check
+          expect_reject EVIDENCE_INCOMPLETE DEPLOYMENT_EVIDENCE_INCOMPLETE node "$VALIDATOR" "$FIXTURES/valid.json" "$SOURCES" --scenario url-only-deployment
+
+          expect_reject EVIDENCE_INCOMPLETE APPROVAL_SOURCE_INVALID node "$VALIDATOR" "$FIXTURES/valid.json" "$FIXTURES/plain-text-approval-url.json"
+
+          if expect_reject EVIDENCE_INCOMPLETE WRONG_RULE_CODE node "$VALIDATOR" "$FIXTURES/missing-mobile.json" "$SOURCES"; then
+            echo "Expected the assertion helper to reject an unexpected rule code" >&2
+            exit 1
+          fi
+          echo "PASS assertion helper rejects an unexpected rule code"
+
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
 
