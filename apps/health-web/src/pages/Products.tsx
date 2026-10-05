@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { t } from "../i18n";
 import HealthHeader from "../components/HealthHeader";
 import HealthFooter from "../components/HealthFooter";
@@ -44,12 +45,13 @@ export default function Products() {
         {visibleProducts.length > 0 ? (
           <section className="health-products-grid">
             {visibleProducts.map((product) => (
-              <article className="health-product-card" key={product.slug}>
+              <Link className="health-product-card" to={`/products/${product.slug}`} key={product.slug}>
                 <span className="health-status">{t("health.status.comingSoon")}</span>
                 <p className="health-product-timing">{t(product.timingKey)}</p>
                 <h2>{t(product.nameKey)}</h2>
                 <p>{t(product.descriptionKey)}</p>
-              </article>
+                <span className="health-card-cta">{t("health.products.viewDetails")} →</span>
+              </Link>
             ))}
           </section>
         ) : (

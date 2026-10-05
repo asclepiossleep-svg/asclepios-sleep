@@ -62,6 +62,12 @@
   border: 1px solid var(--hw-border);
   border-radius: var(--hw-radius-lg);
   box-shadow: var(--hw-shadow);
+  text-decoration: none;
+  color: inherit;
+}
+
+.health-product-card:hover {
+  border-color: var(--hw-teal);
 }
 
 .health-product-card h2 {

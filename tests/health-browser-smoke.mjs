@@ -105,6 +105,86 @@ for (const scenario of scenarios) {
     });
 
     console.log(`PASS health ${scenario.name} products: heading + all three Phase-1 product names render, "Sleep" chip shows all three, "Calm" chip shows honest empty state, "All Products" restores all three, no horizontal overflow, no runtime console errors, no failed network requests`);
+
+    // Locale switch: zh-HK and zh-CN render their own translated lead copy
+    // (not a character conversion of each other), then reset to en so the
+    // rest of the scenario runs against known English strings.
+    await page.selectOption('.health-lang-select', 'zh-HK');
+    await page.locator('.health-products-lead', { hasText: '精心設計嘅產品' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await page.selectOption('.health-lang-select', 'zh-CN');
+    await page.locator('.health-products-lead', { hasText: '精心设计的产品' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await page.selectOption('.health-lang-select', 'en');
+    await page.locator('.health-products-lead', { hasText: 'Considered products launching in stages' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    console.log(`PASS health ${scenario.name} locale switch: zh-HK and zh-CN each render their own translated product lead copy, en restores the fallback locale`);
+
+    // Product -> detail -> add to demo cart path.
+    await page.locator('.health-chip', { hasText: 'All Products' }).click();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+
+    await page.locator('.health-product-card', { hasText: 'SLEEPTAPE™ Nasal Strips' }).click();
+    await page.waitForURL(/\/products\/sleeptape$/, { timeout: 10_000 });
+    await page.locator('h1', { hasText: 'SLEEPTAPE™ Nasal Strips' }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.locator('.health-price-notice', { hasText: 'DEMO' }).first().waitFor({ state: 'visible', timeout: 5_000 });
+
+    const detailScrollY = await page.evaluate(() => window.scrollY);
+    if (detailScrollY > 1) {
+      throw new Error(`product detail did not reset scroll position on entry (scrollY=${detailScrollY})`);
+    }
+
+    await page.locator('button', { hasText: 'Add to Demo Cart' }).click();
+    await page.locator('.health-detail-confirmation').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.health-cart-badge', { hasText: '1' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const detailOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    if (detailOverflow) throw new Error('product detail page has horizontal overflow');
+
+    await page.screenshot({
+      path: `${outputDir}/${scenario.name}-product-detail.png`,
+      fullPage: true,
+    });
+
+    console.log(`PASS health ${scenario.name} product detail: SLEEPTAPE detail route renders an honest DEMO price notice, "Add to Demo Cart" shows a confirmation and increments the header cart badge, no horizontal overflow`);
+
+    // Demo cart: quantity change, remove, honest empty-cart state.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await page.locator('.health-cart-link').click();
+    await page.waitForURL(/\/cart$/, { timeout: 10_000 });
+    await page.locator('h1', { hasText: 'Demo Cart' }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.locator('.health-cart-row', { hasText: 'SLEEPTAPE™ Nasal Strips' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const cartScrollY = await page.evaluate(() => window.scrollY);
+    if (cartScrollY > 1) {
+      throw new Error(`cart did not reset scroll position on entry (scrollY=${cartScrollY})`);
+    }
+
+    await page.locator('.health-cart-row .health-stepper button[aria-label="Increase quantity"]').click();
+    await page.locator('.health-stepper-value', { hasText: '2' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.health-cart-badge', { hasText: '2' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const cartOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    if (cartOverflow) throw new Error('cart page has horizontal overflow');
+
+    await page.screenshot({
+      path: `${outputDir}/${scenario.name}-cart-with-item.png`,
+      fullPage: true,
+    });
+
+    await page.locator('.health-cart-remove').click();
+    await page.locator('.health-cart-empty-title').waitFor({ state: 'visible', timeout: 5_000 });
+    const remainingRows = await page.locator('.health-cart-row').count();
+    if (remainingRows !== 0) throw new Error(`expected 0 cart rows after removing the only line, found ${remainingRows}`);
+
+    await page.screenshot({
+      path: `${outputDir}/${scenario.name}-cart-empty.png`,
+      fullPage: true,
+    });
+
+    if (pageErrors.length > 0) throw new Error(`uncaught browser error(s) on cart path: ${pageErrors.join(' | ')}`);
+    if (consoleErrors.length > 0) throw new Error(`console error(s) on cart path: ${consoleErrors.join(' | ')}`);
+    if (requestFailures.length > 0) throw new Error(`failed network request(s) on cart path: ${requestFailures.join(' | ')}`);
+
+    console.log(`PASS health ${scenario.name} demo cart: quantity increase updates the row and header badge, remove restores the honest empty-cart state, no horizontal overflow, no runtime console errors, no failed network requests`);
   } catch (error) {
     failed = true;
     await page.screenshot({
