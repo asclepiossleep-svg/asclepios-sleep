@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DecisionRecord,
   STATUS_LABELS,
@@ -79,6 +79,15 @@ export default function VisualWorkflowConsole() {
   const draftCounterRef = useRef(1);
 
   const selected = useMemo(() => versions.find((v) => v.id === selectedId) ?? versions[0], [versions, selectedId]);
+
+  // A pending owner review note is scoped to the version it was written for.
+  // Clearing it deterministically on every selection change prevents a note
+  // drafted for version A from ever enabling or populating a review action
+  // committed against a different selected version B.
+  useEffect(() => {
+    setReviewNote("");
+  }, [selectedId]);
+
   const comparisonTarget = useMemo(
     () => (selected.comparisonTargetId ? versions.find((v) => v.id === selected.comparisonTargetId) ?? null : null),
     [selected, versions]
