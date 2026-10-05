@@ -119,10 +119,18 @@ for (const scenario of scenarios) {
     console.log(`PASS health ${scenario.name} locale switch: zh-HK and zh-CN each render their own translated product lead copy, en restores the fallback locale`);
 
     // Product -> detail -> add to demo cart path.
+    await page.locator('.health-chip', { hasText: 'All Products' }).click();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+
     await page.locator('.health-product-card', { hasText: 'SLEEPTAPE™ Nasal Strips' }).click();
     await page.waitForURL(/\/products\/sleeptape$/, { timeout: 10_000 });
     await page.locator('h1', { hasText: 'SLEEPTAPE™ Nasal Strips' }).waitFor({ state: 'visible', timeout: 10_000 });
     await page.locator('.health-price-notice', { hasText: 'DEMO' }).first().waitFor({ state: 'visible', timeout: 5_000 });
+
+    const detailScrollY = await page.evaluate(() => window.scrollY);
+    if (detailScrollY > 1) {
+      throw new Error(`product detail did not reset scroll position on entry (scrollY=${detailScrollY})`);
+    }
 
     await page.locator('button', { hasText: 'Add to Demo Cart' }).click();
     await page.locator('.health-detail-confirmation').waitFor({ state: 'visible', timeout: 5_000 });
@@ -139,10 +147,16 @@ for (const scenario of scenarios) {
     console.log(`PASS health ${scenario.name} product detail: SLEEPTAPE detail route renders an honest DEMO price notice, "Add to Demo Cart" shows a confirmation and increments the header cart badge, no horizontal overflow`);
 
     // Demo cart: quantity change, remove, honest empty-cart state.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await page.locator('.health-cart-link').click();
     await page.waitForURL(/\/cart$/, { timeout: 10_000 });
     await page.locator('h1', { hasText: 'Demo Cart' }).waitFor({ state: 'visible', timeout: 10_000 });
     await page.locator('.health-cart-row', { hasText: 'SLEEPTAPE™ Nasal Strips' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const cartScrollY = await page.evaluate(() => window.scrollY);
+    if (cartScrollY > 1) {
+      throw new Error(`cart did not reset scroll position on entry (scrollY=${cartScrollY})`);
+    }
 
     await page.locator('.health-cart-row .health-stepper button[aria-label="Increase quantity"]').click();
     await page.locator('.health-stepper-value', { hasText: '2' }).waitFor({ state: 'visible', timeout: 5_000 });
