@@ -123,6 +123,20 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
   },
 ];
 
+// A structured local decision record created by a review action (issue #131,
+// v2 slice). Rendered/copyable/downloadable in the console only — never sent
+// over the network and never written to a database or git.
+export interface DecisionRecord {
+  decisionId: string;
+  selectedVersionId: string;
+  comparisonTargetId: string | null;
+  previousStatus: VersionStatus;
+  newStatus: VersionStatus;
+  reviewNote: string;
+  timestamp: string;
+  scope: "LOCAL_PREVIEW_ONLY";
+}
+
 export const STATUS_LABELS: Record<VersionStatus, string> = {
   REFERENCE_ONLY: "Reference only",
   DRAFT: "Draft",
