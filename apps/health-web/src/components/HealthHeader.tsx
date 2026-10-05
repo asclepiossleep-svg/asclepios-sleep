@@ -4,6 +4,8 @@ import { t, setLocale, SUPPORTED_LOCALES } from "../i18n";
 import { useLocale } from "../i18n/useLocale";
 import brandMark from "../assets/brand/asclepios-mark.webp";
 import SleepAppLink from "./SleepAppLink";
+import { useCart } from "../state/cart";
+import "../styles/commerce.css";
 
 const LOCALE_NAMES: Record<string, string> = {
   en: "English",
@@ -15,6 +17,7 @@ export default function HealthHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const activeLocale = useLocale();
+  const { totalQuantity } = useCart();
 
   function isActive(path: string) {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
@@ -60,13 +63,25 @@ export default function HealthHeader() {
             <path d="M16.5 16.5 13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
-        <button type="button" className="health-icon-button" title={t("health.action.bagPending")} aria-disabled="true">
-          <span className="sr-only">{t("health.action.bag")}</span>
+        <Link
+          to="/cart"
+          className="health-icon-button health-cart-link"
+          title={t("health.action.bag")}
+          onClick={() => setMenuOpen(false)}
+        >
+          <span className="sr-only">
+            {t("health.action.bag")}: {totalQuantity}
+          </span>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M5.5 7.5h9l.7 9.2a1.3 1.3 0 0 1-1.3 1.4H6.1a1.3 1.3 0 0 1-1.3-1.4l.7-9.2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
             <path d="M7.5 7.5V6a2.5 2.5 0 0 1 5 0v1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-        </button>
+          {totalQuantity > 0 && (
+            <span className="health-cart-badge" aria-hidden="true">
+              {totalQuantity}
+            </span>
+          )}
+        </Link>
         <button
           type="button"
           className="health-icon-button health-menu-toggle"
