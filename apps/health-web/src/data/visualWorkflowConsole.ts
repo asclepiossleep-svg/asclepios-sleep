@@ -161,15 +161,22 @@ export const SOURCE_STATUS_LABELS: Record<SourceStatus, string> = {
 };
 
 // A structured local decision record created by a review action (issue #131,
-// v2 slice; sourceId/sourceType lineage added in the v3 slice). Rendered/
-// copyable/downloadable in the console only — never sent over the network
-// and never written to a database or git.
+// v2 slice; source lineage added in the v3 slice). Rendered/copyable/
+// downloadable in the console only — never sent over the network and never
+// written to a database or git. The source fields are a full snapshot
+// (sourceId/sourceType/label/originText/provenanceNotes) taken at commit
+// time, not just an id, because the linked LocalSourceRecord is itself
+// session-local and is discarded on reload — a decision exported before
+// reload must still be able to show its own claimed provenance on its own.
 export interface DecisionRecord {
   decisionId: string;
   selectedVersionId: string;
   comparisonTargetId: string | null;
   sourceId: string | null;
   sourceType: SourceType | null;
+  sourceLabel: string | null;
+  sourceOriginText: string | null;
+  sourceProvenanceNotes: string | null;
   previousStatus: VersionStatus;
   newStatus: VersionStatus;
   reviewNote: string;

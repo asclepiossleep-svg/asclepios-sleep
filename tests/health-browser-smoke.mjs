@@ -452,16 +452,21 @@ for (const scenario of scenarios) {
 
     console.log(`PASS health ${scenario.name} visual console source-to-DRAFT lineage: new version ${sourceDraftVersionId} is created as DRAFT (not inheriting the now-APPROVED parent's status), carries comparisonTargetId=products-v2-ready and sourceId=${newSourceId}, and the provenance panel renders the linked source`);
 
-    // Review the source-derived draft so its decision record carries source/lineage fields.
+    // Review the source-derived draft so its decision record carries source/lineage
+    // fields. Uses "Request changes" (not "Mark reference only") so the legacy
+    // REFERENCE_ONLY seed-count invariant below stays meaningful — this version
+    // must not become a fourth "Reference only" badge.
     await noteInput.fill('Automated smoke-test review note for the source-derived DRAFT.');
-    await page.locator('.vwc-action-btn', { hasText: 'Mark reference only' }).click();
-    await page.locator('.vwc-detail-header .vwc-badge', { hasText: 'Reference only' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await requestChangesBtn.click();
+    await page.locator('.vwc-detail-header .vwc-badge', { hasText: 'Changes requested' }).waitFor({ state: 'visible', timeout: 5_000 });
 
     const latestDecisionRecord = page.locator('.vwc-decision-record').first();
     await latestDecisionRecord.waitFor({ state: 'visible', timeout: 5_000 });
     const latestDecisionText = await latestDecisionRecord.innerText();
-    if (!latestDecisionText.includes(newSourceId) || !latestDecisionText.includes('FILE_REFERENCE')) {
-      throw new Error('expected the latest decision record to include the linked source id and source type');
+    for (const expected of [newSourceId, 'FILE_REFERENCE', sourceLabelValue, sourceOriginValue, sourceProvenanceValue]) {
+      if (!latestDecisionText.includes(expected)) {
+        throw new Error(`expected the latest decision record to include the full source snapshot field "${expected}"`);
+      }
     }
 
     // Sibling/legacy protection must still hold after the v3 flow.
@@ -493,8 +498,14 @@ for (const scenario of scenarios) {
     if (latestCopiedDecision.selectedVersionId !== sourceDraftVersionId) {
       throw new Error('Copy JSON payload for the source-derived decision does not match the visible decision record selected version id');
     }
-    if (latestCopiedDecision.sourceId !== newSourceId || latestCopiedDecision.sourceType !== 'FILE_REFERENCE') {
-      throw new Error('Copy JSON payload for the source-derived decision is missing the exact sourceId/sourceType lineage');
+    if (
+      latestCopiedDecision.sourceId !== newSourceId ||
+      latestCopiedDecision.sourceType !== 'FILE_REFERENCE' ||
+      latestCopiedDecision.sourceLabel !== sourceLabelValue ||
+      latestCopiedDecision.sourceOriginText !== sourceOriginValue ||
+      latestCopiedDecision.sourceProvenanceNotes !== sourceProvenanceValue
+    ) {
+      throw new Error('Copy JSON payload for the source-derived decision is missing the exact source snapshot (id/type/label/origin/provenance)');
     }
 
     const [sourceDownload] = await Promise.all([
@@ -506,11 +517,18 @@ for (const scenario of scenarios) {
     for await (const chunk of sourceDownloadStream) sourceDownloadChunks.push(chunk);
     const sourceDownloadedDecisions = JSON.parse(Buffer.concat(sourceDownloadChunks).toString('utf-8'));
     const sourceDownloadedDecision = sourceDownloadedDecisions.find((d) => d.decisionId === latestCopiedDecision.decisionId);
-    if (!sourceDownloadedDecision || sourceDownloadedDecision.sourceId !== newSourceId || sourceDownloadedDecision.sourceType !== 'FILE_REFERENCE') {
-      throw new Error('downloaded decisions JSON does not include the exact source/lineage fields for the source-derived decision');
+    if (
+      !sourceDownloadedDecision ||
+      sourceDownloadedDecision.sourceId !== newSourceId ||
+      sourceDownloadedDecision.sourceType !== 'FILE_REFERENCE' ||
+      sourceDownloadedDecision.sourceLabel !== sourceLabelValue ||
+      sourceDownloadedDecision.sourceOriginText !== sourceOriginValue ||
+      sourceDownloadedDecision.sourceProvenanceNotes !== sourceProvenanceValue
+    ) {
+      throw new Error('downloaded decisions JSON does not include the exact source snapshot (id/type/label/origin/provenance) for the source-derived decision');
     }
 
-    console.log(`PASS health ${scenario.name} visual console source lineage in decision JSON: Copy JSON and Download JSON both include sourceId=${newSourceId} and sourceType=FILE_REFERENCE for the source-derived decision`);
+    console.log(`PASS health ${scenario.name} visual console source lineage in decision JSON: Copy JSON and Download JSON both include the full source snapshot (sourceId=${newSourceId}, sourceType=FILE_REFERENCE, label/origin/provenance) for the source-derived decision, independent of the session-local source record`);
 
     // Reload must restore the original seed state and discard local drafts/decisions.
     const reloadResponse = await page.reload({ waitUntil: 'networkidle', timeout: 30_000 });

@@ -227,7 +227,11 @@ export default function VisualWorkflowConsole() {
     const comparisonTargetId = selected.comparisonTargetId;
     const selectedVersionId = selected.id;
     const sourceId = selected.sourceId;
-    const sourceType = sourceId ? sourceRecords.find((s) => s.sourceId === sourceId)?.sourceType ?? null : null;
+    // Snapshot the full source record (not just its id) at commit time: the
+    // linked LocalSourceRecord is itself session-local and discarded on
+    // reload, so a decision exported before reload must still be able to
+    // show its own claimed provenance independently.
+    const sourceRecord = sourceId ? sourceRecords.find((s) => s.sourceId === sourceId) ?? null : null;
 
     setVersions((prev) =>
       prev.map((v) =>
@@ -240,7 +244,10 @@ export default function VisualWorkflowConsole() {
         selectedVersionId,
         comparisonTargetId,
         sourceId,
-        sourceType,
+        sourceType: sourceRecord?.sourceType ?? null,
+        sourceLabel: sourceRecord?.label ?? null,
+        sourceOriginText: sourceRecord?.originText ?? null,
+        sourceProvenanceNotes: sourceRecord?.provenanceNotes ?? null,
         previousStatus,
         newStatus: nextStatus,
         reviewNote: note,
@@ -578,6 +585,12 @@ export default function VisualWorkflowConsole() {
                       <code>{d.sourceId ?? "null"}</code>
                       <span>source_type</span>
                       <code>{d.sourceType ?? "null"}</code>
+                      <span>source_label</span>
+                      <code>{d.sourceLabel ?? "null"}</code>
+                      <span>source_origin_text</span>
+                      <code>{d.sourceOriginText ?? "null"}</code>
+                      <span>source_provenance_notes</span>
+                      <code>{d.sourceProvenanceNotes ?? "null"}</code>
                       <span>previous_status</span>
                       <code>{d.previousStatus}</code>
                       <span>new_status</span>
