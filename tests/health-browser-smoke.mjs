@@ -187,7 +187,7 @@ for (const scenario of scenarios) {
 
     // --- Keyboard reachability: every order row is tab-reachable in logical
     // DOM order and shows a visible focus outline.
-    const orderRowLocators = await page.locator('.ooc-list-row').all();
+    const orderRowLocators = await page.locator('.ooc-list[aria-label="Demo orders"] > button.ooc-list-row').all();
     if (orderRowLocators.length !== 7) {
       throw new Error(`expected 7 seeded demo order rows, found ${orderRowLocators.length}`);
     }
