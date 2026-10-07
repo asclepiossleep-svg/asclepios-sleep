@@ -160,7 +160,8 @@
   overflow-wrap: anywhere;
 }
 
-.vwc-source-provenance {
+.vwc-source-provenance,
+.vwc-iteration-brief-lineage {
   border: 1px solid var(--hw-border);
   border-radius: var(--hw-radius-md);
   padding: 14px;

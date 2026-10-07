@@ -749,7 +749,7 @@ export default function VisualWorkflowConsole() {
               )}
             </div>
 
-            <div className="vwc-source-provenance vwc-iteration-brief-lineage">
+            <div className="vwc-iteration-brief-lineage">
               <div className="vwc-compare-column-title">Selected version iteration brief lineage</div>
               {linkedIterationBrief ? (
                 <div className="vwc-source-provenance-detail">
