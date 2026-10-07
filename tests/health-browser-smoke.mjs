@@ -5,6 +5,11 @@ const baseURL = process.env.BASE_URL || 'http://127.0.0.1:4174';
 const outputDir = 'artifacts/health-browser-smoke';
 await fs.mkdir(outputDir, { recursive: true });
 
+// Badge text is rendered with CSS text-transform: uppercase, so innerText()
+// legitimately returns upper case. Compare the semantic value, not the
+// rendered case.
+const normalizeBadgeText = (text) => text.trim().toLowerCase();
+
 const scenarios = [
   { name: 'desktop', context: { viewport: { width: 1440, height: 900 } } },
   { name: 'mobile', context: devices['iPhone 13'] },
@@ -206,18 +211,18 @@ for (const scenario of scenarios) {
     if (referenceOnlyBadgeCount !== 3) {
       throw new Error(`expected exactly 3 untouched REFERENCE_ONLY seed records, found ${referenceOnlyBadgeCount} "Reference only" badges`);
     }
-    const homeV2DraftBadge = (await page.locator('.vwc-list-item', { hasText: 'v2 (console mock draft)' }).locator('.vwc-badge').innerText()).trim();
-    if (homeV2DraftBadge !== 'Draft') {
-      throw new Error(`expected sibling home-v2-draft to remain "Draft", found "${homeV2DraftBadge}"`);
+    const homeV2DraftBadge = await page.locator('.vwc-list-item', { hasText: 'v2 (console mock draft)' }).locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(homeV2DraftBadge) !== 'draft') {
+      throw new Error(`expected sibling home-v2-draft to remain "Draft", found "${homeV2DraftBadge.trim()}"`);
     }
-    const productsV2ReadyBadge = (await page.locator('.vwc-list-item', { hasText: 'v2 (ready for review mock)' }).locator('.vwc-badge').innerText()).trim();
-    if (productsV2ReadyBadge !== 'Ready for review') {
-      throw new Error(`expected sibling products-v2-ready to remain "Ready for review", found "${productsV2ReadyBadge}"`);
+    const productsV2ReadyBadge = await page.locator('.vwc-list-item', { hasText: 'v2 (ready for review mock)' }).locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(productsV2ReadyBadge) !== 'ready for review') {
+      throw new Error(`expected sibling products-v2-ready to remain "Ready for review", found "${productsV2ReadyBadge.trim()}"`);
     }
     const mutatedDraftItem = page.locator('.vwc-list-item', { hasText: newDraftLabel });
-    const mutatedDraftBadge = (await mutatedDraftItem.locator('.vwc-badge').innerText()).trim();
-    if (mutatedDraftBadge !== 'Changes requested') {
-      throw new Error(`expected only the exact selected draft version to change status, found "${mutatedDraftBadge}"`);
+    const mutatedDraftBadge = await mutatedDraftItem.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(mutatedDraftBadge) !== 'changes requested') {
+      throw new Error(`expected only the exact selected draft version to change status, found "${mutatedDraftBadge.trim()}"`);
     }
 
     const v2Overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
@@ -268,13 +273,13 @@ for (const scenario of scenarios) {
     if (decisionCountAfterAttempt !== decisionCountBeforeAttempt) {
       throw new Error("a disabled review action committed a decision record — version A's note leaked into version B's review action");
     }
-    const productsV2BadgeAfterAttempt = (await productsV2ReadyItem.locator('.vwc-badge').innerText()).trim();
-    if (productsV2BadgeAfterAttempt !== 'Ready for review') {
-      throw new Error(`expected products-v2-ready status to be unaffected by the blocked cross-version review attempt, found "${productsV2BadgeAfterAttempt}"`);
+    const productsV2BadgeAfterAttempt = await productsV2ReadyItem.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(productsV2BadgeAfterAttempt) !== 'ready for review') {
+      throw new Error(`expected products-v2-ready status to be unaffected by the blocked cross-version review attempt, found "${productsV2BadgeAfterAttempt.trim()}"`);
     }
-    const homeV2BadgeAfterAttempt = (await homeV2DraftItem.locator('.vwc-badge').innerText()).trim();
-    if (homeV2BadgeAfterAttempt !== 'Draft') {
-      throw new Error(`expected home-v2-draft status to be unaffected, found "${homeV2BadgeAfterAttempt}"`);
+    const homeV2BadgeAfterAttempt = await homeV2DraftItem.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(homeV2BadgeAfterAttempt) !== 'draft') {
+      throw new Error(`expected home-v2-draft status to be unaffected, found "${homeV2BadgeAfterAttempt.trim()}"`);
     }
 
     console.log(`PASS health ${scenario.name} visual console version isolation: a note entered on home-v2-draft is cleared on switching to products-v2-ready, review actions stay disabled, and a forced click on the disabled button commits nothing`);
@@ -377,9 +382,9 @@ for (const scenario of scenarios) {
       throw new Error('expected the locally created DRAFT version to be discarded after reload');
     }
 
-    const homeV1BadgeAfterReload = (await page.locator('.vwc-list-item', { hasText: 'v1 (legacy reference capture)' }).first().locator('.vwc-badge').innerText()).trim();
-    if (homeV1BadgeAfterReload !== 'Reference only') {
-      throw new Error(`expected a legacy reference seed version to read "Reference only" after reload, found "${homeV1BadgeAfterReload}"`);
+    const homeV1BadgeAfterReload = await page.locator('.vwc-list-item', { hasText: 'v1 (legacy reference capture)' }).first().locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(homeV1BadgeAfterReload) !== 'reference only') {
+      throw new Error(`expected a legacy reference seed version to read "Reference only" after reload, found "${homeV1BadgeAfterReload.trim()}"`);
     }
     const referenceOnlyBadgeCountAfterReload = await page.locator('.vwc-list-item .vwc-badge', { hasText: 'Reference only' }).count();
     if (referenceOnlyBadgeCountAfterReload !== 3) {
