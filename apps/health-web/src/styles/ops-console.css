@@ -5,6 +5,13 @@
   font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
 }
 
+.ooc-root button:focus-visible,
+.ooc-root select:focus-visible,
+.ooc-root textarea:focus-visible {
+  outline: 3px solid var(--hw-teal-dark);
+  outline-offset: 2px;
+}
+
 .ooc-banner {
   background: #3a2a0a;
   color: #ffe6a3;
@@ -119,7 +126,7 @@
 
 .ooc-list-head {
   padding: 8px 10px;
-  font-size: 11px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--hw-muted);
@@ -148,7 +155,7 @@
 
 .ooc-list-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--hw-navy);
   font-weight: 600;
 }
@@ -267,7 +274,7 @@
 }
 
 .ooc-chain-label {
-  font-size: 11px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--hw-muted);
@@ -310,7 +317,7 @@
 
 .ooc-timeline-at {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--hw-muted);
 }
 
@@ -422,7 +429,7 @@
 
 .oeq-action-group label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--hw-muted);
   margin-bottom: 6px;
 }
@@ -500,7 +507,7 @@
 }
 
 .ooc-event-at {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--hw-muted);
 }
 
@@ -511,7 +518,7 @@
 
 .ooc-event-snapshot {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .ooc-event-snapshot pre {
