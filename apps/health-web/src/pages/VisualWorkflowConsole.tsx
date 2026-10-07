@@ -143,6 +143,12 @@ export default function VisualWorkflowConsole() {
     [selectedBriefId, briefs]
   );
 
+  // UX guard (issue #131, v4 UX-closure slice): "Create next DRAFT from
+  // brief" must only ever act while the owner is actually looking at the
+  // brief's own exact base version — never silently on whatever page/version
+  // happens to be selected.
+  const briefBaseMismatch = selectedBrief !== null && selectedBrief.selectedVersionId !== selected.id;
+
   const byPage = useMemo(
     () =>
       VISUAL_PAGES.map((page) => ({
@@ -290,13 +296,19 @@ export default function VisualWorkflowConsole() {
     );
   }
 
+  function goToBriefBaseVersion() {
+    if (!selectedBrief) return;
+    selectVersion(selectedBrief.selectedVersionId);
+  }
+
   function createDraftFromBrief() {
     if (!selectedBrief) return;
-    // Bind creation entirely to the brief's own exact base version — never
-    // to whatever version/page happens to be currently selected. Without
-    // this, switching the selected version/page after picking a brief (but
-    // before clicking this action) could label the new draft under the
-    // wrong page while still carrying the brief's original parent lineage.
+    // Require the owner to actually be viewing the brief's own exact base
+    // version before creating from it — never silently create/select a
+    // draft on another page while a different version is displayed. This
+    // is the correctness path (not just the disabled button attribute):
+    // a forced click while mismatched must still create nothing.
+    if (selectedBrief.selectedVersionId !== selected.id) return;
     const briefBaseVersion = versions.find((v) => v.id === selectedBrief.selectedVersionId);
     if (!briefBaseVersion) return;
     const n = draftCounterRef.current;
@@ -640,7 +652,7 @@ export default function VisualWorkflowConsole() {
           <button
             type="button"
             className="vwc-action-btn create-draft-from-brief"
-            disabled={!selectedBrief}
+            disabled={!selectedBrief || briefBaseMismatch}
             onClick={createDraftFromBrief}
           >
             Create next DRAFT from brief{selectedBrief ? ` (${selectedBrief.briefId})` : ""}
@@ -648,6 +660,18 @@ export default function VisualWorkflowConsole() {
         </div>
         {!selectedBrief && (
           <p className="vwc-note-hint">Select a local iteration brief above to enable this.</p>
+        )}
+        {selectedBrief && briefBaseMismatch && (
+          <div className="vwc-note-hint vwc-brief-base-mismatch">
+            <p>
+              This brief requires exact base version <code>{selectedBrief.selectedVersionId}</code>, but
+              the currently selected version is <code>{selected.id}</code>. Go to the brief's base
+              version to create the next DRAFT from it.
+            </p>
+            <button type="button" className="vwc-action-btn go-to-brief-base" onClick={goToBriefBaseVersion}>
+              Go to brief base version ({selectedBrief.selectedVersionId})
+            </button>
+          </div>
         )}
       </section>
 

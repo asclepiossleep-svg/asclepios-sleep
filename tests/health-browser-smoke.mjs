@@ -583,64 +583,80 @@ for (const scenario of scenarios) {
 
     const createDraftFromBriefBtn = page.locator('.vwc-action-btn.create-draft-from-brief');
 
-    // Cross-page lineage-integrity negative path (issue #131 bounded
-    // correction): after selecting the Products iteration brief above,
-    // switch the currently selected version to a Home version and prove
-    // "Create next DRAFT from brief" still cannot create a Home-labelled
-    // draft carrying the brief's Products parent lineage.
+    // Base-version UX guard (Goal VISUAL-WORKFLOW-ITERATION-V4-UX-001): after
+    // selecting the Products iteration brief above, switch the currently
+    // selected version to a Home version and prove "Create next DRAFT from
+    // brief" is disabled, names the exact required base version id, and a
+    // forced activation creates nothing — no silent cross-page create/select.
     await homeV2DraftItem.click();
     await page.locator('.vwc-detail-header .vwc-version-id', { hasText: 'home-v2-draft' }).waitFor({ state: 'visible', timeout: 5_000 });
 
-    const homeItemCountBeforeCrossPageAttempt = await page
+    const homeItemCountBeforeMismatch = await page
       .locator('.vwc-list-group', { hasText: 'Health — Home' })
       .locator('.vwc-list-item')
       .count();
-    const productsItemCountBeforeCrossPageAttempt = await page
+    const productsItemCountBeforeMismatch = await page
       .locator('.vwc-list-group', { hasText: 'Health — Products' })
       .locator('.vwc-list-item')
       .count();
+    const decisionCountBeforeMismatch = await page.locator('.vwc-decision-record').count();
+    const referenceOnlyBadgeCountBeforeMismatch = await page.locator('.vwc-list-item .vwc-badge', { hasText: 'Reference only' }).count();
 
-    if (await createDraftFromBriefBtn.isDisabled()) {
-      throw new Error('expected "Create next DRAFT from brief" to remain enabled after switching to a different page while a Products brief stays selected');
-    }
-    await createDraftFromBriefBtn.click();
-
-    const crossPageDraftItem = page.locator('.vwc-list-item.is-selected');
-    await crossPageDraftItem.waitFor({ state: 'visible', timeout: 5_000 });
-    const crossPageDraftVersionId = (await page.locator('.vwc-detail-header .vwc-version-id').innerText()).replace('version id:', '').trim();
-    if (!crossPageDraftVersionId.startsWith('products-')) {
-      throw new Error(`expected the brief-derived draft to carry the brief's own Products page lineage even though a Home version was selected, got id "${crossPageDraftVersionId}"`);
+    if (!(await createDraftFromBriefBtn.isDisabled())) {
+      throw new Error('expected "Create next DRAFT from brief" to be disabled once the selected version no longer matches the brief\'s exact base version');
     }
 
-    const homeItemCountAfterCrossPageAttempt = await page
+    const briefMismatchHint = page.locator('.vwc-brief-base-mismatch');
+    await briefMismatchHint.waitFor({ state: 'visible', timeout: 5_000 });
+    const briefMismatchText = await briefMismatchHint.innerText();
+    if (!briefMismatchText.includes('products-v2-ready')) {
+      throw new Error(`expected the inline explanation to name the brief's exact required base version id "products-v2-ready", got: "${briefMismatchText}"`);
+    }
+
+    // Forced activation of the disabled button must create no version or decision.
+    await createDraftFromBriefBtn.click({ force: true });
+    const homeItemCountAfterForcedClick = await page
       .locator('.vwc-list-group', { hasText: 'Health — Home' })
       .locator('.vwc-list-item')
       .count();
-    if (homeItemCountAfterCrossPageAttempt !== homeItemCountBeforeCrossPageAttempt) {
-      throw new Error('expected "Create next DRAFT from brief" to create zero new Home-page versions while a Products brief was selected');
-    }
-    const productsItemCountAfterCrossPageAttempt = await page
+    const productsItemCountAfterForcedClick = await page
       .locator('.vwc-list-group', { hasText: 'Health — Products' })
       .locator('.vwc-list-item')
       .count();
-    if (productsItemCountAfterCrossPageAttempt !== productsItemCountBeforeCrossPageAttempt + 1) {
-      throw new Error("expected exactly one new Products-page version to be created by \"Create next DRAFT from brief\", carrying the brief's own Products parent lineage");
+    const decisionCountAfterForcedClick = await page.locator('.vwc-decision-record').count();
+    if (
+      homeItemCountAfterForcedClick !== homeItemCountBeforeMismatch ||
+      productsItemCountAfterForcedClick !== productsItemCountBeforeMismatch ||
+      decisionCountAfterForcedClick !== decisionCountBeforeMismatch
+    ) {
+      throw new Error('forced activation of the disabled "Create next DRAFT from brief" button must not create any version or decision while the base-version mismatch stands');
+    }
+    const referenceOnlyBadgeCountAfterForcedClick = await page.locator('.vwc-list-item .vwc-badge', { hasText: 'Reference only' }).count();
+    if (referenceOnlyBadgeCountAfterForcedClick !== referenceOnlyBadgeCountBeforeMismatch) {
+      throw new Error('forced activation of the disabled "Create next DRAFT from brief" button must not touch the legacy REFERENCE_ONLY seed records');
     }
 
-    const crossPageTargetColumn = page.locator('.vwc-compare-section .vwc-compare-column', { hasText: 'Comparison target' });
-    await crossPageTargetColumn.locator('.vwc-version-id', { hasText: 'products-v2-ready' }).waitFor({ state: 'visible', timeout: 5_000 });
-    const crossPageLineagePanel = page.locator('.vwc-iteration-brief-lineage');
-    await crossPageLineagePanel.locator('.vwc-version-id', { hasText: newBriefId }).waitFor({ state: 'visible', timeout: 5_000 });
+    console.log(`PASS health ${scenario.name} visual console brief base-version guard: switching to home-v2-draft while Products iteration brief ${newBriefId} stayed selected disables "Create next DRAFT from brief", shows the exact required base id products-v2-ready, and a forced click creates nothing`);
 
-    console.log(`PASS health ${scenario.name} visual console cross-page brief lineage guard: switching to home-v2-draft while Products iteration brief ${newBriefId} stayed selected and clicking "Create next DRAFT from brief" created version ${crossPageDraftVersionId} under the Products page with parent/comparison target products-v2-ready, not a Home-labelled draft with a Products parent`);
+    // Enter a note on the (mismatched) currently selected version to prove
+    // "Go to brief base version" clears it deterministically through the
+    // existing selection boundary, not just moves the selection.
+    await noteInput.fill('Note entered on home-v2-draft before navigating to the brief base version — must not leak.');
 
-    // Re-select the brief's own base version to prove the ordinary
-    // same-version brief→DRAFT path still succeeds.
-    await productsV2ReadyItem.click();
+    await briefMismatchHint.locator('.vwc-action-btn.go-to-brief-base').click();
     await page.locator('.vwc-detail-header .vwc-version-id', { hasText: 'products-v2-ready' }).waitFor({ state: 'visible', timeout: 5_000 });
 
+    const noteAfterGoToBriefBase = await noteInput.inputValue();
+    if (noteAfterGoToBriefBase !== '') {
+      throw new Error(`expected "Go to brief base version" to clear the pending owner review note, found leftover text: "${noteAfterGoToBriefBase}"`);
+    }
+
+    console.log(`PASS health ${scenario.name} visual console go-to-brief-base-version: selects products-v2-ready exactly and clears the pending owner review note through the existing deterministic selection boundary`);
+
+    // Back at the brief's own exact base version, the ordinary
+    // same-version brief→DRAFT path must work unchanged.
     if (await createDraftFromBriefBtn.isDisabled()) {
-      throw new Error('expected "Create next DRAFT from brief" to be enabled once an iteration brief is selected');
+      throw new Error('expected "Create next DRAFT from brief" to be enabled again once back at the brief\'s exact base version');
     }
     await createDraftFromBriefBtn.click();
 

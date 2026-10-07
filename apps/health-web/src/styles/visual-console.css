@@ -408,6 +408,26 @@
   color: var(--hw-muted);
 }
 
+.vwc-brief-base-mismatch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.vwc-brief-base-mismatch p {
+  margin: 0;
+}
+
+.vwc-action-btn.go-to-brief-base {
+  border-color: var(--hw-navy);
+  color: var(--hw-navy);
+}
+.vwc-action-btn.go-to-brief-base:hover {
+  background: var(--hw-teal-soft);
+}
+
 .vwc-review-actions {
   margin-top: 4px;
 }
