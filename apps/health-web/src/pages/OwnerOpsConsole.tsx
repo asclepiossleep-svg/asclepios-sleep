@@ -1,7 +1,14 @@
 import { useMemo, useState } from "react";
 import {
+  applyDemoAction,
+  canCompleteDemoRefund,
+  canResolveFulfilmentException,
+  collectInvariantViolations,
   DELIVERY_STATUS_LABELS,
+  DEMO_ACTION_LABELS,
   DEMO_ORDERS,
+  DemoActionName,
+  DemoEvent,
   DemoOrder,
   ENTITLEMENT_STATUS_LABELS,
   FULFILMENT_STATUS_LABELS,
@@ -9,46 +16,24 @@ import {
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
   SUPPORT_STATUS_LABELS,
-  SupportStatus,
   summarize,
 } from "../data/opsConsole";
 import "../styles/ops-console.css";
 
-interface LogEntry {
-  at: string;
-  message: string;
-}
-
 export default function OwnerOpsConsole() {
   const [orders, setOrders] = useState<DemoOrder[]>(DEMO_ORDERS);
   const [selectedId, setSelectedId] = useState<string>(DEMO_ORDERS[2].id);
-  const [log, setLog] = useState<LogEntry[]>([]);
+  const [events, setEvents] = useState<DemoEvent[]>([]);
 
   const selected = useMemo(() => orders.find((o) => o.id === selectedId) ?? orders[0], [orders, selectedId]);
   const summary = useMemo(() => summarize(orders), [orders]);
+  const invariantViolations = useMemo(() => collectInvariantViolations(orders), [orders]);
 
-  function applyLocalSupportStatus(nextStatus: SupportStatus, actionLabel: string) {
-    const timestamp = new Date().toISOString();
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === selected.id
-          ? { ...o, supportStatus: nextStatus, supportNote: `${actionLabel} (local only, ${timestamp})` }
-          : o
-      )
-    );
-    setLog((prev) => [{ at: timestamp, message: `${actionLabel}: ${selected.id}` }, ...prev].slice(0, 20));
-  }
-
-  function markFulfilmentExceptionResolved() {
-    const timestamp = new Date().toISOString();
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === selected.id
-          ? { ...o, fulfilmentStatus: "DISPATCHED", deliveryStatus: "IN_TRANSIT", deliveryNote: `Exception marked resolved (local only, ${timestamp})` }
-          : o
-      )
-    );
-    setLog((prev) => [{ at: timestamp, message: `Marked fulfilment exception resolved: ${selected.id}` }, ...prev].slice(0, 20));
+  function runAction(action: DemoActionName) {
+    const { orders: nextOrders, event } = applyDemoAction(orders, selected.id, action);
+    if (!event) return;
+    setOrders(nextOrders);
+    setEvents((prev) => [...prev, event]);
   }
 
   return (
@@ -65,6 +50,20 @@ export default function OwnerOpsConsole() {
         <h1>Owner Operations Console</h1>
         <span className="ooc-header-meta">v0 — DEMO dataset, local/session-only actions</span>
       </div>
+
+      {invariantViolations.length > 0 && (
+        <div className="ooc-invariant-warning" role="alert">
+          <strong>Data integrity warning —</strong> this demo data is contradictory and needs review. Actions
+          here never hide inconsistencies:
+          <ul>
+            {invariantViolations.map((v, i) => (
+              <li key={i}>
+                <span className="ooc-list-id">{v.orderId}</span> — {v.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="ooc-summary">
         <div className="ooc-summary-card">
@@ -185,44 +184,52 @@ export default function OwnerOpsConsole() {
             <button
               type="button"
               className="ooc-action-btn"
-              disabled={selected.fulfilmentStatus !== "REJECTED"}
-              onClick={markFulfilmentExceptionResolved}
+              disabled={!canResolveFulfilmentException(selected)}
+              onClick={() => runAction("RESOLVE_FULFILMENT_EXCEPTION")}
             >
-              Mark fulfilment exception resolved (local only)
+              Resolve fulfilment exception (local only)
             </button>
             <button
               type="button"
               className="ooc-action-btn"
-              disabled={selected.supportStatus !== "CASE_OPEN" && selected.supportStatus !== "RETURN_REQUESTED"}
-              onClick={() => applyLocalSupportStatus("REFUND_PENDING", "Marked refund pending")}
+              disabled={!canCompleteDemoRefund(selected)}
+              onClick={() => runAction("COMPLETE_DEMO_REFUND")}
             >
-              Mark refund pending (local only)
+              Complete demo refund (local only)
             </button>
-            <button
-              type="button"
-              className="ooc-action-btn"
-              disabled={selected.supportStatus !== "REFUND_PENDING"}
-              onClick={() => applyLocalSupportStatus("REFUND_SUCCEEDED", "Marked refund succeeded")}
-            >
-              Mark refund succeeded (local only)
-            </button>
-          </div>
-
-          <div className="ooc-log">
-            <h3>Session action log (local only)</h3>
-            {log.length === 0 ? (
-              <p>No actions taken yet this session.</p>
-            ) : (
-              <ul>
-                {log.map((entry, i) => (
-                  <li key={i}>
-                    {entry.at} — {entry.message}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </section>
+      </div>
+
+      <div className="ooc-events">
+        <h3>Local event timeline ({events.length})</h3>
+        <p className="ooc-events-note">
+          Every action above is recorded here with a generated event ID, timestamp, actor, and an exact
+          before/after state snapshot, scope <code>LOCAL_PREVIEW_ONLY</code>. Reloading this page removes
+          every event here and restores the original seeded demo orders.
+        </p>
+        {events.length === 0 ? (
+          <p>No demo actions taken yet this session.</p>
+        ) : (
+          <ul className="ooc-event-list">
+            {events.map((ev) => (
+              <li key={ev.id} className="ooc-event-item">
+                <div className="ooc-event-head">
+                  <span className="ooc-list-id">{ev.id}</span>
+                  <span className="ooc-event-at">{ev.at}</span>
+                </div>
+                <div className="ooc-event-meta">
+                  <strong>{DEMO_ACTION_LABELS[ev.action]}</strong> — order{" "}
+                  <span className="ooc-list-id">{ev.orderId}</span> — actor {ev.actor} — scope {ev.scope}
+                </div>
+                <details className="ooc-event-snapshot">
+                  <summary>Before / after state snapshot</summary>
+                  <pre>{JSON.stringify({ before: ev.before, after: ev.after }, null, 2)}</pre>
+                </details>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

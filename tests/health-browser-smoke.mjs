@@ -114,10 +114,32 @@ for (const scenario of scenarios) {
     await page.locator('h1', { hasText: 'Owner Operations Console' }).waitFor({ state: 'visible', timeout: 10_000 });
     await page.locator('.ooc-banner', { hasText: 'Internal preview' }).waitFor({ state: 'visible', timeout: 5_000 });
 
+    // No invariant warning on the pristine seeded dataset.
+    if (await page.locator('.ooc-invariant-warning').count() > 0) {
+      throw new Error('ops console shows an invariant warning on pristine seed data');
+    }
+
     const summaryLabels = ['Orders needing action', 'Fulfilment exceptions', 'Returns / refunds pending'];
     for (const label of summaryLabels) {
       await page.locator('.ooc-summary-card', { hasText: label }).waitFor({ state: 'visible', timeout: 5_000 });
     }
+
+    const summaryValue = async (label) =>
+      Number((await page.locator('.ooc-summary-card', { hasText: label }).locator('.ooc-summary-value').innerText()).trim());
+
+    const initialNeedingAction = await summaryValue('Orders needing action');
+    const initialFulfilmentExceptions = await summaryValue('Fulfilment exceptions');
+    const initialReturnsRefundsPending = await summaryValue('Returns / refunds pending');
+    if (initialNeedingAction !== 3 || initialFulfilmentExceptions !== 1 || initialReturnsRefundsPending !== 1) {
+      throw new Error(
+        `unexpected seed summary counters: needingAction=${initialNeedingAction} fulfilmentExceptions=${initialFulfilmentExceptions} returnsRefundsPending=${initialReturnsRefundsPending}`
+      );
+    }
+
+    // Sibling order DEMO-ORD-1001 (clean happy-path reference run) must stay
+    // untouched by any action taken against a different order below.
+    const sibling1001Row = () => page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1001' }).first();
+    await sibling1001Row().locator('.ooc-chip.status-DELIVERED').waitFor({ state: 'visible', timeout: 5_000 });
 
     await page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1003' }).first().click();
     await page.locator('.ooc-detail h2', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
@@ -126,8 +148,122 @@ for (const scenario of scenarios) {
       await page.locator('.ooc-chain-label', { hasText: label }).waitFor({ state: 'visible', timeout: 5_000 });
     }
 
-    await page.locator('.ooc-action-btn', { hasText: 'Mark fulfilment exception resolved' }).click();
-    await page.locator('.ooc-log li', { hasText: 'Marked fulfilment exception resolved: DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+    // Exact selected-order detail rendering for DEMO-ORD-1003's seeded exception state.
+    await page.locator('.ooc-chain-step', { hasText: 'Order' }).locator('.ooc-chip.status-ON_HOLD').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Fulfilment' }).locator('.ooc-chip.fulfilment-REJECTED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Delivery' }).locator('.ooc-chip.delivery-EXCEPTION').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Support' }).locator('.ooc-chip.support-CASE_OPEN').waitFor({ state: 'visible', timeout: 5_000 });
+
+    // --- Demo scenario rule 1: resolve fulfilment exception (atomic transition) ---
+    await page.locator('.ooc-action-btn', { hasText: 'Resolve fulfilment exception' }).click();
+
+    await page.locator('.ooc-chain-step', { hasText: 'Order' }).locator('.ooc-chip.status-DISPATCHED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Fulfilment' }).locator('.ooc-chip.fulfilment-DISPATCHED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Delivery' }).locator('.ooc-chip.delivery-IN_TRANSIT').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Support' }).locator('.ooc-chip.support-NONE').waitFor({ state: 'visible', timeout: 5_000 });
+
+    const afterResolveNeedingAction = await summaryValue('Orders needing action');
+    const afterResolveFulfilmentExceptions = await summaryValue('Fulfilment exceptions');
+    const afterResolveReturnsRefundsPending = await summaryValue('Returns / refunds pending');
+    if (afterResolveNeedingAction !== 2 || afterResolveFulfilmentExceptions !== 0 || afterResolveReturnsRefundsPending !== 1) {
+      throw new Error(
+        `unexpected summary counters after resolving fulfilment exception: needingAction=${afterResolveNeedingAction} fulfilmentExceptions=${afterResolveFulfilmentExceptions} returnsRefundsPending=${afterResolveReturnsRefundsPending}`
+      );
+    }
+
+    // Sibling order untouched by the action against DEMO-ORD-1003.
+    await sibling1001Row().locator('.ooc-chip.status-DELIVERED').waitFor({ state: 'visible', timeout: 5_000 });
+
+    // One timeline event for this action with exact before/after snapshot and LOCAL_PREVIEW_ONLY scope.
+    const eventItems = page.locator('.ooc-event-item');
+    if ((await eventItems.count()) !== 1) {
+      throw new Error(`expected exactly 1 event after one action, found ${await eventItems.count()}`);
+    }
+    const firstEvent = eventItems.nth(0);
+    await firstEvent.locator('.ooc-event-meta', { hasText: 'Resolve fulfilment exception' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await firstEvent.locator('.ooc-event-meta', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await firstEvent.locator('.ooc-event-meta', { hasText: 'DEMO_OPERATOR' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await firstEvent.locator('.ooc-event-meta', { hasText: 'LOCAL_PREVIEW_ONLY' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await firstEvent.locator('summary').click();
+    const firstEventSnapshot = await firstEvent.locator('pre').innerText();
+    for (const expected of ['"fulfilmentStatus": "REJECTED"', '"fulfilmentStatus": "DISPATCHED"', '"supportStatus": "CASE_OPEN"', '"supportStatus": "NONE"']) {
+      if (!firstEventSnapshot.includes(expected)) {
+        throw new Error(`event snapshot missing expected field ${expected}: ${firstEventSnapshot}`);
+      }
+    }
+
+    // --- Demo scenario rule 2: complete demo refund (atomic transition) ---
+    await page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1005' }).first().click();
+    await page.locator('.ooc-detail h2', { hasText: 'DEMO-ORD-1005' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Entitlement' }).locator('.ooc-chip.entitlement-ACTIVATED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Inventory' }).locator('.ooc-chip.inventory-COMMITTED').waitFor({ state: 'visible', timeout: 5_000 });
+
+    await page.locator('.ooc-action-btn', { hasText: 'Complete demo refund' }).click();
+
+    await page.locator('.ooc-chain-step', { hasText: 'Order' }).locator('.ooc-chip.status-REFUNDED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Payment' }).locator('.ooc-chip.payment-REFUNDED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Inventory' }).locator('.ooc-chip.inventory-RELEASED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Entitlement' }).locator('.ooc-chip.entitlement-EXPIRED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Support' }).locator('.ooc-chip.support-REFUND_SUCCEEDED').waitFor({ state: 'visible', timeout: 5_000 });
+
+    // No contradictory active entitlement / reserved inventory remains for this order.
+    if (await page.locator('.ooc-chain-step', { hasText: 'Entitlement' }).locator('.ooc-chip.entitlement-ACTIVATED').count() > 0) {
+      throw new Error('entitlement still shows ACTIVATED after a completed demo refund');
+    }
+    if (await page.locator('.ooc-chain-step', { hasText: 'Inventory' }).locator('.ooc-chip.inventory-COMMITTED').count() > 0) {
+      throw new Error('inventory still shows COMMITTED after a completed demo refund');
+    }
+    if (await page.locator('.ooc-invariant-warning').count() > 0) {
+      throw new Error('ops console shows an invariant warning after a correctly-atomic refund action');
+    }
+
+    const afterRefundNeedingAction = await summaryValue('Orders needing action');
+    const afterRefundReturnsRefundsPending = await summaryValue('Returns / refunds pending');
+    if (afterRefundNeedingAction !== 1 || afterRefundReturnsRefundsPending !== 0) {
+      throw new Error(
+        `unexpected summary counters after completing demo refund: needingAction=${afterRefundNeedingAction} returnsRefundsPending=${afterRefundReturnsRefundsPending}`
+      );
+    }
+
+    // Sibling order still untouched after a second, different action.
+    await sibling1001Row().locator('.ooc-chip.status-DELIVERED').waitFor({ state: 'visible', timeout: 5_000 });
+
+    if ((await eventItems.count()) !== 2) {
+      throw new Error(`expected exactly 2 events after two actions, found ${await eventItems.count()}`);
+    }
+    const secondEvent = eventItems.nth(1);
+    await secondEvent.locator('.ooc-event-meta', { hasText: 'Complete demo refund' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await secondEvent.locator('.ooc-event-meta', { hasText: 'DEMO-ORD-1005' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await secondEvent.locator('summary').click();
+    const secondEventSnapshot = await secondEvent.locator('pre').innerText();
+    for (const expected of ['"entitlementStatus": "ACTIVATED"', '"entitlementStatus": "EXPIRED"', '"inventoryStatus": "COMMITTED"', '"inventoryStatus": "RELEASED"']) {
+      if (!secondEventSnapshot.includes(expected)) {
+        throw new Error(`refund event snapshot missing expected field ${expected}: ${secondEventSnapshot}`);
+      }
+    }
+
+    // Reload must restore the original seeded state and remove all local events/actions.
+    const reloadResponse = await page.reload({ waitUntil: 'networkidle', timeout: 30_000 });
+    if (!reloadResponse || !reloadResponse.ok()) {
+      throw new Error(`ops console reload returned HTTP ${reloadResponse?.status() ?? 'no response'}`);
+    }
+    await page.locator('h1', { hasText: 'Owner Operations Console' }).waitFor({ state: 'visible', timeout: 10_000 });
+    if ((await page.locator('.ooc-event-item').count()) !== 0) {
+      throw new Error('ops console retained local events across a reload');
+    }
+    await page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1005' }).first().locator('.ooc-chip.status-RETURN_REQUESTED').waitFor({ state: 'visible', timeout: 5_000 });
+    const resetNeedingAction = await summaryValue('Orders needing action');
+    const resetFulfilmentExceptions = await summaryValue('Fulfilment exceptions');
+    const resetReturnsRefundsPending = await summaryValue('Returns / refunds pending');
+    if (resetNeedingAction !== 3 || resetFulfilmentExceptions !== 1 || resetReturnsRefundsPending !== 1) {
+      throw new Error(
+        `ops console did not reset to seeded summary counters on reload: needingAction=${resetNeedingAction} fulfilmentExceptions=${resetFulfilmentExceptions} returnsRefundsPending=${resetReturnsRefundsPending}`
+      );
+    }
+
+    // Re-select DEMO-ORD-1003 for the overflow screenshot below, matching prior behaviour.
+    await page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1003' }).first().click();
+    await page.locator('.ooc-detail h2', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
 
     const opsConsoleOverflowDiagnostics = await page.evaluate(() => {
       const root = document.documentElement;
@@ -187,7 +323,7 @@ for (const scenario of scenarios) {
       fullPage: true,
     });
 
-    console.log(`PASS health ${scenario.name} ops console: /internal/ops-console renders summary cards + order list + lifecycle chain, local-only action updates session log, no horizontal overflow, no runtime console errors, no failed network requests`);
+    console.log(`PASS health ${scenario.name} ops console: /internal/ops-console renders summary cards + order list + lifecycle chain; resolve-fulfilment-exception and complete-demo-refund both apply atomically with consistent summary counters and sibling orders unaffected; each action appends exactly one LOCAL_PREVIEW_ONLY event with an exact before/after snapshot; a completed refund leaves no active entitlement or reserved inventory; no invariant warning on correct state; reload clears events and restores the seed; no horizontal overflow, no runtime console errors, no failed network requests`);
   } catch (error) {
     failed = true;
     await page.screenshot({

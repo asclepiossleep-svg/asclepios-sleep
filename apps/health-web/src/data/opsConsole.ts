@@ -291,6 +291,200 @@ export const DEMO_ORDERS: DemoOrder[] = [
   },
 ];
 
+// --- Centralised state-transition engine (issue #26, OWNER-OPS-DEMO-STATE-
+// INTEGRITY-001 slice) -----------------------------------------------------
+//
+// Every console action goes through applyDemoAction() below so a single
+// click updates every affected lifecycle field (order/payment/inventory/
+// fulfilment/delivery/entitlement/support) and the derived summary counters
+// in one atomic React state update — no action can touch one widget while
+// leaving a sibling field or counter contradictory. These two transitions
+// are simulation rules for exercising the console only, not approved
+// production refund/fulfilment policy.
+
+export type DemoActionName = "RESOLVE_FULFILMENT_EXCEPTION" | "COMPLETE_DEMO_REFUND";
+
+export const DEMO_ACTION_LABELS: Record<DemoActionName, string> = {
+  RESOLVE_FULFILMENT_EXCEPTION: "Resolve fulfilment exception",
+  COMPLETE_DEMO_REFUND: "Complete demo refund",
+};
+
+export const DEMO_OPERATOR_ACTOR = "DEMO_OPERATOR" as const;
+export const DEMO_EVENT_SCOPE = "LOCAL_PREVIEW_ONLY" as const;
+
+// Snapshot of exactly the lifecycle fields the event timeline records
+// before/after, per OWNER-OPS-DEMO-STATE-INTEGRITY-001 requirement 2.
+export interface OrderLifecycleSnapshot {
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  inventoryStatus: InventoryStatus;
+  fulfilmentStatus: FulfilmentStatus;
+  deliveryStatus: DeliveryStatus;
+  entitlementStatus: EntitlementStatus;
+  supportStatus: SupportStatus;
+}
+
+export function snapshotOrder(order: DemoOrder): OrderLifecycleSnapshot {
+  return {
+    orderStatus: order.orderStatus,
+    paymentStatus: order.paymentStatus,
+    inventoryStatus: order.inventoryStatus,
+    fulfilmentStatus: order.fulfilmentStatus,
+    deliveryStatus: order.deliveryStatus,
+    entitlementStatus: order.entitlementStatus,
+    supportStatus: order.supportStatus,
+  };
+}
+
+export interface DemoEvent {
+  id: string;
+  at: string;
+  action: DemoActionName;
+  orderId: string;
+  actor: typeof DEMO_OPERATOR_ACTOR;
+  before: OrderLifecycleSnapshot;
+  after: OrderLifecycleSnapshot;
+  scope: typeof DEMO_EVENT_SCOPE;
+}
+
+function generateEventId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `evt-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function canResolveFulfilmentException(order: DemoOrder): boolean {
+  return order.fulfilmentStatus === "REJECTED" || order.deliveryStatus === "EXCEPTION";
+}
+
+export function canCompleteDemoRefund(order: DemoOrder): boolean {
+  return (
+    order.paymentStatus === "PAID" &&
+    (order.supportStatus === "CASE_OPEN" ||
+      order.supportStatus === "RETURN_REQUESTED" ||
+      order.supportStatus === "REFUND_PENDING")
+  );
+}
+
+// Demo scenario rule 1 of 2: clears the exact exception and brings the
+// fulfilment/delivery/order fields back to a consistent in-transit state. A
+// support case open purely "where is my order" is modelled as caused by the
+// same exception, so it closes alongside it; an explicit
+// return/refund-driven case is a separate concern and is left untouched.
+function resolveFulfilmentException(order: DemoOrder, timestamp: string): DemoOrder {
+  const caseWasAboutThisException = order.supportStatus === "CASE_OPEN";
+  return {
+    ...order,
+    orderStatus: order.orderStatus === "ON_HOLD" ? "DISPATCHED" : order.orderStatus,
+    fulfilmentStatus: "DISPATCHED",
+    deliveryStatus: "IN_TRANSIT",
+    deliveryNote: `Fulfilment exception resolved (local only, ${timestamp}); shipment re-dispatched.`,
+    supportStatus: caseWasAboutThisException ? "NONE" : order.supportStatus,
+    supportNote: caseWasAboutThisException
+      ? `Support case closed — fulfilment exception resolved (local only, ${timestamp}).`
+      : order.supportNote,
+  };
+}
+
+// Demo scenario rule 2 of 2: atomically marks payment/order as refunded,
+// releases the demo inventory reservation, disables any demo entitlement/
+// activation, and closes the linked support/refund task. Historical
+// fulfilment/delivery facts (e.g. an already-DELIVERED shipment) are left
+// as-is — a refund does not rewrite shipment history.
+function completeDemoRefund(order: DemoOrder, timestamp: string): DemoOrder {
+  return {
+    ...order,
+    orderStatus: "REFUNDED",
+    paymentStatus: "REFUNDED",
+    inventoryStatus: "RELEASED",
+    entitlementStatus: order.entitlementStatus === "NOT_ISSUED" ? "NOT_ISSUED" : "EXPIRED",
+    supportStatus: "REFUND_SUCCEEDED",
+    supportNote: `Refund completed (local only, ${timestamp}); inventory released and entitlement disabled.`,
+  };
+}
+
+/**
+ * Apply one centralised demo action to the order list, returning a new
+ * orders array plus the single structured event the action generated (or
+ * null if the action was not eligible — callers must not apply disabled
+ * actions, but this guard keeps the engine itself safe either way).
+ */
+export function applyDemoAction(
+  orders: DemoOrder[],
+  orderId: string,
+  action: DemoActionName
+): { orders: DemoOrder[]; event: DemoEvent | null } {
+  const target = orders.find((o) => o.id === orderId);
+  if (!target) return { orders, event: null };
+
+  const eligible =
+    action === "RESOLVE_FULFILMENT_EXCEPTION" ? canResolveFulfilmentException(target) : canCompleteDemoRefund(target);
+  if (!eligible) return { orders, event: null };
+
+  const timestamp = new Date().toISOString();
+  const before = snapshotOrder(target);
+  const nextOrder = action === "RESOLVE_FULFILMENT_EXCEPTION"
+    ? resolveFulfilmentException(target, timestamp)
+    : completeDemoRefund(target, timestamp);
+  const after = snapshotOrder(nextOrder);
+
+  const event: DemoEvent = {
+    id: generateEventId(),
+    at: timestamp,
+    action,
+    orderId,
+    actor: DEMO_OPERATOR_ACTOR,
+    before,
+    after,
+    scope: DEMO_EVENT_SCOPE,
+  };
+
+  return { orders: orders.map((o) => (o.id === orderId ? nextOrder : o)), event };
+}
+
+// Invariant check (requirement 5): flags contradictions between lifecycle
+// fields on a single order so the console can surface them instead of
+// silently rendering an inconsistent state, whether the data arrived
+// contradictory from the seed or from a mutation.
+export function findInvariantViolations(order: DemoOrder): string[] {
+  const issues: string[] = [];
+
+  if (order.paymentStatus === "REFUNDED" && order.entitlementStatus === "ACTIVATED") {
+    issues.push("Entitlement is ACTIVATED but payment has been REFUNDED.");
+  }
+  if (order.paymentStatus === "REFUNDED" && order.inventoryStatus === "COMMITTED") {
+    issues.push("Inventory is still COMMITTED but payment has been REFUNDED.");
+  }
+  if (order.orderStatus === "REFUNDED" && order.paymentStatus !== "REFUNDED") {
+    issues.push("Order status is REFUNDED but payment status is not REFUNDED.");
+  }
+  if (order.supportStatus === "REFUND_SUCCEEDED" && order.paymentStatus !== "REFUNDED") {
+    issues.push("Support shows REFUND_SUCCEEDED but payment status is not REFUNDED.");
+  }
+  if (order.fulfilmentStatus === "REJECTED" && order.deliveryStatus === "DELIVERED") {
+    issues.push("Fulfilment is REJECTED but delivery shows DELIVERED.");
+  }
+  if (
+    order.entitlementStatus === "ACTIVATED" &&
+    order.deliveryStatus !== "DELIVERED" &&
+    order.fulfilmentStatus !== "DELIVERED"
+  ) {
+    issues.push("Entitlement is ACTIVATED but the order has not reached a DELIVERED fulfilment/delivery state.");
+  }
+
+  return issues;
+}
+
+export interface OrderInvariantViolation {
+  orderId: string;
+  message: string;
+}
+
+export function collectInvariantViolations(orders: DemoOrder[]): OrderInvariantViolation[] {
+  return orders.flatMap((o) => findInvariantViolations(o).map((message) => ({ orderId: o.id, message })));
+}
+
 export interface OrderSummary {
   ordersNeedingAction: number;
   fulfilmentExceptions: number;
