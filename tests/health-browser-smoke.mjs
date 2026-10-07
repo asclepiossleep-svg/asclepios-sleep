@@ -530,6 +530,158 @@ for (const scenario of scenarios) {
 
     console.log(`PASS health ${scenario.name} visual console source lineage in decision JSON: Copy JSON and Download JSON both include the full source snapshot (sourceId=${newSourceId}, sourceType=FILE_REFERENCE, label/origin/provenance) for the source-derived decision, independent of the session-local source record`);
 
+    // v4 slice (issue #131 bounded continuation): local Iteration Brief ->
+    // "Create next DRAFT from brief" -> brief/lineage visible in the
+    // comparison panel and in the decision JSON. Select the now-APPROVED
+    // products-v2-ready version so the DRAFT-never-inherits-APPROVED
+    // invariant is exercised on a genuinely non-DRAFT parent.
+    await productsV2ReadyItem.click();
+    await page.locator('.vwc-detail-header .vwc-version-id', { hasText: 'products-v2-ready' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.vwc-detail-header .vwc-badge', { hasText: 'Approved' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const createBriefBtn = page.locator('.vwc-action-btn.create-brief');
+    if (!(await createBriefBtn.isDisabled())) {
+      throw new Error('expected "Create iteration brief" to be disabled before objective/required changes are filled in');
+    }
+
+    const briefObjectiveValue = 'Tighten the hero layout spacing for products-v2-ready.';
+    const briefRequiredChangesValue = 'Reduce hero vertical padding and align card row spacing with the comparison target.';
+    const briefPreserveValue = 'Keep the existing chip filter behaviour and product card copy unchanged.';
+    const briefAcceptanceValue = 'Owner confirms hero spacing visually matches the comparison target at desktop and mobile widths.';
+
+    await page.locator('[aria-label="Iteration objective"]').fill(briefObjectiveValue);
+    await page.locator('[aria-label="Required changes"]').fill(briefRequiredChangesValue);
+    await page.locator('[aria-label="Preserve constraints"]').fill(briefPreserveValue);
+    await page.locator('[aria-label="Acceptance notes"]').fill(briefAcceptanceValue);
+
+    if (await createBriefBtn.isDisabled()) {
+      throw new Error('expected "Create iteration brief" to enable once objective and required changes are filled in');
+    }
+    await createBriefBtn.click();
+
+    const newBriefRecord = page.locator('.vwc-iteration-brief-section .vwc-source-record.is-selected');
+    await newBriefRecord.waitFor({ state: 'visible', timeout: 5_000 });
+    const newBriefId = (await newBriefRecord.locator('.vwc-source-record-label').innerText()).trim();
+    if (!newBriefId.startsWith('brief-session-')) {
+      throw new Error(`expected a generated iteration brief id, got "${newBriefId}"`);
+    }
+    const newBriefBadge = await newBriefRecord.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(newBriefBadge) !== 'iteration brief draft') {
+      throw new Error(`expected a newly created iteration brief to default to ITERATION_BRIEF_DRAFT, found "${newBriefBadge.trim()}"`);
+    }
+    const newBriefText = await newBriefRecord.innerText();
+    for (const expected of ['products-v2-ready', 'products-v1-reference', briefObjectiveValue, briefRequiredChangesValue, briefPreserveValue, briefAcceptanceValue]) {
+      if (!newBriefText.includes(expected)) {
+        throw new Error(`expected the newly created iteration brief to render "${expected}"`);
+      }
+    }
+    if (newBriefText.includes('source id:')) {
+      throw new Error('expected the iteration brief created against products-v2-ready (no linked source) to omit a source id binding');
+    }
+
+    console.log(`PASS health ${scenario.name} visual console iteration brief creation: "Create iteration brief" is disabled until objective/required changes are filled in, defaults to ITERATION_BRIEF_DRAFT, and binds the exact selected version id (products-v2-ready) and comparison target id (products-v1-reference)`);
+
+    const createDraftFromBriefBtn = page.locator('.vwc-action-btn.create-draft-from-brief');
+    if (await createDraftFromBriefBtn.isDisabled()) {
+      throw new Error('expected "Create next DRAFT from brief" to be enabled once an iteration brief is selected');
+    }
+    await createDraftFromBriefBtn.click();
+
+    const briefDraftItem = page.locator('.vwc-list-item.is-selected');
+    await briefDraftItem.waitFor({ state: 'visible', timeout: 5_000 });
+    const briefDraftLabel = (await briefDraftItem.locator('.vwc-list-item-label').innerText()).trim();
+    if (!briefDraftLabel.includes('from brief')) {
+      throw new Error(`expected the newly created version label to reference its iteration brief, got "${briefDraftLabel}"`);
+    }
+    const briefDraftBadge = await briefDraftItem.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(briefDraftBadge) !== 'draft') {
+      throw new Error(`a brief-derived DRAFT must never inherit APPROVED/READY_FOR_REVIEW state from its parent version, found "${briefDraftBadge.trim()}"`);
+    }
+    const briefDraftVersionId = (await page.locator('.vwc-detail-header .vwc-version-id').innerText()).replace('version id:', '').trim();
+
+    const briefDraftTargetColumn = page.locator('.vwc-compare-section .vwc-compare-column', { hasText: 'Comparison target' });
+    await briefDraftTargetColumn.locator('.vwc-version-id', { hasText: 'products-v2-ready' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const briefLineagePanel = page.locator('.vwc-iteration-brief-lineage');
+    await briefLineagePanel.locator('.vwc-version-id', { hasText: newBriefId }).waitFor({ state: 'visible', timeout: 5_000 });
+    const briefLineageText = await briefLineagePanel.innerText();
+    for (const expected of [briefObjectiveValue, briefRequiredChangesValue, 'products-v2-ready', 'products-v1-reference']) {
+      if (!briefLineageText.includes(expected)) {
+        throw new Error(`expected the selected version iteration brief lineage panel to show "${expected}"`);
+      }
+    }
+
+    // Sibling/legacy protection must still hold after the v4 flow.
+    const referenceOnlyBadgeCountAfterV4 = await page.locator('.vwc-list-item .vwc-badge', { hasText: 'Reference only' }).count();
+    if (referenceOnlyBadgeCountAfterV4 !== 3) {
+      throw new Error(`expected exactly 3 untouched legacy REFERENCE_ONLY seed records after the v4 flow, found ${referenceOnlyBadgeCountAfterV4}`);
+    }
+    const homeV2DraftBadgeAfterV4 = await homeV2DraftItem.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(homeV2DraftBadgeAfterV4) !== 'draft') {
+      throw new Error(`expected sibling home-v2-draft to remain untouched "Draft" after the v4 flow, found "${homeV2DraftBadgeAfterV4.trim()}"`);
+    }
+
+    console.log(`PASS health ${scenario.name} visual console iteration-brief-to-DRAFT lineage: new version ${briefDraftVersionId} is created as DRAFT (not inheriting the APPROVED parent's status), carries comparisonTargetId=products-v2-ready and iterationBriefId=${newBriefId}, and the lineage panel renders the linked brief`);
+
+    // Review the brief-derived draft so its decision record carries the iteration-brief snapshot.
+    await noteInput.fill('Automated smoke-test review note for the brief-derived DRAFT.');
+    await requestChangesBtn.click();
+    await page.locator('.vwc-detail-header .vwc-badge', { hasText: 'Changes requested' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const briefDecisionRecord = page.locator('.vwc-decision-record').first();
+    await briefDecisionRecord.waitFor({ state: 'visible', timeout: 5_000 });
+    const briefDecisionText = await briefDecisionRecord.innerText();
+    for (const expected of [newBriefId, briefObjectiveValue, briefRequiredChangesValue, briefPreserveValue, briefAcceptanceValue]) {
+      if (!briefDecisionText.includes(expected)) {
+        throw new Error(`expected the latest decision record to include the iteration brief snapshot field "${expected}"`);
+      }
+    }
+
+    await briefDecisionRecord.locator('.vwc-action-btn.copy').click();
+    await briefDecisionRecord.locator('.vwc-action-btn.copy', { hasText: 'Copied!' }).waitFor({ state: 'visible', timeout: 5_000 });
+    const briefCopiedRaw = await page.evaluate(() => window.__vwcCopiedText);
+    let briefCopiedDecision;
+    try {
+      briefCopiedDecision = JSON.parse(briefCopiedRaw);
+    } catch (error) {
+      throw new Error(`Copy JSON clipboard payload for the brief-derived decision was not valid JSON: ${error.message}`);
+    }
+    if (
+      briefCopiedDecision.selectedVersionId !== briefDraftVersionId ||
+      briefCopiedDecision.iterationBriefId !== newBriefId ||
+      briefCopiedDecision.iterationBriefObjective !== briefObjectiveValue ||
+      briefCopiedDecision.iterationBriefRequiredChanges !== briefRequiredChangesValue ||
+      briefCopiedDecision.iterationBriefPreserveConstraints !== briefPreserveValue ||
+      briefCopiedDecision.iterationBriefAcceptanceNotes !== briefAcceptanceValue
+    ) {
+      throw new Error('Copy JSON payload for the brief-derived decision is missing the exact iteration brief snapshot');
+    }
+
+    const [briefDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.locator('.vwc-action-btn.download', { hasText: 'Download all as JSON' }).click(),
+    ]);
+    const briefDownloadStream = await briefDownload.createReadStream();
+    const briefDownloadChunks = [];
+    for await (const chunk of briefDownloadStream) briefDownloadChunks.push(chunk);
+    const briefDownloadedDecisions = JSON.parse(Buffer.concat(briefDownloadChunks).toString('utf-8'));
+    const briefDownloadedDecision = briefDownloadedDecisions.find((d) => d.decisionId === briefCopiedDecision.decisionId);
+    if (
+      !briefDownloadedDecision ||
+      briefDownloadedDecision.iterationBriefId !== newBriefId ||
+      briefDownloadedDecision.iterationBriefObjective !== briefObjectiveValue ||
+      briefDownloadedDecision.iterationBriefRequiredChanges !== briefRequiredChangesValue
+    ) {
+      throw new Error('downloaded decisions JSON does not include the exact iteration brief snapshot for the brief-derived decision');
+    }
+
+    const v4Overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    if (v4Overflow) {
+      throw new Error('visual console v4 flow (iteration brief / create draft from brief / decision record) has horizontal overflow');
+    }
+
+    console.log(`PASS health ${scenario.name} visual console iteration brief lineage in decision JSON: Copy JSON and Download JSON both include the full iteration brief snapshot (briefId=${newBriefId}) for the brief-derived decision, no horizontal overflow`);
+
     // Reload must restore the original seed state and discard local drafts/decisions.
     const reloadResponse = await page.reload({ waitUntil: 'networkidle', timeout: 30_000 });
     if (!reloadResponse || !reloadResponse.ok()) {
@@ -566,6 +718,24 @@ for (const scenario of scenarios) {
       throw new Error('expected "Create DRAFT from selected source" to be disabled again after reload clears the selected source');
     }
 
+    const briefsAfterReload = await page.locator('.vwc-iteration-brief-section .vwc-source-record').count();
+    if (briefsAfterReload !== 0) {
+      throw new Error(`expected 0 local iteration briefs after reload, found ${briefsAfterReload}`);
+    }
+    await page.locator('.vwc-iteration-brief-section', { hasText: 'No local iteration briefs yet this session.' }).waitFor({ state: 'visible', timeout: 5_000 });
+    const briefObjectiveInputAfterReload = await page.locator('[aria-label="Iteration objective"]').inputValue();
+    if (briefObjectiveInputAfterReload !== '') {
+      throw new Error(`expected the iteration brief objective field to reset after reload, found "${briefObjectiveInputAfterReload}"`);
+    }
+    const createBriefBtnAfterReload = page.locator('.vwc-action-btn.create-brief');
+    if (!(await createBriefBtnAfterReload.isDisabled())) {
+      throw new Error('expected "Create iteration brief" to be disabled again after reload clears the brief form');
+    }
+    const createDraftFromBriefBtnAfterReload = page.locator('.vwc-action-btn.create-draft-from-brief');
+    if (!(await createDraftFromBriefBtnAfterReload.isDisabled())) {
+      throw new Error('expected "Create next DRAFT from brief" to be disabled again after reload clears the selected brief');
+    }
+
     const homeV1BadgeAfterReload = await page.locator('.vwc-list-item', { hasText: 'v1 (legacy reference capture)' }).first().locator('.vwc-badge').innerText();
     if (normalizeBadgeText(homeV1BadgeAfterReload) !== 'reference only') {
       throw new Error(`expected a legacy reference seed version to read "Reference only" after reload, found "${homeV1BadgeAfterReload.trim()}"`);
@@ -587,7 +757,7 @@ for (const scenario of scenarios) {
       fullPage: true,
     });
 
-    console.log(`PASS health ${scenario.name} visual console reload: decisions, locally created source records/drafts and the intake form are discarded, seed versions and statuses are restored, no horizontal overflow`);
+    console.log(`PASS health ${scenario.name} visual console reload: decisions, locally created source records/briefs/drafts and the intake/brief forms are discarded, seed versions and statuses are restored, no horizontal overflow`);
   } catch (error) {
     failed = true;
     await page.screenshot({

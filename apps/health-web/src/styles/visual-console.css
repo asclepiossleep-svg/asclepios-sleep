@@ -38,7 +38,8 @@
   font-size: 13px;
 }
 
-.vwc-source-intake-section {
+.vwc-source-intake-section,
+.vwc-iteration-brief-section {
   background: var(--hw-surface);
   border: 1px solid var(--hw-border);
   border-radius: var(--hw-radius-lg);
@@ -276,6 +277,10 @@
   background: #f3e8d8;
   color: #7a5518;
 }
+.vwc-badge.status-ITERATION_BRIEF_DRAFT {
+  background: #e0e9f5;
+  color: #2f4f7a;
+}
 
 .vwc-detail {
   background: var(--hw-surface);
@@ -345,22 +350,26 @@
 }
 
 .vwc-action-btn.create-draft,
-.vwc-action-btn.create-draft-from-source {
+.vwc-action-btn.create-draft-from-source,
+.vwc-action-btn.create-draft-from-brief {
   border-color: var(--hw-navy);
   color: var(--hw-navy);
 }
 .vwc-action-btn.create-draft:hover,
-.vwc-action-btn.create-draft-from-source:hover {
+.vwc-action-btn.create-draft-from-source:hover,
+.vwc-action-btn.create-draft-from-brief:hover {
   background: var(--hw-teal-soft);
 }
 
-.vwc-action-btn.create-source {
+.vwc-action-btn.create-source,
+.vwc-action-btn.create-brief {
   border-color: var(--hw-teal);
   color: var(--hw-teal-dark);
   grid-column: 1 / -1;
   width: fit-content;
 }
-.vwc-action-btn.create-source:hover {
+.vwc-action-btn.create-source:hover,
+.vwc-action-btn.create-brief:hover {
   background: var(--hw-teal-soft);
 }
 

@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   DecisionRecord,
+  ITERATION_BRIEF_STATUS_LABELS,
+  IterationBrief,
   LocalSourceRecord,
   SOURCE_STATUS_LABELS,
   SOURCE_TYPE_LABELS,
@@ -94,6 +96,16 @@ export default function VisualWorkflowConsole() {
   const [sourceProvenanceInput, setSourceProvenanceInput] = useState("");
   const sourceCounterRef = useRef(1);
 
+  // Local Iteration Brief state (v4 slice, issue #131). Planning metadata
+  // only — no image/asset generation or external model call lives here.
+  const [briefs, setBriefs] = useState<IterationBrief[]>([]);
+  const [selectedBriefId, setSelectedBriefId] = useState<string | null>(null);
+  const [briefObjectiveInput, setBriefObjectiveInput] = useState("");
+  const [briefRequiredChangesInput, setBriefRequiredChangesInput] = useState("");
+  const [briefPreserveInput, setBriefPreserveInput] = useState("");
+  const [briefAcceptanceInput, setBriefAcceptanceInput] = useState("");
+  const briefCounterRef = useRef(1);
+
   const selected = useMemo(() => versions.find((v) => v.id === selectedId) ?? versions[0], [versions, selectedId]);
 
   // A pending owner review note is scoped to the version it was written for.
@@ -117,6 +129,18 @@ export default function VisualWorkflowConsole() {
   const selectedVersionSource = useMemo(
     () => (selected.sourceId ? sourceRecords.find((s) => s.sourceId === selected.sourceId) ?? null : null),
     [selected, sourceRecords]
+  );
+
+  // The exact IterationBrief this selected version was created from, if any
+  // (v4 slice) — bound to selected.iterationBriefId, not a page label.
+  const linkedIterationBrief = useMemo(
+    () => (selected.iterationBriefId ? briefs.find((b) => b.briefId === selected.iterationBriefId) ?? null : null),
+    [selected, briefs]
+  );
+
+  const selectedBrief = useMemo(
+    () => (selectedBriefId ? briefs.find((b) => b.briefId === selectedBriefId) ?? null : null),
+    [selectedBriefId, briefs]
   );
 
   const byPage = useMemo(
@@ -148,6 +172,8 @@ export default function VisualWorkflowConsole() {
       sources: [...selected.sources],
       sourceId: null,
       comparisonTargetId: selected.id,
+      parentVersionId: selected.id,
+      iterationBriefId: null,
       reviewStatus: `Draft — created locally from ${selected.id}, not yet submitted for owner review`,
     };
     setVersions((prev) => [...prev, draft]);
@@ -206,6 +232,8 @@ export default function VisualWorkflowConsole() {
       sources: [...selected.sources],
       sourceId: sourceRecord.sourceId,
       comparisonTargetId: selected.id,
+      parentVersionId: selected.id,
+      iterationBriefId: null,
       reviewStatus: `Draft — created locally from source ${sourceRecord.sourceId} and parent ${selected.id}, not yet submitted for owner review`,
     };
     setVersions((prev) => [...prev, draft]);
@@ -213,6 +241,85 @@ export default function VisualWorkflowConsole() {
     setLog((prev) =>
       [
         { at: timestamp, message: `Created next DRAFT version ${newId} from source ${sourceRecord.sourceId} and parent ${selected.id} (local only)` },
+        ...prev,
+      ].slice(0, 20)
+    );
+  }
+
+  const briefFormIncomplete =
+    !selected ||
+    !comparisonTarget ||
+    briefObjectiveInput.trim().length === 0 ||
+    briefRequiredChangesInput.trim().length === 0;
+
+  function createIterationBrief(e: FormEvent) {
+    e.preventDefault();
+    if (briefFormIncomplete || !comparisonTarget) return;
+    const n = briefCounterRef.current;
+    briefCounterRef.current = n + 1;
+    const timestamp = new Date().toISOString();
+    const briefId = `brief-session-${n}`;
+    const sourceRecord = selected.sourceId ? sourceRecords.find((s) => s.sourceId === selected.sourceId) ?? null : null;
+    const brief: IterationBrief = {
+      briefId,
+      selectedVersionId: selected.id,
+      comparisonTargetId: comparisonTarget.id,
+      sourceId: sourceRecord?.sourceId ?? null,
+      sourceType: sourceRecord?.sourceType ?? null,
+      sourceLabel: sourceRecord?.label ?? null,
+      sourceOriginText: sourceRecord?.originText ?? null,
+      sourceProvenanceNotes: sourceRecord?.provenanceNotes ?? null,
+      objective: briefObjectiveInput.trim(),
+      requiredChanges: briefRequiredChangesInput.trim(),
+      preserveConstraints: briefPreserveInput.trim(),
+      acceptanceNotes: briefAcceptanceInput.trim(),
+      createdAt: timestamp,
+      status: "ITERATION_BRIEF_DRAFT",
+    };
+    setBriefs((prev) => [brief, ...prev]);
+    setSelectedBriefId(briefId);
+    setBriefObjectiveInput("");
+    setBriefRequiredChangesInput("");
+    setBriefPreserveInput("");
+    setBriefAcceptanceInput("");
+    setLog((prev) =>
+      [
+        { at: timestamp, message: `Created iteration brief ${briefId} for ${selected.id} vs ${comparisonTarget.id} (local only)` },
+        ...prev,
+      ].slice(0, 20)
+    );
+  }
+
+  function createDraftFromBrief() {
+    if (!selectedBrief) return;
+    const n = draftCounterRef.current;
+    draftCounterRef.current = n + 1;
+    const timestamp = new Date().toISOString();
+    const newId = `${selected.pageId}-brief-draft-session-${n}`;
+    // Status is always DRAFT regardless of the brief's base/parent version
+    // status — never inherits APPROVED/READY_FOR_REVIEW. parentVersionId and
+    // comparisonTargetId are both set to the brief's exact base version id,
+    // and sourceId carries the brief's own source-lineage snapshot.
+    const draft: VisualVersion = {
+      id: newId,
+      pageId: selected.pageId,
+      versionLabel: `New DRAFT ${n} (from brief ${selectedBrief.briefId})`,
+      status: "DRAFT",
+      createdAt: timestamp,
+      designNotes:
+        "Editable local draft note — describe what changed from the parent version per the linked iteration brief. This text only exists in this browser tab and resets on reload.",
+      sources: [...selected.sources],
+      sourceId: selectedBrief.sourceId,
+      comparisonTargetId: selectedBrief.selectedVersionId,
+      parentVersionId: selectedBrief.selectedVersionId,
+      iterationBriefId: selectedBrief.briefId,
+      reviewStatus: `Draft — created locally from iteration brief ${selectedBrief.briefId} (parent ${selectedBrief.selectedVersionId}), not yet submitted for owner review`,
+    };
+    setVersions((prev) => [...prev, draft]);
+    selectVersion(newId);
+    setLog((prev) =>
+      [
+        { at: timestamp, message: `Created next DRAFT version ${newId} from iteration brief ${selectedBrief.briefId} (local only)` },
         ...prev,
       ].slice(0, 20)
     );
@@ -232,6 +339,11 @@ export default function VisualWorkflowConsole() {
     // reload, so a decision exported before reload must still be able to
     // show its own claimed provenance independently.
     const sourceRecord = sourceId ? sourceRecords.find((s) => s.sourceId === sourceId) ?? null : null;
+    // Same reasoning for the iteration brief: snapshot its fields, not just
+    // its id, because the linked IterationBrief is itself session-local.
+    const iterationBrief = selected.iterationBriefId
+      ? briefs.find((b) => b.briefId === selected.iterationBriefId) ?? null
+      : null;
 
     setVersions((prev) =>
       prev.map((v) =>
@@ -248,6 +360,12 @@ export default function VisualWorkflowConsole() {
         sourceLabel: sourceRecord?.label ?? null,
         sourceOriginText: sourceRecord?.originText ?? null,
         sourceProvenanceNotes: sourceRecord?.provenanceNotes ?? null,
+        iterationBriefId: iterationBrief?.briefId ?? null,
+        iterationBriefStatus: iterationBrief?.status ?? null,
+        iterationBriefObjective: iterationBrief?.objective ?? null,
+        iterationBriefRequiredChanges: iterationBrief?.requiredChanges ?? null,
+        iterationBriefPreserveConstraints: iterationBrief?.preserveConstraints ?? null,
+        iterationBriefAcceptanceNotes: iterationBrief?.acceptanceNotes ?? null,
         previousStatus,
         newStatus: nextStatus,
         reviewNote: note,
@@ -290,21 +408,23 @@ export default function VisualWorkflowConsole() {
   return (
     <div className="vwc-root">
       <div className="vwc-banner">
-        <strong>Internal preview — not a production page.</strong> This is a DRAFT v2/v3 slice of the
+        <strong>Internal preview — not a production page.</strong> This is a DRAFT v2/v3/v4 slice of the
         owner Visual Workflow Console (issue #131) for explicit owner review — it does not replace or
         re-approve the v1 console or any legacy Health screen. Approve / Request changes / Mark
         reference only now require a non-empty owner review note and create a local structured
         decision record below. "Create next DRAFT version" creates a new in-memory version. The
-        <strong> LOCAL_PREVIEW_ONLY Source Intake</strong> panel below records provenance metadata
-        only — it never fetches URLs, uploads/reads files, generates images, or touches any existing
-        asset bytes/manifest/SHA. Nothing on this page is written to a database, git, or the network —
-        reload this page and every action (including source records, new drafts, edited notes and
-        decision records) resets to the seed data.
+        <strong> LOCAL_PREVIEW_ONLY Source Intake</strong> panel records provenance metadata only — it
+        never fetches URLs, uploads/reads files, generates images, or touches any existing asset
+        bytes/manifest/SHA. The <strong> LOCAL_PREVIEW_ONLY Iteration Brief</strong> panel below records
+        a planning brief bound to exact version/comparison/source IDs — it never generates an image/asset
+        or calls an external model. Nothing on this page is written to a database, git, or the network —
+        reload this page and every action (including source records, briefs, new drafts, edited notes
+        and decision records) resets to the seed data.
       </div>
 
       <div className="vwc-header">
         <h1>Visual Workflow Console</h1>
-        <span className="vwc-header-meta">v3 draft — local/mock review state only</span>
+        <span className="vwc-header-meta">v4 draft — local/mock review state only</span>
       </div>
 
       <section className="vwc-section vwc-source-intake-section">
@@ -406,6 +526,121 @@ export default function VisualWorkflowConsole() {
           <p className="vwc-note-hint">
             Select a local source record above, and a parent version in the list below, to enable this.
           </p>
+        )}
+      </section>
+
+      <section className="vwc-section vwc-iteration-brief-section">
+        <div className="vwc-source-intake-badge">LOCAL_PREVIEW_ONLY — Iteration Brief</div>
+        <h3>Local iteration brief</h3>
+        <p className="vwc-source-intake-disclaimer">
+          Planning metadata only, bound to exact IDs — no image/asset generation or external model call.
+          Requires a selected version, an exact comparison target, an objective and required changes
+          before it can be created.
+        </p>
+        <p className="vwc-note-hint">
+          Bound to selected version id <code>{selected.id}</code> and comparison target id{" "}
+          <code>{comparisonTarget?.id ?? "none — select a version with a comparison target below"}</code>.
+        </p>
+        <form className="vwc-source-form" onSubmit={createIterationBrief}>
+          <label className="vwc-source-field vwc-source-field-wide">
+            <span>Iteration objective</span>
+            <input
+              type="text"
+              value={briefObjectiveInput}
+              onChange={(e) => setBriefObjectiveInput(e.target.value)}
+              placeholder="Concise objective for this iteration"
+              aria-label="Iteration objective"
+            />
+          </label>
+          <label className="vwc-source-field vwc-source-field-wide">
+            <span>Required changes</span>
+            <textarea
+              value={briefRequiredChangesInput}
+              onChange={(e) => setBriefRequiredChangesInput(e.target.value)}
+              rows={2}
+              placeholder="What must change from the comparison target..."
+              aria-label="Required changes"
+            />
+          </label>
+          <label className="vwc-source-field vwc-source-field-wide">
+            <span>Preserve / do-not-change constraints</span>
+            <textarea
+              value={briefPreserveInput}
+              onChange={(e) => setBriefPreserveInput(e.target.value)}
+              rows={2}
+              placeholder="What must NOT change..."
+              aria-label="Preserve constraints"
+            />
+          </label>
+          <label className="vwc-source-field vwc-source-field-wide">
+            <span>Acceptance notes</span>
+            <textarea
+              value={briefAcceptanceInput}
+              onChange={(e) => setBriefAcceptanceInput(e.target.value)}
+              rows={2}
+              placeholder="How the owner will judge the next DRAFT..."
+              aria-label="Acceptance notes"
+            />
+          </label>
+          <button type="submit" className="vwc-action-btn create-brief" disabled={briefFormIncomplete}>
+            Create iteration brief
+          </button>
+          {briefFormIncomplete && (
+            <p className="vwc-note-hint vwc-source-field-wide">
+              Select a version with a comparison target, then fill in objective and required changes to
+              create a brief.
+            </p>
+          )}
+        </form>
+
+        {briefs.length === 0 ? (
+          <p>No local iteration briefs yet this session.</p>
+        ) : (
+          <ul className="vwc-source-record-list">
+            {briefs.map((b) => (
+              <li key={b.briefId}>
+                <button
+                  type="button"
+                  className={`vwc-source-record ${b.briefId === selectedBriefId ? "is-selected" : ""}`.trim()}
+                  onClick={() => setSelectedBriefId(b.briefId)}
+                >
+                  <div className="vwc-source-record-header">
+                    <span className="vwc-source-record-label">{b.briefId}</span>
+                    <span className="vwc-badge status-ITERATION_BRIEF_DRAFT">
+                      {ITERATION_BRIEF_STATUS_LABELS[b.status]}
+                    </span>
+                  </div>
+                  <div className="vwc-version-id">
+                    selected version id: {b.selectedVersionId} — comparison target id: {b.comparisonTargetId}
+                  </div>
+                  {b.sourceId && <div className="vwc-version-id">source id: {b.sourceId}</div>}
+                  <div className="vwc-source-record-meta">Objective: {b.objective}</div>
+                  <div className="vwc-source-record-meta">Required changes: {b.requiredChanges}</div>
+                  {b.preserveConstraints && (
+                    <div className="vwc-source-record-meta">Preserve: {b.preserveConstraints}</div>
+                  )}
+                  {b.acceptanceNotes && (
+                    <div className="vwc-source-record-meta">Acceptance notes: {b.acceptanceNotes}</div>
+                  )}
+                  <div className="vwc-source-record-meta">created {b.createdAt}</div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="vwc-actions">
+          <button
+            type="button"
+            className="vwc-action-btn create-draft-from-brief"
+            disabled={!selectedBrief}
+            onClick={createDraftFromBrief}
+          >
+            Create next DRAFT from brief{selectedBrief ? ` (${selectedBrief.briefId})` : ""}
+          </button>
+        </div>
+        {!selectedBrief && (
+          <p className="vwc-note-hint">Select a local iteration brief above to enable this.</p>
         )}
       </section>
 
@@ -513,6 +748,33 @@ export default function VisualWorkflowConsole() {
                 <p>No local source record linked to this version.</p>
               )}
             </div>
+
+            <div className="vwc-source-provenance vwc-iteration-brief-lineage">
+              <div className="vwc-compare-column-title">Selected version iteration brief lineage</div>
+              {linkedIterationBrief ? (
+                <div className="vwc-source-provenance-detail">
+                  <div className="vwc-version-id">brief id: {linkedIterationBrief.briefId}</div>
+                  <span className="vwc-badge status-ITERATION_BRIEF_DRAFT">
+                    {ITERATION_BRIEF_STATUS_LABELS[linkedIterationBrief.status]}
+                  </span>
+                  <div className="vwc-version-id">
+                    base version id: {linkedIterationBrief.selectedVersionId} — comparison target id:{" "}
+                    {linkedIterationBrief.comparisonTargetId}
+                  </div>
+                  <p>Objective: {linkedIterationBrief.objective}</p>
+                  <p>Required changes: {linkedIterationBrief.requiredChanges}</p>
+                  {linkedIterationBrief.preserveConstraints && (
+                    <p>Preserve: {linkedIterationBrief.preserveConstraints}</p>
+                  )}
+                  {linkedIterationBrief.acceptanceNotes && (
+                    <p>Acceptance notes: {linkedIterationBrief.acceptanceNotes}</p>
+                  )}
+                  <p>created {linkedIterationBrief.createdAt}</p>
+                </div>
+              ) : (
+                <p>No local iteration brief linked to this version.</p>
+              )}
+            </div>
           </div>
 
           <div className="vwc-section">
@@ -591,6 +853,18 @@ export default function VisualWorkflowConsole() {
                       <code>{d.sourceOriginText ?? "null"}</code>
                       <span>source_provenance_notes</span>
                       <code>{d.sourceProvenanceNotes ?? "null"}</code>
+                      <span>iteration_brief_id</span>
+                      <code>{d.iterationBriefId ?? "null"}</code>
+                      <span>iteration_brief_status</span>
+                      <code>{d.iterationBriefStatus ?? "null"}</code>
+                      <span>iteration_brief_objective</span>
+                      <code>{d.iterationBriefObjective ?? "null"}</code>
+                      <span>iteration_brief_required_changes</span>
+                      <code>{d.iterationBriefRequiredChanges ?? "null"}</code>
+                      <span>iteration_brief_preserve_constraints</span>
+                      <code>{d.iterationBriefPreserveConstraints ?? "null"}</code>
+                      <span>iteration_brief_acceptance_notes</span>
+                      <code>{d.iterationBriefAcceptanceNotes ?? "null"}</code>
                       <span>previous_status</span>
                       <code>{d.previousStatus}</code>
                       <span>new_status</span>

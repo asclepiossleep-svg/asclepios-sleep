@@ -25,6 +25,15 @@ export interface VisualVersion {
   // exact selected LocalSourceRecord.
   sourceId: string | null;
   comparisonTargetId: string | null;
+  // Explicit parent-version lineage (v4 slice, issue #131). Null unless this
+  // version was created via "Create next DRAFT from brief" — distinct from
+  // comparisonTargetId so a brief-derived draft always records both, even
+  // when they happen to point at the same version id.
+  parentVersionId: string | null;
+  // Lineage to the exact IterationBrief this DRAFT was created from (v4
+  // slice, issue #131). Null for every pre-existing seed and for drafts not
+  // created via "Create next DRAFT from brief".
+  iterationBriefId: string | null;
   reviewStatus: string;
 }
 
@@ -71,6 +80,8 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
     ],
     sourceId: null,
     comparisonTargetId: null,
+    parentVersionId: null,
+    iterationBriefId: null,
     reviewStatus: "Not submitted for review — reference only",
   },
   {
@@ -84,6 +95,8 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
     sources: ["Local draft — no external design file attached yet"],
     sourceId: null,
     comparisonTargetId: "home-v1-reference",
+    parentVersionId: null,
+    iterationBriefId: null,
     reviewStatus: "Draft — not yet submitted for owner review",
   },
   {
@@ -100,6 +113,8 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
     ],
     sourceId: null,
     comparisonTargetId: null,
+    parentVersionId: null,
+    iterationBriefId: null,
     reviewStatus: "Not submitted for review — reference only",
   },
   {
@@ -113,6 +128,8 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
     sources: ["Local draft — no external design file attached yet"],
     sourceId: null,
     comparisonTargetId: "products-v1-reference",
+    parentVersionId: null,
+    iterationBriefId: null,
     reviewStatus: "Ready for owner review",
   },
   {
@@ -129,6 +146,8 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
     ],
     sourceId: null,
     comparisonTargetId: null,
+    parentVersionId: null,
+    iterationBriefId: null,
     reviewStatus: "Not submitted for review — reference only",
   },
 ];
@@ -160,14 +179,46 @@ export const SOURCE_STATUS_LABELS: Record<SourceStatus, string> = {
   UNVERIFIED_REFERENCE: "Unverified reference",
 };
 
+// Local Iteration Brief metadata (v4 slice, issue #131). A brief is bound to
+// exact version/comparison/source IDs, not page labels — it records planning
+// intent only (objective/required changes/constraints/acceptance notes), no
+// image/asset generation or external model call. In-memory for this browser
+// tab only — resets on reload, same as versions/sources/decisions.
+export type IterationBriefStatus = "ITERATION_BRIEF_DRAFT";
+
+export interface IterationBrief {
+  briefId: string;
+  // Exact selected/source-derived version ID this brief was written against.
+  selectedVersionId: string;
+  // Exact comparison target version ID at the moment the brief was created.
+  comparisonTargetId: string;
+  // Linked source provenance snapshot, when the selected version carries one.
+  sourceId: string | null;
+  sourceType: SourceType | null;
+  sourceLabel: string | null;
+  sourceOriginText: string | null;
+  sourceProvenanceNotes: string | null;
+  objective: string;
+  requiredChanges: string;
+  preserveConstraints: string;
+  acceptanceNotes: string;
+  createdAt: string;
+  status: IterationBriefStatus;
+}
+
+export const ITERATION_BRIEF_STATUS_LABELS: Record<IterationBriefStatus, string> = {
+  ITERATION_BRIEF_DRAFT: "Iteration brief draft",
+};
+
 // A structured local decision record created by a review action (issue #131,
-// v2 slice; source lineage added in the v3 slice). Rendered/copyable/
-// downloadable in the console only — never sent over the network and never
-// written to a database or git. The source fields are a full snapshot
-// (sourceId/sourceType/label/originText/provenanceNotes) taken at commit
-// time, not just an id, because the linked LocalSourceRecord is itself
-// session-local and is discarded on reload — a decision exported before
-// reload must still be able to show its own claimed provenance on its own.
+// v2 slice; source lineage added in the v3 slice; iteration-brief lineage
+// added in the v4 slice). Rendered/copyable/downloadable in the console
+// only — never sent over the network and never written to a database or
+// git. The source and iteration-brief fields are full snapshots taken at
+// commit time, not just an id, because the linked LocalSourceRecord /
+// IterationBrief are themselves session-local and discarded on reload — a
+// decision exported before reload must still be able to show its own
+// claimed provenance/brief on its own.
 export interface DecisionRecord {
   decisionId: string;
   selectedVersionId: string;
@@ -177,6 +228,12 @@ export interface DecisionRecord {
   sourceLabel: string | null;
   sourceOriginText: string | null;
   sourceProvenanceNotes: string | null;
+  iterationBriefId: string | null;
+  iterationBriefStatus: IterationBriefStatus | null;
+  iterationBriefObjective: string | null;
+  iterationBriefRequiredChanges: string | null;
+  iterationBriefPreserveConstraints: string | null;
+  iterationBriefAcceptanceNotes: string | null;
   previousStatus: VersionStatus;
   newStatus: VersionStatus;
   reviewNote: string;
