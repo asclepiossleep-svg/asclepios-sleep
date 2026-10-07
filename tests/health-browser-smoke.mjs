@@ -31,6 +31,26 @@ async function assertFocusVisible(locator, label) {
   }
 }
 
+async function assertFocusVisibleViaTab(page, precedingLocator, targetLocator, label) {
+  // Chromium's `:focus-visible` heuristic is input-modality-sensitive: a
+  // programmatic .focus() after a pointer click does not count as keyboard
+  // focus. Proving the real keyboard path means focusing the element that
+  // precedes the target in tab order, then pressing Tab onto the target.
+  await precedingLocator.focus();
+  await page.keyboard.press('Tab');
+  const isActive = await targetLocator.evaluate((el) => el === document.activeElement);
+  if (!isActive) {
+    throw new Error(`${label} was not the next Tab stop after its preceding field`);
+  }
+  const hasVisibleOutline = await targetLocator.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0;
+  });
+  if (!hasVisibleOutline) {
+    throw new Error(`${label} is keyboard-focusable but shows no visible focus outline`);
+  }
+}
+
 async function assertTabOrder(page, locators, label) {
   for (let i = 0; i < locators.length; i += 1) {
     if (i === 0) {
@@ -407,7 +427,7 @@ for (const scenario of scenarios) {
     // --- Sequence step 1: assign a demo owner role ---
     await oeqRoot.locator('#oeq-owner-select').selectOption('DEMO_OPS');
     if (await assignButton.isDisabled()) throw new Error('assign-owner button should enable once a role is chosen');
-    await assertFocusVisible(assignButton, 'assign-owner button (enabled)');
+    await assertFocusVisibleViaTab(page, oeqRoot.locator('#oeq-owner-select'), assignButton, 'assign-owner button (enabled)');
     await assignButton.click();
 
     await oeqRoot.locator('.ooc-chain-step', { hasText: 'Owner' }).locator('.oeq-owner-DEMO_OPS', { hasText: 'Demo Ops' }).waitFor({ state: 'visible', timeout: 5_000 });
@@ -433,7 +453,7 @@ for (const scenario of scenarios) {
     // --- Sequence step 2: record a local retry attempt ---
     await oeqRoot.locator('#oeq-retry-note').fill('Pinged the demo 3PL adapter to re-request fulfilment handoff.');
     if (await retryButton.isDisabled()) throw new Error('record-retry button should enable once a non-empty note is entered');
-    await assertFocusVisible(retryButton, 'record-retry button (enabled)');
+    await assertFocusVisibleViaTab(page, oeqRoot.locator('#oeq-retry-note'), retryButton, 'record-retry button (enabled)');
     await retryButton.click();
 
     await oeqRoot.locator('.ooc-chain-step', { hasText: 'Status' }).locator('.oeq-status-RETRY_RECORDED').waitFor({ state: 'visible', timeout: 5_000 });
@@ -500,7 +520,7 @@ for (const scenario of scenarios) {
     if (await reconcileButton.isDisabled()) {
       throw new Error('mark-reconciled should enable once source order DEMO-ORD-1003 no longer carries the exception condition');
     }
-    await assertFocusVisible(reconcileButton, 'mark-reconciled button (enabled)');
+    await assertFocusVisibleViaTab(page, oeqRoot.locator('#oeq-reconcile-note'), reconcileButton, 'mark-reconciled button (enabled)');
     await reconcileButton.click();
 
     await oeqRoot.locator('.ooc-chain-step', { hasText: 'Status' }).locator('.oeq-status-RECONCILED').waitFor({ state: 'visible', timeout: 5_000 });
