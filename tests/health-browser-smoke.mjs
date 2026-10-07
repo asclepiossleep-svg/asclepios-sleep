@@ -364,6 +364,154 @@ for (const scenario of scenarios) {
 
     console.log(`PASS health ${scenario.name} visual console download JSON: intercepted client-side download has a valid filename and contains the exact visible decision record, no backend write`);
 
+    // v3 slice (issue #131 bounded continuation): local source intake -> create
+    // DRAFT from an exact selected source record + parent version -> lineage
+    // visible in the comparison/provenance panel and in the decision JSON.
+    const sourceLabelValue = 'Owner-supplied products hero reference';
+    const sourceOriginValue = 'https://example-owner-reference.invalid/products-hero (text only, not fetched)';
+    const sourceProvenanceValue = 'Owner shared this as inspiration for the products hero treatment; recorded for provenance only.';
+
+    const addSourceBtn = page.locator('.vwc-action-btn.create-source');
+    if (!(await addSourceBtn.isDisabled())) {
+      throw new Error('expected "Add local source record" to be disabled before any source fields are filled in');
+    }
+
+    await page.locator('[aria-label="Source label"]').fill(sourceLabelValue);
+    await page.locator('[aria-label="Source origin text"]').fill(sourceOriginValue);
+    await page.locator('[aria-label="Source provenance notes"]').fill(sourceProvenanceValue);
+    await page.locator('.vwc-source-form select').selectOption('FILE_REFERENCE');
+
+    if (await addSourceBtn.isDisabled()) {
+      throw new Error('expected "Add local source record" to enable once type/label/origin/provenance are all filled in');
+    }
+    await addSourceBtn.click();
+
+    const newSourceRecord = page.locator('.vwc-source-record.is-selected');
+    await newSourceRecord.waitFor({ state: 'visible', timeout: 5_000 });
+    const newSourceId = (await newSourceRecord.locator('.vwc-version-id').innerText()).replace('source id:', '').trim();
+    if (!newSourceId.startsWith('source-session-')) {
+      throw new Error(`expected a generated source id, got "${newSourceId}"`);
+    }
+    const newSourceBadge = await newSourceRecord.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(newSourceBadge) !== 'unverified reference') {
+      throw new Error(`expected a newly created source record to default to UNVERIFIED_REFERENCE, found "${newSourceBadge.trim()}"`);
+    }
+    const newSourceText = await newSourceRecord.innerText();
+    for (const expected of [sourceLabelValue, sourceOriginValue, sourceProvenanceValue, 'File reference']) {
+      if (!newSourceText.includes(expected)) {
+        throw new Error(`expected the newly created source record to render "${expected}"`);
+      }
+    }
+
+    console.log(`PASS health ${scenario.name} visual console source intake: a new local source record requires type/label/origin/provenance, defaults to UNVERIFIED_REFERENCE, and renders every field entered`);
+
+    // Approve the currently selected parent version (products-v2-ready) so the
+    // next step can prove a source-derived DRAFT never inherits APPROVED state.
+    const parentVersionId = (await page.locator('.vwc-detail-header .vwc-version-id').innerText()).replace('version id:', '').trim();
+    if (parentVersionId !== 'products-v2-ready') {
+      throw new Error(`expected the parent version selection going into source-draft creation to still be products-v2-ready, found "${parentVersionId}"`);
+    }
+    await noteInput.fill('Approving products-v2-ready so the next source-derived DRAFT can be proven not to inherit APPROVED state.');
+    await approveBtn.click();
+    await page.locator('.vwc-detail-header .vwc-badge', { hasText: 'Approved' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const createDraftFromSourceBtn = page.locator('.vwc-action-btn.create-draft-from-source');
+    if (await createDraftFromSourceBtn.isDisabled()) {
+      throw new Error('expected "Create DRAFT from selected source" to be enabled once a source record is selected');
+    }
+    await createDraftFromSourceBtn.click();
+
+    const sourceDraftItem = page.locator('.vwc-list-item.is-selected');
+    await sourceDraftItem.waitFor({ state: 'visible', timeout: 5_000 });
+    const sourceDraftLabel = (await sourceDraftItem.locator('.vwc-list-item-label').innerText()).trim();
+    if (!sourceDraftLabel.includes('from source')) {
+      throw new Error(`expected the newly created version label to reference its source, got "${sourceDraftLabel}"`);
+    }
+    await page.locator('.vwc-detail-header .vwc-badge', { hasText: 'Draft' }).waitFor({ state: 'visible', timeout: 5_000 });
+    const sourceDraftVersionId = (await page.locator('.vwc-detail-header .vwc-version-id').innerText()).replace('version id:', '').trim();
+
+    const sourceDraftTargetColumn = page.locator('.vwc-compare-section .vwc-compare-column', { hasText: 'Comparison target' });
+    await sourceDraftTargetColumn.locator('.vwc-version-id', { hasText: 'products-v2-ready' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const provenancePanel = page.locator('.vwc-source-provenance');
+    await provenancePanel.locator('.vwc-version-id', { hasText: newSourceId }).waitFor({ state: 'visible', timeout: 5_000 });
+    const provenanceBadgeText = await provenancePanel.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(provenanceBadgeText) !== 'unverified reference') {
+      throw new Error(`expected the linked source provenance panel to show UNVERIFIED_REFERENCE, found "${provenanceBadgeText.trim()}"`);
+    }
+    const provenanceText = await provenancePanel.innerText();
+    if (!provenanceText.includes('File reference')) {
+      throw new Error('expected the selected version source provenance panel to show the linked source type');
+    }
+
+    // Approving the parent must not have promoted the new DRAFT.
+    const approvedBadgeOnNewDraftCount = await sourceDraftItem.locator('.vwc-badge', { hasText: 'Approved' }).count();
+    if (approvedBadgeOnNewDraftCount !== 0) {
+      throw new Error("a source-derived DRAFT must never inherit APPROVED state from its parent version");
+    }
+
+    console.log(`PASS health ${scenario.name} visual console source-to-DRAFT lineage: new version ${sourceDraftVersionId} is created as DRAFT (not inheriting the now-APPROVED parent's status), carries comparisonTargetId=products-v2-ready and sourceId=${newSourceId}, and the provenance panel renders the linked source`);
+
+    // Review the source-derived draft so its decision record carries source/lineage fields.
+    await noteInput.fill('Automated smoke-test review note for the source-derived DRAFT.');
+    await page.locator('.vwc-action-btn', { hasText: 'Mark reference only' }).click();
+    await page.locator('.vwc-detail-header .vwc-badge', { hasText: 'Reference only' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const latestDecisionRecord = page.locator('.vwc-decision-record').first();
+    await latestDecisionRecord.waitFor({ state: 'visible', timeout: 5_000 });
+    const latestDecisionText = await latestDecisionRecord.innerText();
+    if (!latestDecisionText.includes(newSourceId) || !latestDecisionText.includes('FILE_REFERENCE')) {
+      throw new Error('expected the latest decision record to include the linked source id and source type');
+    }
+
+    // Sibling/legacy protection must still hold after the v3 flow.
+    const referenceOnlyBadgeCountAfterV3 = await page.locator('.vwc-list-item .vwc-badge', { hasText: 'Reference only' }).count();
+    if (referenceOnlyBadgeCountAfterV3 !== 3) {
+      throw new Error(`expected exactly 3 untouched legacy REFERENCE_ONLY seed records after the v3 flow, found ${referenceOnlyBadgeCountAfterV3}`);
+    }
+    const homeV2DraftBadgeAfterV3 = await homeV2DraftItem.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(homeV2DraftBadgeAfterV3) !== 'draft') {
+      throw new Error(`expected sibling home-v2-draft to remain untouched "Draft" after the v3 flow, found "${homeV2DraftBadgeAfterV3.trim()}"`);
+    }
+    const mutatedDraftBadgeAfterV3 = await mutatedDraftItem.locator('.vwc-badge').innerText();
+    if (normalizeBadgeText(mutatedDraftBadgeAfterV3) !== 'changes requested') {
+      throw new Error(`expected the earlier-reviewed draft to remain untouched "Changes requested" after the v3 flow, found "${mutatedDraftBadgeAfterV3.trim()}"`);
+    }
+
+    console.log(`PASS health ${scenario.name} visual console v3 sibling protection: legacy REFERENCE_ONLY seeds and previously reviewed sibling versions are unchanged after the source-intake flow`);
+
+    // Copy/Download JSON must include the source/lineage fields for the source-derived decision.
+    await latestDecisionRecord.locator('.vwc-action-btn.copy').click();
+    await latestDecisionRecord.locator('.vwc-action-btn.copy', { hasText: 'Copied!' }).waitFor({ state: 'visible', timeout: 5_000 });
+    const latestCopiedRaw = await page.evaluate(() => window.__vwcCopiedText);
+    let latestCopiedDecision;
+    try {
+      latestCopiedDecision = JSON.parse(latestCopiedRaw);
+    } catch (error) {
+      throw new Error(`Copy JSON clipboard payload for the source-derived decision was not valid JSON: ${error.message}`);
+    }
+    if (latestCopiedDecision.selectedVersionId !== sourceDraftVersionId) {
+      throw new Error('Copy JSON payload for the source-derived decision does not match the visible decision record selected version id');
+    }
+    if (latestCopiedDecision.sourceId !== newSourceId || latestCopiedDecision.sourceType !== 'FILE_REFERENCE') {
+      throw new Error('Copy JSON payload for the source-derived decision is missing the exact sourceId/sourceType lineage');
+    }
+
+    const [sourceDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.locator('.vwc-action-btn.download', { hasText: 'Download all as JSON' }).click(),
+    ]);
+    const sourceDownloadStream = await sourceDownload.createReadStream();
+    const sourceDownloadChunks = [];
+    for await (const chunk of sourceDownloadStream) sourceDownloadChunks.push(chunk);
+    const sourceDownloadedDecisions = JSON.parse(Buffer.concat(sourceDownloadChunks).toString('utf-8'));
+    const sourceDownloadedDecision = sourceDownloadedDecisions.find((d) => d.decisionId === latestCopiedDecision.decisionId);
+    if (!sourceDownloadedDecision || sourceDownloadedDecision.sourceId !== newSourceId || sourceDownloadedDecision.sourceType !== 'FILE_REFERENCE') {
+      throw new Error('downloaded decisions JSON does not include the exact source/lineage fields for the source-derived decision');
+    }
+
+    console.log(`PASS health ${scenario.name} visual console source lineage in decision JSON: Copy JSON and Download JSON both include sourceId=${newSourceId} and sourceType=FILE_REFERENCE for the source-derived decision`);
+
     // Reload must restore the original seed state and discard local drafts/decisions.
     const reloadResponse = await page.reload({ waitUntil: 'networkidle', timeout: 30_000 });
     if (!reloadResponse || !reloadResponse.ok()) {
@@ -379,7 +527,25 @@ for (const scenario of scenarios) {
 
     const newDraftCountAfterReload = await page.locator('.vwc-list-item', { hasText: 'New DRAFT' }).count();
     if (newDraftCountAfterReload !== 0) {
-      throw new Error('expected the locally created DRAFT version to be discarded after reload');
+      throw new Error('expected the locally created DRAFT versions (plain and source-derived) to be discarded after reload');
+    }
+
+    const sourceRecordsAfterReload = await page.locator('.vwc-source-record').count();
+    if (sourceRecordsAfterReload !== 0) {
+      throw new Error(`expected 0 local source records after reload, found ${sourceRecordsAfterReload}`);
+    }
+    await page.locator('.vwc-source-intake-section', { hasText: 'No local source records yet this session.' }).waitFor({ state: 'visible', timeout: 5_000 });
+    const sourceLabelInputAfterReload = await page.locator('[aria-label="Source label"]').inputValue();
+    if (sourceLabelInputAfterReload !== '') {
+      throw new Error(`expected the source intake label field to reset after reload, found "${sourceLabelInputAfterReload}"`);
+    }
+    const addSourceBtnAfterReload = page.locator('.vwc-action-btn.create-source');
+    if (!(await addSourceBtnAfterReload.isDisabled())) {
+      throw new Error('expected "Add local source record" to be disabled again after reload clears the intake form');
+    }
+    const createDraftFromSourceBtnAfterReload = page.locator('.vwc-action-btn.create-draft-from-source');
+    if (!(await createDraftFromSourceBtnAfterReload.isDisabled())) {
+      throw new Error('expected "Create DRAFT from selected source" to be disabled again after reload clears the selected source');
     }
 
     const homeV1BadgeAfterReload = await page.locator('.vwc-list-item', { hasText: 'v1 (legacy reference capture)' }).first().locator('.vwc-badge').innerText();
@@ -403,7 +569,7 @@ for (const scenario of scenarios) {
       fullPage: true,
     });
 
-    console.log(`PASS health ${scenario.name} visual console reload: decisions and locally created drafts are discarded, seed versions and statuses are restored, no horizontal overflow`);
+    console.log(`PASS health ${scenario.name} visual console reload: decisions, locally created source records/drafts and the intake form are discarded, seed versions and statuses are restored, no horizontal overflow`);
   } catch (error) {
     failed = true;
     await page.screenshot({

@@ -19,6 +19,11 @@ export interface VisualVersion {
   createdAt: string;
   designNotes: string;
   sources: string[];
+  // Lineage to a local source-intake record (v3 slice, issue #131). Null for
+  // every pre-existing seed and for drafts created without going through the
+  // Source Intake panel — it is set only when a draft is created from an
+  // exact selected LocalSourceRecord.
+  sourceId: string | null;
   comparisonTargetId: string | null;
   reviewStatus: string;
 }
@@ -64,6 +69,7 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
       "tests/visual-baselines/desktop-homepage.png",
       "tests/visual-baselines/mobile-homepage.png",
     ],
+    sourceId: null,
     comparisonTargetId: null,
     reviewStatus: "Not submitted for review — reference only",
   },
@@ -76,6 +82,7 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
     designNotes:
       "Illustrative draft created to exercise the Visual Workflow Console UI (owner review actions, comparison view). Layout is schematic, not a final design proposal.",
     sources: ["Local draft — no external design file attached yet"],
+    sourceId: null,
     comparisonTargetId: "home-v1-reference",
     reviewStatus: "Draft — not yet submitted for owner review",
   },
@@ -91,6 +98,7 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
       "tests/visual-baselines/desktop-products.png",
       "tests/visual-baselines/mobile-products.png",
     ],
+    sourceId: null,
     comparisonTargetId: null,
     reviewStatus: "Not submitted for review — reference only",
   },
@@ -103,6 +111,7 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
     designNotes:
       "Mock slice showing the READY_FOR_REVIEW state so the owner can exercise Approve / Request changes on a pending version.",
     sources: ["Local draft — no external design file attached yet"],
+    sourceId: null,
     comparisonTargetId: "products-v1-reference",
     reviewStatus: "Ready for owner review",
   },
@@ -118,18 +127,49 @@ export const VISUAL_VERSIONS: VisualVersion[] = [
       "tests/visual-baselines/desktop-sleep-app.png",
       "tests/visual-baselines/mobile-sleep-app.png",
     ],
+    sourceId: null,
     comparisonTargetId: null,
     reviewStatus: "Not submitted for review — reference only",
   },
 ];
 
+// Local source-intake metadata (v3 slice, issue #131). Records provenance
+// only: no URL is fetched, no file is uploaded/read, no image is generated,
+// and no checksum/manifest/asset byte is computed or touched. In-memory for
+// this browser tab only — resets on reload, same as versions/decisions.
+export type SourceType = "URL_REFERENCE" | "FILE_REFERENCE" | "SCREENSHOT_REFERENCE";
+export type SourceStatus = "UNVERIFIED_REFERENCE";
+
+export interface LocalSourceRecord {
+  sourceId: string;
+  sourceType: SourceType;
+  label: string;
+  originText: string;
+  provenanceNotes: string;
+  createdAt: string;
+  status: SourceStatus;
+}
+
+export const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
+  URL_REFERENCE: "URL reference",
+  FILE_REFERENCE: "File reference",
+  SCREENSHOT_REFERENCE: "Screenshot reference",
+};
+
+export const SOURCE_STATUS_LABELS: Record<SourceStatus, string> = {
+  UNVERIFIED_REFERENCE: "Unverified reference",
+};
+
 // A structured local decision record created by a review action (issue #131,
-// v2 slice). Rendered/copyable/downloadable in the console only — never sent
-// over the network and never written to a database or git.
+// v2 slice; sourceId/sourceType lineage added in the v3 slice). Rendered/
+// copyable/downloadable in the console only — never sent over the network
+// and never written to a database or git.
 export interface DecisionRecord {
   decisionId: string;
   selectedVersionId: string;
   comparisonTargetId: string | null;
+  sourceId: string | null;
+  sourceType: SourceType | null;
   previousStatus: VersionStatus;
   newStatus: VersionStatus;
   reviewNote: string;
