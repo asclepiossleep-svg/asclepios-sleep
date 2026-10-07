@@ -261,6 +261,173 @@ for (const scenario of scenarios) {
       );
     }
 
+    // --- Exception ownership & reconciliation queue (OWNER-OPS-DEMO-EXCEPTION-QUEUE-001) ---
+    const oeqRoot = page.locator('.oeq-root');
+    await oeqRoot.locator('h2', { hasText: 'Exception ownership' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const exceptionSummaryValue = async (label) =>
+      Number((await oeqRoot.locator('.ooc-summary-card', { hasText: label }).locator('.ooc-summary-value').innerText()).trim());
+
+    const initialOpen = await exceptionSummaryValue('Open');
+    const initialRetryRecorded = await exceptionSummaryValue('Retry recorded');
+    const initialReconciled = await exceptionSummaryValue('Reconciled');
+    if (initialOpen !== 3 || initialRetryRecorded !== 0 || initialReconciled !== 0) {
+      throw new Error(
+        `unexpected seed exception queue counters: open=${initialOpen} retryRecorded=${initialRetryRecorded} reconciled=${initialReconciled}`
+      );
+    }
+
+    // Sibling exception EXC-1007 (derived from unrelated order DEMO-ORD-1007) must stay
+    // untouched by any action taken against EXC-1003 below.
+    const sibling1007Row = () => oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1007' }).first();
+    await sibling1007Row().locator('.oeq-status-OPEN').waitFor({ state: 'visible', timeout: 5_000 });
+    await sibling1007Row().locator('.oeq-owner-UNASSIGNED').waitFor({ state: 'visible', timeout: 5_000 });
+
+    // Exact derived exception/order binding.
+    await oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1003' }).first().click();
+    await oeqRoot.locator('.ooc-detail h3', { hasText: 'EXC-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.ooc-detail-sub', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.ooc-detail-sub', { hasText: 'Fulfilment exception' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    // NOT_CONNECTED provider acknowledgement and LOCAL_PREVIEW_ONLY scope are visible,
+    // never implying a real provider/API call.
+    await oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1003' }).first().locator('.oeq-provider-ack', { hasText: 'NOT_CONNECTED' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.oeq-provider-ack', { hasText: 'NOT_CONNECTED' }).first().waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.oeq-scope', { hasText: 'LOCAL_PREVIEW_ONLY' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    // Required owner/note validation: every action starts disabled with no role chosen / empty notes.
+    const assignButton = oeqRoot.locator('button', { hasText: 'Assign owner' });
+    const retryButton = oeqRoot.locator('button', { hasText: 'Record retry' });
+    const reconcileButton = oeqRoot.locator('button', { hasText: 'Mark reconciled' });
+    if (!(await assignButton.isDisabled())) throw new Error('assign-owner button should start disabled with no role chosen');
+    if (!(await retryButton.isDisabled())) throw new Error('record-retry button should start disabled with an empty note');
+    if (!(await reconcileButton.isDisabled())) throw new Error('mark-reconciled button should start disabled with an empty note');
+
+    // --- Sequence step 1: assign a demo owner role ---
+    await oeqRoot.locator('#oeq-owner-select').selectOption('DEMO_OPS');
+    if (await assignButton.isDisabled()) throw new Error('assign-owner button should enable once a role is chosen');
+    await assignButton.click();
+
+    await oeqRoot.locator('.ooc-chain-step', { hasText: 'Owner' }).locator('.oeq-owner-DEMO_OPS', { hasText: 'Demo Ops' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1003' }).first().locator('.oeq-owner-DEMO_OPS').waitFor({ state: 'visible', timeout: 5_000 });
+
+    if ((await page.locator('.ooc-event-item').count()) !== 1) {
+      throw new Error(`expected exactly 1 event after assigning an owner, found ${await page.locator('.ooc-event-item').count()}`);
+    }
+    let oeqEvent = page.locator('.ooc-event-item').nth(0);
+    await oeqEvent.locator('.ooc-event-meta', { hasText: 'Assign owner' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqEvent.locator('.ooc-event-meta', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqEvent.locator('.ooc-event-meta', { hasText: 'EXC-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqEvent.locator('.ooc-event-meta', { hasText: 'DEMO_OPERATOR' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqEvent.locator('.ooc-event-meta', { hasText: 'LOCAL_PREVIEW_ONLY' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqEvent.locator('summary').click();
+    let oeqSnapshot = await oeqEvent.locator('pre').innerText();
+    for (const expected of ['"ownerRole": null', '"ownerRole": "DEMO_OPS"']) {
+      if (!oeqSnapshot.includes(expected)) throw new Error(`assign-owner event snapshot missing expected field ${expected}: ${oeqSnapshot}`);
+    }
+
+    // --- Sequence step 2: record a local retry attempt ---
+    await oeqRoot.locator('#oeq-retry-note').fill('Pinged the demo 3PL adapter to re-request fulfilment handoff.');
+    if (await retryButton.isDisabled()) throw new Error('record-retry button should enable once a non-empty note is entered');
+    await retryButton.click();
+
+    await oeqRoot.locator('.ooc-chain-step', { hasText: 'Status' }).locator('.oeq-status-RETRY_RECORDED').waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1003' }).first().locator('.oeq-status-RETRY_RECORDED').waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.ooc-section', { hasText: 'Last local attempt' }).locator('p', { hasText: 'SIMULATED_ONLY' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const afterRetryOpen = await exceptionSummaryValue('Open');
+    const afterRetryRetryRecorded = await exceptionSummaryValue('Retry recorded');
+    if (afterRetryOpen !== 2 || afterRetryRetryRecorded !== 1) {
+      throw new Error(`unexpected exception queue counters after recording a retry: open=${afterRetryOpen} retryRecorded=${afterRetryRetryRecorded}`);
+    }
+
+    // Sibling exception and sibling order remain unaffected by action against EXC-1003.
+    await sibling1007Row().locator('.oeq-status-OPEN').waitFor({ state: 'visible', timeout: 5_000 });
+    await sibling1001Row().locator('.ooc-chip.status-DELIVERED').waitFor({ state: 'visible', timeout: 5_000 });
+
+    if ((await page.locator('.ooc-event-item').count()) !== 2) {
+      throw new Error(`expected exactly 2 events after recording a retry, found ${await page.locator('.ooc-event-item').count()}`);
+    }
+    oeqEvent = page.locator('.ooc-event-item').nth(1);
+    await oeqEvent.locator('.ooc-event-meta', { hasText: 'Record retry attempt' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqEvent.locator('summary').click();
+    oeqSnapshot = await oeqEvent.locator('pre').innerText();
+    for (const expected of ['"status": "OPEN"', '"status": "RETRY_RECORDED"']) {
+      if (!oeqSnapshot.includes(expected)) throw new Error(`record-retry event snapshot missing expected field ${expected}: ${oeqSnapshot}`);
+    }
+
+    // --- Sequence step 3: mark reconciled (requires a non-empty reconciliation note) ---
+    if (!(await reconcileButton.isDisabled())) throw new Error('mark-reconciled button should remain disabled until a reconciliation note is entered');
+    await oeqRoot.locator('#oeq-reconcile-note').fill('Shipment re-dispatched and confirmed with demo customer; closing locally.');
+    if (await reconcileButton.isDisabled()) throw new Error('mark-reconciled button should enable once a non-empty reconciliation note is entered');
+    await reconcileButton.click();
+
+    await oeqRoot.locator('.ooc-chain-step', { hasText: 'Status' }).locator('.oeq-status-RECONCILED').waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.oeq-reconciled-banner', { hasText: 'Shipment re-dispatched and confirmed with demo customer; closing locally.' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const afterReconcileRetryRecorded = await exceptionSummaryValue('Retry recorded');
+    const afterReconcileReconciled = await exceptionSummaryValue('Reconciled');
+    if (afterReconcileRetryRecorded !== 0 || afterReconcileReconciled !== 1) {
+      throw new Error(`unexpected exception queue counters after reconciling: retryRecorded=${afterReconcileRetryRecorded} reconciled=${afterReconcileReconciled}`);
+    }
+
+    // A reconciled exception must not disappear silently: it stays visible in the list
+    // with its owner/status, and its full history (assign + retry + reconcile) is retained.
+    await oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1003' }).first().locator('.oeq-status-RECONCILED').waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1003' }).first().locator('.oeq-owner-DEMO_OPS').waitFor({ state: 'visible', timeout: 5_000 });
+    const historyItems = oeqRoot.locator('.ooc-section', { hasText: 'History' }).locator('.ooc-timeline li');
+    if ((await historyItems.count()) !== 3) {
+      throw new Error(`expected exactly 3 retained history entries after assign+retry+reconcile, found ${await historyItems.count()}`);
+    }
+    await oeqRoot.locator('.ooc-section', { hasText: 'History' }).locator('li', { hasText: 'SIMULATED_ONLY' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    // Actions are disabled on a reconciled (closed, retained) exception.
+    if (!(await assignButton.isDisabled())) throw new Error('assign-owner should be disabled once an exception is reconciled');
+    if (!(await retryButton.isDisabled())) throw new Error('record-retry should be disabled once an exception is reconciled');
+    if (!(await reconcileButton.isDisabled())) throw new Error('mark-reconciled should be disabled once an exception is reconciled');
+
+    // Sibling exception/order remain untouched after the full assign->retry->reconcile sequence.
+    await sibling1007Row().locator('.oeq-status-OPEN').waitFor({ state: 'visible', timeout: 5_000 });
+    await sibling1007Row().locator('.oeq-owner-UNASSIGNED').waitFor({ state: 'visible', timeout: 5_000 });
+    await sibling1001Row().locator('.ooc-chip.status-DELIVERED').waitFor({ state: 'visible', timeout: 5_000 });
+
+    if ((await page.locator('.ooc-event-item').count()) !== 3) {
+      throw new Error(`expected exactly 3 events after assign+retry+reconcile, found ${await page.locator('.ooc-event-item').count()}`);
+    }
+    oeqEvent = page.locator('.ooc-event-item').nth(2);
+    await oeqEvent.locator('.ooc-event-meta', { hasText: 'Mark reconciled' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqEvent.locator('summary').click();
+    oeqSnapshot = await oeqEvent.locator('pre').innerText();
+    for (const expected of ['"status": "RETRY_RECORDED"', '"status": "RECONCILED"', '"reconciliationNote": null', '"reconciliationNote": "Shipment re-dispatched']) {
+      if (!oeqSnapshot.includes(expected)) throw new Error(`reconcile event snapshot missing expected field ${expected}: ${oeqSnapshot}`);
+    }
+
+    // Reload: exception queue resets fully — owners/attempts/notes/history/events all cleared.
+    const exceptionReloadResponse = await page.reload({ waitUntil: 'networkidle', timeout: 30_000 });
+    if (!exceptionReloadResponse || !exceptionReloadResponse.ok()) {
+      throw new Error(`ops console reload (exception queue check) returned HTTP ${exceptionReloadResponse?.status() ?? 'no response'}`);
+    }
+    await page.locator('h1', { hasText: 'Owner Operations Console' }).waitFor({ state: 'visible', timeout: 10_000 });
+    if ((await page.locator('.ooc-event-item').count()) !== 0) {
+      throw new Error('ops console retained exception-queue local events across a reload');
+    }
+    const resetOpenExceptions = await exceptionSummaryValue('Open');
+    const resetRetryRecordedExceptions = await exceptionSummaryValue('Retry recorded');
+    const resetReconciledExceptions = await exceptionSummaryValue('Reconciled');
+    if (resetOpenExceptions !== 3 || resetRetryRecordedExceptions !== 0 || resetReconciledExceptions !== 0) {
+      throw new Error(
+        `exception queue did not reset to seeded counters on reload: open=${resetOpenExceptions} retryRecorded=${resetRetryRecordedExceptions} reconciled=${resetReconciledExceptions}`
+      );
+    }
+    await oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1003' }).first().locator('.oeq-status-OPEN').waitFor({ state: 'visible', timeout: 5_000 });
+    await oeqRoot.locator('.oeq-list-row', { hasText: 'EXC-1003' }).first().locator('.oeq-owner-UNASSIGNED').waitFor({ state: 'visible', timeout: 5_000 });
+
+    if (pageErrors.length > 0) throw new Error(`uncaught browser error(s) on exception queue: ${pageErrors.join(' | ')}`);
+    if (consoleErrors.length > 0) throw new Error(`console error(s) on exception queue: ${consoleErrors.join(' | ')}`);
+    if (requestFailures.length > 0) throw new Error(`failed network request(s) on exception queue: ${requestFailures.join(' | ')}`);
+
+    console.log(`PASS health ${scenario.name} exception queue: /internal/ops-console exception queue is derived from demo orders with exact order binding, NOT_CONNECTED/LOCAL_PREVIEW_ONLY/SIMULATED_ONLY labelled throughout; assign -> record retry -> reconcile all require valid owner/non-empty notes, apply atomically with consistent counters and sibling isolation, append exactly one event each with before/after snapshots; a reconciled exception stays visible with full retained history; reload clears events and restores the seeded queue; no runtime console errors or failed network requests`);
+
     // Re-select DEMO-ORD-1003 for the overflow screenshot below, matching prior behaviour.
     await page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1003' }).first().click();
     await page.locator('.ooc-detail h2', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });

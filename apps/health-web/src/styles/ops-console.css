@@ -343,6 +343,111 @@
   color: var(--hw-muted);
 }
 
+.oeq-root {
+  min-width: 0;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hw-border);
+}
+
+.oeq-root h2 {
+  font-size: 18px;
+}
+
+.oeq-list {
+  min-width: 0;
+  background: var(--hw-surface);
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-md);
+  padding: 8px;
+  overflow-x: auto;
+}
+
+.oeq-list-row {
+  grid-template-columns: 1fr 1fr 1.3fr 1fr 1fr 1fr;
+  min-width: 620px;
+}
+
+.oeq-empty {
+  font-size: 13px;
+  color: var(--hw-muted);
+  padding: 10px;
+}
+
+.oeq-owner-DEMO_OPS,
+.oeq-owner-DEMO_FINANCE,
+.oeq-owner-DEMO_SUPPORT {
+  background: var(--hw-teal-soft);
+  color: var(--hw-teal-dark);
+}
+
+.oeq-owner-UNASSIGNED {
+  background: #e4e7ee;
+  color: #3c4a66;
+}
+
+.oeq-status-OPEN {
+  background: #fbe0de;
+  color: #9a2f28;
+}
+
+.oeq-status-RETRY_RECORDED {
+  background: #fde7c0;
+  color: #8a5a06;
+}
+
+.oeq-status-RECONCILED {
+  background: var(--hw-teal-soft);
+  color: var(--hw-teal-dark);
+}
+
+.oeq-provider-ack,
+.oeq-scope {
+  background: #e4e7ee;
+  color: #3c4a66;
+}
+
+.oeq-reconciled-banner {
+  background: var(--hw-teal-soft);
+  border-radius: var(--hw-radius-md);
+  padding: 10px 12px;
+}
+
+.oeq-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.oeq-action-group label {
+  display: block;
+  font-size: 12px;
+  color: var(--hw-muted);
+  margin-bottom: 6px;
+}
+
+.oeq-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.oeq-action-row select,
+.oeq-action-row textarea {
+  flex: 1 1 220px;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--hw-border);
+  border-radius: var(--hw-radius-md);
+  background: var(--hw-bg);
+  color: var(--hw-text);
+  resize: vertical;
+}
+
 .ooc-events {
   min-width: 0;
   overflow-wrap: anywhere;

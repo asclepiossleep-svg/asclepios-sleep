@@ -339,11 +339,15 @@ export function snapshotOrder(order: DemoOrder): OrderLifecycleSnapshot {
 export interface DemoEvent {
   id: string;
   at: string;
-  action: DemoActionName;
+  action: DemoActionName | ExceptionActionName;
   orderId: string;
+  // Present only for exception-queue actions (requirement 4 of
+  // OWNER-OPS-DEMO-EXCEPTION-QUEUE-001) — order-lifecycle events leave this
+  // undefined so existing rendering/tests are unaffected.
+  exceptionId?: string;
   actor: typeof DEMO_OPERATOR_ACTOR;
-  before: OrderLifecycleSnapshot;
-  after: OrderLifecycleSnapshot;
+  before: OrderLifecycleSnapshot | ExceptionSnapshot;
+  after: OrderLifecycleSnapshot | ExceptionSnapshot;
   scope: typeof DEMO_EVENT_SCOPE;
 }
 
@@ -509,4 +513,250 @@ export function summarize(orders: DemoOrder[]): OrderSummary {
       o.supportStatus === "REFUND_PENDING"
   ).length;
   return { ordersNeedingAction, fulfilmentExceptions, returnsRefundsPending };
+}
+
+// --- Exception ownership & reconciliation queue (issue #26,
+// OWNER-OPS-DEMO-EXCEPTION-QUEUE-001 slice) ---------------------------------
+//
+// Every item here is DERIVED from the DemoOrder records above — no new
+// commercial fact is invented. Assigning an owner, recording a retry
+// attempt, or marking an exception reconciled never mutates the underlying
+// order/payment/inventory/fulfilment/delivery/entitlement/support fields;
+// this queue tracks ownership and reconciliation of an exception, it does
+// not re-run the OWNER-OPS-DEMO-STATE-INTEGRITY-001 lifecycle engine. No
+// provider/API is called: providerAck is always the literal NOT_CONNECTED,
+// and a recorded retry always carries the literal outcome SIMULATED_ONLY.
+
+export type ExceptionOwnerRole = "DEMO_OPS" | "DEMO_FINANCE" | "DEMO_SUPPORT";
+
+export const EXCEPTION_OWNER_ROLES: ExceptionOwnerRole[] = ["DEMO_OPS", "DEMO_FINANCE", "DEMO_SUPPORT"];
+
+export const EXCEPTION_OWNER_ROLE_LABELS: Record<ExceptionOwnerRole, string> = {
+  DEMO_OPS: "Demo Ops",
+  DEMO_FINANCE: "Demo Finance",
+  DEMO_SUPPORT: "Demo Support",
+};
+
+export type ExceptionStatus = "OPEN" | "RETRY_RECORDED" | "RECONCILED";
+
+export const EXCEPTION_STATUS_LABELS: Record<ExceptionStatus, string> = {
+  OPEN: "Open",
+  RETRY_RECORDED: "Retry recorded",
+  RECONCILED: "Reconciled",
+};
+
+export type ExceptionType =
+  | "FULFILMENT_EXCEPTION"
+  | "PAYMENT_FAILED"
+  | "RETURN_REQUESTED"
+  | "REFUND_PENDING"
+  | "SUPPORT_CASE_OPEN";
+
+export const EXCEPTION_TYPE_LABELS: Record<ExceptionType, string> = {
+  FULFILMENT_EXCEPTION: "Fulfilment exception",
+  PAYMENT_FAILED: "Payment failed",
+  RETURN_REQUESTED: "Return requested",
+  REFUND_PENDING: "Refund pending",
+  SUPPORT_CASE_OPEN: "Support case open",
+};
+
+export const PROVIDER_ACK_NOT_CONNECTED = "NOT_CONNECTED" as const;
+export const RETRY_OUTCOME_SIMULATED_ONLY = "SIMULATED_ONLY" as const;
+
+export type ExceptionActionName = "ASSIGN_OWNER" | "RECORD_RETRY" | "RECONCILE";
+
+export const EXCEPTION_ACTION_LABELS: Record<ExceptionActionName, string> = {
+  ASSIGN_OWNER: "Assign owner",
+  RECORD_RETRY: "Record retry attempt",
+  RECONCILE: "Mark reconciled",
+};
+
+export function actionLabel(action: DemoActionName | ExceptionActionName): string {
+  return (
+    (DEMO_ACTION_LABELS as Record<string, string>)[action] ??
+    (EXCEPTION_ACTION_LABELS as Record<string, string>)[action] ??
+    action
+  );
+}
+
+export interface ExceptionHistoryEntry {
+  at: string;
+  action: ExceptionActionName;
+  note: string;
+  ownerRole: ExceptionOwnerRole | null;
+}
+
+export interface DemoException {
+  id: string;
+  orderId: string;
+  type: ExceptionType;
+  ownerRole: ExceptionOwnerRole | null;
+  status: ExceptionStatus;
+  lastAttemptAt: string | null;
+  providerAck: typeof PROVIDER_ACK_NOT_CONNECTED;
+  nextActionNote: string;
+  scope: typeof DEMO_EVENT_SCOPE;
+  reconciliationNote: string | null;
+  history: ExceptionHistoryEntry[];
+}
+
+// Deterministic, priority-ordered derivation: at most one exception type per
+// order, read only from that order's own current demo fields.
+function deriveExceptionType(order: DemoOrder): ExceptionType | null {
+  if (order.fulfilmentStatus === "REJECTED" || order.deliveryStatus === "EXCEPTION") return "FULFILMENT_EXCEPTION";
+  if (order.paymentStatus === "FAILED") return "PAYMENT_FAILED";
+  if (order.supportStatus === "RETURN_REQUESTED") return "RETURN_REQUESTED";
+  if (order.supportStatus === "REFUND_PENDING") return "REFUND_PENDING";
+  if (order.supportStatus === "CASE_OPEN") return "SUPPORT_CASE_OPEN";
+  return null;
+}
+
+function deriveExceptionId(orderId: string): string {
+  return `EXC-${orderId.replace("DEMO-ORD-", "")}`;
+}
+
+function deriveNextActionNote(order: DemoOrder, type: ExceptionType): string {
+  if (type === "FULFILMENT_EXCEPTION" && order.deliveryNote) return order.deliveryNote;
+  if (order.supportNote) return order.supportNote;
+  return `Review ${EXCEPTION_TYPE_LABELS[type].toLowerCase()} for ${order.id} (local demo only).`;
+}
+
+// Builds the deterministic seed exception queue from the deterministic seed
+// orders. Called once per page load (component mount), so a browser reload
+// always restores exactly this state and discards every local owner
+// assignment, retry attempt, reconciliation note and history entry.
+export function buildExceptionQueue(orders: DemoOrder[]): DemoException[] {
+  const exceptions: DemoException[] = [];
+  for (const order of orders) {
+    const type = deriveExceptionType(order);
+    if (!type) continue;
+    exceptions.push({
+      id: deriveExceptionId(order.id),
+      orderId: order.id,
+      type,
+      ownerRole: null,
+      status: "OPEN",
+      lastAttemptAt: null,
+      providerAck: PROVIDER_ACK_NOT_CONNECTED,
+      nextActionNote: deriveNextActionNote(order, type),
+      scope: DEMO_EVENT_SCOPE,
+      reconciliationNote: null,
+      history: [],
+    });
+  }
+  return exceptions;
+}
+
+export interface ExceptionQueueSummary {
+  open: number;
+  retryRecorded: number;
+  reconciled: number;
+}
+
+export function summarizeExceptions(exceptions: DemoException[]): ExceptionQueueSummary {
+  return {
+    open: exceptions.filter((e) => e.status === "OPEN").length,
+    retryRecorded: exceptions.filter((e) => e.status === "RETRY_RECORDED").length,
+    reconciled: exceptions.filter((e) => e.status === "RECONCILED").length,
+  };
+}
+
+export interface ExceptionSnapshot {
+  ownerRole: ExceptionOwnerRole | null;
+  status: ExceptionStatus;
+  lastAttemptAt: string | null;
+  reconciliationNote: string | null;
+}
+
+export function snapshotException(exc: DemoException): ExceptionSnapshot {
+  return {
+    ownerRole: exc.ownerRole,
+    status: exc.status,
+    lastAttemptAt: exc.lastAttemptAt,
+    reconciliationNote: exc.reconciliationNote,
+  };
+}
+
+export type ExceptionActionInput =
+  | { action: "ASSIGN_OWNER"; ownerRole: ExceptionOwnerRole }
+  | { action: "RECORD_RETRY"; note: string }
+  | { action: "RECONCILE"; note: string };
+
+// A reconciled exception is a closed, retained record (requirement 6 — it
+// must stay visible with its note/owner/timestamps/history, but is no
+// longer mutable). Retry/reconcile both require a non-empty operator note;
+// assign requires one of the exact three demo owner roles.
+export function canApplyExceptionAction(exc: DemoException, input: ExceptionActionInput): boolean {
+  if (exc.status === "RECONCILED") return false;
+  if (input.action === "ASSIGN_OWNER") return EXCEPTION_OWNER_ROLES.includes(input.ownerRole);
+  if (input.action === "RECORD_RETRY") return input.note.trim().length > 0;
+  return input.note.trim().length > 0;
+}
+
+function applyExceptionTransition(exc: DemoException, input: ExceptionActionInput, timestamp: string): DemoException {
+  if (input.action === "ASSIGN_OWNER") {
+    return { ...exc, ownerRole: input.ownerRole };
+  }
+  if (input.action === "RECORD_RETRY") {
+    return { ...exc, status: "RETRY_RECORDED", lastAttemptAt: timestamp };
+  }
+  return { ...exc, status: "RECONCILED", reconciliationNote: input.note.trim() };
+}
+
+function exceptionHistoryNote(input: ExceptionActionInput, timestamp: string): string {
+  if (input.action === "ASSIGN_OWNER") {
+    return `Assigned to ${EXCEPTION_OWNER_ROLE_LABELS[input.ownerRole]} (local only, ${timestamp}).`;
+  }
+  if (input.action === "RECORD_RETRY") {
+    return `Retry attempt recorded (provider ${PROVIDER_ACK_NOT_CONNECTED}, outcome ${RETRY_OUTCOME_SIMULATED_ONLY}, local only): ${input.note.trim()}`;
+  }
+  return `Reconciled (local only): ${input.note.trim()}`;
+}
+
+/**
+ * Apply one centralised exception-queue action (assign/change owner, record
+ * a local retry attempt, or mark reconciled), returning the updated
+ * exceptions array plus the single structured event appended to the
+ * existing shared timeline (or null if the action was not eligible/valid —
+ * callers must not apply disabled actions, but this guard keeps the engine
+ * itself safe either way).
+ */
+export function applyExceptionAction(
+  exceptions: DemoException[],
+  exceptionId: string,
+  input: ExceptionActionInput
+): { exceptions: DemoException[]; event: DemoEvent | null } {
+  const target = exceptions.find((e) => e.id === exceptionId);
+  if (!target) return { exceptions, event: null };
+  if (!canApplyExceptionAction(target, input)) return { exceptions, event: null };
+
+  const timestamp = new Date().toISOString();
+  const before = snapshotException(target);
+  const nextException = applyExceptionTransition(target, input, timestamp);
+  const after = snapshotException(nextException);
+
+  const historyEntry: ExceptionHistoryEntry = {
+    at: timestamp,
+    action: input.action,
+    note: exceptionHistoryNote(input, timestamp),
+    ownerRole: nextException.ownerRole,
+  };
+  const finalException: DemoException = { ...nextException, history: [...nextException.history, historyEntry] };
+
+  const event: DemoEvent = {
+    id: generateEventId(),
+    at: timestamp,
+    action: input.action,
+    orderId: target.orderId,
+    exceptionId: target.id,
+    actor: DEMO_OPERATOR_ACTOR,
+    before,
+    after,
+    scope: DEMO_EVENT_SCOPE,
+  };
+
+  return {
+    exceptions: exceptions.map((e) => (e.id === exceptionId ? finalException : e)),
+    event,
+  };
 }
