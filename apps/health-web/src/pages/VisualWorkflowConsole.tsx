@@ -81,12 +81,17 @@ export default function VisualWorkflowConsole() {
   const selected = useMemo(() => versions.find((v) => v.id === selectedId) ?? versions[0], [versions, selectedId]);
 
   // A pending owner review note is scoped to the version it was written for.
-  // Clearing it deterministically on every selection change prevents a note
-  // drafted for version A from ever enabling or populating a review action
-  // committed against a different selected version B.
+  // selectVersion() below clears it in the same update as changing
+  // selectedId so a new version can never render with another version's
+  // note; this effect is defense-in-depth only, not the correctness path.
   useEffect(() => {
     setReviewNote("");
   }, [selectedId]);
+
+  function selectVersion(id: string) {
+    setReviewNote("");
+    setSelectedId(id);
+  }
 
   const comparisonTarget = useMemo(
     () => (selected.comparisonTargetId ? versions.find((v) => v.id === selected.comparisonTargetId) ?? null : null),
@@ -124,7 +129,7 @@ export default function VisualWorkflowConsole() {
       reviewStatus: `Draft — created locally from ${selected.id}, not yet submitted for owner review`,
     };
     setVersions((prev) => [...prev, draft]);
-    setSelectedId(newId);
+    selectVersion(newId);
     setLog((prev) =>
       [{ at: timestamp, message: `Created next DRAFT version ${newId} from ${selected.id} (local only)` }, ...prev].slice(0, 20)
     );
@@ -215,7 +220,7 @@ export default function VisualWorkflowConsole() {
                   key={v.id}
                   type="button"
                   className={`vwc-list-item ${v.id === selected.id ? "is-selected" : ""}`.trim()}
-                  onClick={() => setSelectedId(v.id)}
+                  onClick={() => selectVersion(v.id)}
                 >
                   <span className="vwc-list-item-label">{v.versionLabel}</span>
                   <span className={`vwc-badge status-${v.status}`}>{STATUS_LABELS[v.status]}</span>
