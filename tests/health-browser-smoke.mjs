@@ -202,7 +202,7 @@ for (const scenario of scenarios) {
     // Committing a review action must change only the exact selected version
     // id — every sibling version, page family, and all three legacy
     // REFERENCE_ONLY seed records must be left byte-for-byte unchanged.
-    const referenceOnlyBadgeCount = await page.locator('.vwc-badge', { hasText: 'Reference only' }).count();
+    const referenceOnlyBadgeCount = await page.locator('.vwc-list-item .vwc-badge', { hasText: 'Reference only' }).count();
     if (referenceOnlyBadgeCount !== 3) {
       throw new Error(`expected exactly 3 untouched REFERENCE_ONLY seed records, found ${referenceOnlyBadgeCount} "Reference only" badges`);
     }
@@ -381,7 +381,7 @@ for (const scenario of scenarios) {
     if (homeV1BadgeAfterReload !== 'Reference only') {
       throw new Error(`expected a legacy reference seed version to read "Reference only" after reload, found "${homeV1BadgeAfterReload}"`);
     }
-    const referenceOnlyBadgeCountAfterReload = await page.locator('.vwc-badge', { hasText: 'Reference only' }).count();
+    const referenceOnlyBadgeCountAfterReload = await page.locator('.vwc-list-item .vwc-badge', { hasText: 'Reference only' }).count();
     if (referenceOnlyBadgeCountAfterReload !== 3) {
       throw new Error(`expected exactly 3 REFERENCE_ONLY seed records after reload, found ${referenceOnlyBadgeCountAfterReload}`);
     }
