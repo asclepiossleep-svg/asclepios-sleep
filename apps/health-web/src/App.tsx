@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import Learn from "./pages/Learn";
+import VisualWorkflowConsole from "./pages/VisualWorkflowConsole";
 import { useLocale } from "./i18n/useLocale";
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/products" element={<Products />} />
       <Route path="/learn" element={<Learn />} />
+      <Route path="/internal/visual-console" element={<VisualWorkflowConsole />} />
     </Routes>
   );
 }
