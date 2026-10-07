@@ -582,6 +582,63 @@ for (const scenario of scenarios) {
     console.log(`PASS health ${scenario.name} visual console iteration brief creation: "Create iteration brief" is disabled until objective/required changes are filled in, defaults to ITERATION_BRIEF_DRAFT, and binds the exact selected version id (products-v2-ready) and comparison target id (products-v1-reference)`);
 
     const createDraftFromBriefBtn = page.locator('.vwc-action-btn.create-draft-from-brief');
+
+    // Cross-page lineage-integrity negative path (issue #131 bounded
+    // correction): after selecting the Products iteration brief above,
+    // switch the currently selected version to a Home version and prove
+    // "Create next DRAFT from brief" still cannot create a Home-labelled
+    // draft carrying the brief's Products parent lineage.
+    await homeV2DraftItem.click();
+    await page.locator('.vwc-detail-header .vwc-version-id', { hasText: 'home-v2-draft' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const homeItemCountBeforeCrossPageAttempt = await page
+      .locator('.vwc-list-group', { hasText: 'Health — Home' })
+      .locator('.vwc-list-item')
+      .count();
+    const productsItemCountBeforeCrossPageAttempt = await page
+      .locator('.vwc-list-group', { hasText: 'Health — Products' })
+      .locator('.vwc-list-item')
+      .count();
+
+    if (await createDraftFromBriefBtn.isDisabled()) {
+      throw new Error('expected "Create next DRAFT from brief" to remain enabled after switching to a different page while a Products brief stays selected');
+    }
+    await createDraftFromBriefBtn.click();
+
+    const crossPageDraftItem = page.locator('.vwc-list-item.is-selected');
+    await crossPageDraftItem.waitFor({ state: 'visible', timeout: 5_000 });
+    const crossPageDraftVersionId = (await page.locator('.vwc-detail-header .vwc-version-id').innerText()).replace('version id:', '').trim();
+    if (!crossPageDraftVersionId.startsWith('products-')) {
+      throw new Error(`expected the brief-derived draft to carry the brief's own Products page lineage even though a Home version was selected, got id "${crossPageDraftVersionId}"`);
+    }
+
+    const homeItemCountAfterCrossPageAttempt = await page
+      .locator('.vwc-list-group', { hasText: 'Health — Home' })
+      .locator('.vwc-list-item')
+      .count();
+    if (homeItemCountAfterCrossPageAttempt !== homeItemCountBeforeCrossPageAttempt) {
+      throw new Error('expected "Create next DRAFT from brief" to create zero new Home-page versions while a Products brief was selected');
+    }
+    const productsItemCountAfterCrossPageAttempt = await page
+      .locator('.vwc-list-group', { hasText: 'Health — Products' })
+      .locator('.vwc-list-item')
+      .count();
+    if (productsItemCountAfterCrossPageAttempt !== productsItemCountBeforeCrossPageAttempt + 1) {
+      throw new Error("expected exactly one new Products-page version to be created by \"Create next DRAFT from brief\", carrying the brief's own Products parent lineage");
+    }
+
+    const crossPageTargetColumn = page.locator('.vwc-compare-section .vwc-compare-column', { hasText: 'Comparison target' });
+    await crossPageTargetColumn.locator('.vwc-version-id', { hasText: 'products-v2-ready' }).waitFor({ state: 'visible', timeout: 5_000 });
+    const crossPageLineagePanel = page.locator('.vwc-iteration-brief-lineage');
+    await crossPageLineagePanel.locator('.vwc-version-id', { hasText: newBriefId }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    console.log(`PASS health ${scenario.name} visual console cross-page brief lineage guard: switching to home-v2-draft while Products iteration brief ${newBriefId} stayed selected and clicking "Create next DRAFT from brief" created version ${crossPageDraftVersionId} under the Products page with parent/comparison target products-v2-ready, not a Home-labelled draft with a Products parent`);
+
+    // Re-select the brief's own base version to prove the ordinary
+    // same-version brief→DRAFT path still succeeds.
+    await productsV2ReadyItem.click();
+    await page.locator('.vwc-detail-header .vwc-version-id', { hasText: 'products-v2-ready' }).waitFor({ state: 'visible', timeout: 5_000 });
+
     if (await createDraftFromBriefBtn.isDisabled()) {
       throw new Error('expected "Create next DRAFT from brief" to be enabled once an iteration brief is selected');
     }

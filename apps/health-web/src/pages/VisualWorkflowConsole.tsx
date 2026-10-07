@@ -292,23 +292,30 @@ export default function VisualWorkflowConsole() {
 
   function createDraftFromBrief() {
     if (!selectedBrief) return;
+    // Bind creation entirely to the brief's own exact base version — never
+    // to whatever version/page happens to be currently selected. Without
+    // this, switching the selected version/page after picking a brief (but
+    // before clicking this action) could label the new draft under the
+    // wrong page while still carrying the brief's original parent lineage.
+    const briefBaseVersion = versions.find((v) => v.id === selectedBrief.selectedVersionId);
+    if (!briefBaseVersion) return;
     const n = draftCounterRef.current;
     draftCounterRef.current = n + 1;
     const timestamp = new Date().toISOString();
-    const newId = `${selected.pageId}-brief-draft-session-${n}`;
+    const newId = `${briefBaseVersion.pageId}-brief-draft-session-${n}`;
     // Status is always DRAFT regardless of the brief's base/parent version
     // status — never inherits APPROVED/READY_FOR_REVIEW. parentVersionId and
     // comparisonTargetId are both set to the brief's exact base version id,
     // and sourceId carries the brief's own source-lineage snapshot.
     const draft: VisualVersion = {
       id: newId,
-      pageId: selected.pageId,
+      pageId: briefBaseVersion.pageId,
       versionLabel: `New DRAFT ${n} (from brief ${selectedBrief.briefId})`,
       status: "DRAFT",
       createdAt: timestamp,
       designNotes:
         "Editable local draft note — describe what changed from the parent version per the linked iteration brief. This text only exists in this browser tab and resets on reload.",
-      sources: [...selected.sources],
+      sources: [...briefBaseVersion.sources],
       sourceId: selectedBrief.sourceId,
       comparisonTargetId: selectedBrief.selectedVersionId,
       parentVersionId: selectedBrief.selectedVersionId,
