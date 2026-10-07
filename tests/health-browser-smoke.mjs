@@ -356,14 +356,55 @@ for (const scenario of scenarios) {
       if (!oeqSnapshot.includes(expected)) throw new Error(`record-retry event snapshot missing expected field ${expected}: ${oeqSnapshot}`);
     }
 
-    // --- Sequence step 3: mark reconciled (requires a non-empty reconciliation note) ---
-    if (!(await reconcileButton.isDisabled())) throw new Error('mark-reconciled button should remain disabled until a reconciliation note is entered');
+    // --- Sequence step 3: RECONCILE must stay disabled/no-op while source
+    // order DEMO-ORD-1003 still carries the condition that created EXC-1003
+    // (OWNER-OPS-DEMO-EXCEPTION-QUEUE-001 cross-layer guard). A non-empty
+    // note alone must not be enough — this is the exact defect the guard
+    // closes: the queue and the live order lifecycle are independent state
+    // machines, and closure of one must not outrun the truth of the other.
     await oeqRoot.locator('#oeq-reconcile-note').fill('Shipment re-dispatched and confirmed with demo customer; closing locally.');
-    if (await reconcileButton.isDisabled()) throw new Error('mark-reconciled button should enable once a non-empty reconciliation note is entered');
+    await page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1003' }).first().click();
+    await page.locator('.ooc-detail h2', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Order' }).locator('.ooc-chip.status-ON_HOLD').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Fulfilment' }).locator('.ooc-chip.fulfilment-REJECTED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Delivery' }).locator('.ooc-chip.delivery-EXCEPTION').waitFor({ state: 'visible', timeout: 5_000 });
+    if (!(await reconcileButton.isDisabled())) {
+      throw new Error('mark-reconciled should stay disabled while source order DEMO-ORD-1003 is still ON_HOLD/REJECTED/EXCEPTION, even with a non-empty note');
+    }
+    await oeqRoot.locator('.oeq-action-hint', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    const blockedOpen = await exceptionSummaryValue('Open');
+    const blockedRetryRecorded = await exceptionSummaryValue('Retry recorded');
+    const blockedReconciled = await exceptionSummaryValue('Reconciled');
+    if (blockedOpen !== 2 || blockedRetryRecorded !== 1 || blockedReconciled !== 0) {
+      throw new Error(`exception queue counters changed while reconcile was blocked: open=${blockedOpen} retryRecorded=${blockedRetryRecorded} reconciled=${blockedReconciled}`);
+    }
+    if ((await page.locator('.ooc-event-item').count()) !== 2) {
+      throw new Error(`expected exactly 2 events while reconcile is blocked, found ${await page.locator('.ooc-event-item').count()}`);
+    }
+
+    // --- Resolve the existing fulfilment lifecycle action for DEMO-ORD-1003 ---
+    await page.locator('.ooc-action-btn', { hasText: 'Resolve fulfilment exception' }).click();
+    await page.locator('.ooc-chain-step', { hasText: 'Order' }).locator('.ooc-chip.status-DISPATCHED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Fulfilment' }).locator('.ooc-chip.fulfilment-DISPATCHED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Delivery' }).locator('.ooc-chip.delivery-IN_TRANSIT').waitFor({ state: 'visible', timeout: 5_000 });
+
+    // --- Sequence step 4: reconciliation becomes available once the source
+    // condition is resolved, and the previously entered note is preserved ---
+    await oeqRoot.locator('.oeq-action-hint', { hasText: 'DEMO-ORD-1003' }).waitFor({ state: 'hidden', timeout: 5_000 });
+    if (await reconcileButton.isDisabled()) {
+      throw new Error('mark-reconciled should enable once source order DEMO-ORD-1003 no longer carries the exception condition');
+    }
     await reconcileButton.click();
 
     await oeqRoot.locator('.ooc-chain-step', { hasText: 'Status' }).locator('.oeq-status-RECONCILED').waitFor({ state: 'visible', timeout: 5_000 });
     await oeqRoot.locator('.oeq-reconciled-banner', { hasText: 'Shipment re-dispatched and confirmed with demo customer; closing locally.' }).waitFor({ state: 'visible', timeout: 5_000 });
+
+    // Reconciling the exception never rewrites the order itself — it stays
+    // exactly where the fulfilment-lifecycle action above left it.
+    await page.locator('.ooc-chain-step', { hasText: 'Order' }).locator('.ooc-chip.status-DISPATCHED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Fulfilment' }).locator('.ooc-chip.fulfilment-DISPATCHED').waitFor({ state: 'visible', timeout: 5_000 });
+    await page.locator('.ooc-chain-step', { hasText: 'Delivery' }).locator('.ooc-chip.delivery-IN_TRANSIT').waitFor({ state: 'visible', timeout: 5_000 });
 
     const afterReconcileRetryRecorded = await exceptionSummaryValue('Retry recorded');
     const afterReconcileReconciled = await exceptionSummaryValue('Reconciled');
@@ -391,10 +432,13 @@ for (const scenario of scenarios) {
     await sibling1007Row().locator('.oeq-owner-UNASSIGNED').waitFor({ state: 'visible', timeout: 5_000 });
     await sibling1001Row().locator('.ooc-chip.status-DELIVERED').waitFor({ state: 'visible', timeout: 5_000 });
 
-    if ((await page.locator('.ooc-event-item').count()) !== 3) {
-      throw new Error(`expected exactly 3 events after assign+retry+reconcile, found ${await page.locator('.ooc-event-item').count()}`);
+    // 4 events total: assign owner, record retry, the order-lifecycle
+    // "Resolve fulfilment exception" action that unblocked reconciliation,
+    // then mark reconciled.
+    if ((await page.locator('.ooc-event-item').count()) !== 4) {
+      throw new Error(`expected exactly 4 events after assign+retry+resolve-order+reconcile, found ${await page.locator('.ooc-event-item').count()}`);
     }
-    oeqEvent = page.locator('.ooc-event-item').nth(2);
+    oeqEvent = page.locator('.ooc-event-item').nth(3);
     await oeqEvent.locator('.ooc-event-meta', { hasText: 'Mark reconciled' }).waitFor({ state: 'visible', timeout: 5_000 });
     await oeqEvent.locator('summary').click();
     oeqSnapshot = await oeqEvent.locator('pre').innerText();
@@ -426,7 +470,7 @@ for (const scenario of scenarios) {
     if (consoleErrors.length > 0) throw new Error(`console error(s) on exception queue: ${consoleErrors.join(' | ')}`);
     if (requestFailures.length > 0) throw new Error(`failed network request(s) on exception queue: ${requestFailures.join(' | ')}`);
 
-    console.log(`PASS health ${scenario.name} exception queue: /internal/ops-console exception queue is derived from demo orders with exact order binding, NOT_CONNECTED/LOCAL_PREVIEW_ONLY/SIMULATED_ONLY labelled throughout; assign -> record retry -> reconcile all require valid owner/non-empty notes, apply atomically with consistent counters and sibling isolation, append exactly one event each with before/after snapshots; a reconciled exception stays visible with full retained history; reload clears events and restores the seeded queue; no runtime console errors or failed network requests`);
+    console.log(`PASS health ${scenario.name} exception queue: /internal/ops-console exception queue is derived from demo orders with exact order binding, NOT_CONNECTED/LOCAL_PREVIEW_ONLY/SIMULATED_ONLY labelled throughout; assign -> record retry all require valid owner/non-empty notes and apply atomically with consistent counters and sibling isolation; RECONCILE stays disabled/no-op while the source order still carries the condition that created the exception, and only becomes available once that order-lifecycle condition is resolved, after which the order is unchanged and the queue item is RECONCILED with full retained history; reload clears events and restores the seeded queue; no runtime console errors or failed network requests`);
 
     // Re-select DEMO-ORD-1003 for the overflow screenshot below, matching prior behaviour.
     await page.locator('.ooc-list-row', { hasText: 'DEMO-ORD-1003' }).first().click();

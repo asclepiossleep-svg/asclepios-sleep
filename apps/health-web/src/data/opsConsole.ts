@@ -615,6 +615,29 @@ function deriveExceptionId(orderId: string): string {
   return `EXC-${orderId.replace("DEMO-ORD-", "")}`;
 }
 
+// Mirrors the per-type predicates inside deriveExceptionType(), isolated so a
+// RECONCILE check can ask "does this exact condition still hold on the
+// order?" without re-deriving (and potentially reprioritising against) a
+// different exception type for the same order (OWNER-OPS-DEMO-EXCEPTION-
+// QUEUE-001 cross-layer guard).
+function isExceptionConditionOpen(order: DemoOrder, type: ExceptionType): boolean {
+  if (type === "FULFILMENT_EXCEPTION") return order.fulfilmentStatus === "REJECTED" || order.deliveryStatus === "EXCEPTION";
+  if (type === "PAYMENT_FAILED") return order.paymentStatus === "FAILED";
+  if (type === "RETURN_REQUESTED") return order.supportStatus === "RETURN_REQUESTED";
+  if (type === "REFUND_PENDING") return order.supportStatus === "REFUND_PENDING";
+  return order.supportStatus === "CASE_OPEN"; // SUPPORT_CASE_OPEN
+}
+
+// True while the live order still carries the condition that produced this
+// exception — i.e. reconciliation would be declaring a problem solved that
+// the order's own current lifecycle state says is still open. A missing
+// source order is treated as still-open (fail safe): reconciliation must
+// never be allowed to outrun an unresolvable cross-layer lookup.
+export function isExceptionSourceConditionOpen(exc: DemoException, sourceOrder: DemoOrder | undefined): boolean {
+  if (!sourceOrder) return true;
+  return isExceptionConditionOpen(sourceOrder, exc.type);
+}
+
 function deriveNextActionNote(order: DemoOrder, type: ExceptionType): string {
   if (type === "FULFILMENT_EXCEPTION" && order.deliveryNote) return order.deliveryNote;
   if (order.supportNote) return order.supportNote;
@@ -685,12 +708,23 @@ export type ExceptionActionInput =
 // A reconciled exception is a closed, retained record (requirement 6 — it
 // must stay visible with its note/owner/timestamps/history, but is no
 // longer mutable). Retry/reconcile both require a non-empty operator note;
-// assign requires one of the exact three demo owner roles.
-export function canApplyExceptionAction(exc: DemoException, input: ExceptionActionInput): boolean {
+// assign requires one of the exact three demo owner roles. RECONCILE is
+// additionally gated on the source order: the queue and the live order
+// lifecycle are independent state machines, so closing the queue item must
+// not be allowed while the order itself still shows the condition that
+// created the exception (OWNER-OPS-DEMO-EXCEPTION-QUEUE-001). Assign-owner
+// and record-retry stay available regardless, so ownership/retry tracking
+// is never blocked by the source condition remaining open.
+export function canApplyExceptionAction(
+  exc: DemoException,
+  input: ExceptionActionInput,
+  sourceOrder?: DemoOrder
+): boolean {
   if (exc.status === "RECONCILED") return false;
   if (input.action === "ASSIGN_OWNER") return EXCEPTION_OWNER_ROLES.includes(input.ownerRole);
   if (input.action === "RECORD_RETRY") return input.note.trim().length > 0;
-  return input.note.trim().length > 0;
+  if (input.note.trim().length === 0) return false;
+  return !isExceptionSourceConditionOpen(exc, sourceOrder);
 }
 
 function applyExceptionTransition(exc: DemoException, input: ExceptionActionInput, timestamp: string): DemoException {
@@ -719,16 +753,20 @@ function exceptionHistoryNote(input: ExceptionActionInput, timestamp: string): s
  * exceptions array plus the single structured event appended to the
  * existing shared timeline (or null if the action was not eligible/valid —
  * callers must not apply disabled actions, but this guard keeps the engine
- * itself safe either way).
+ * itself safe either way). `orders` is the live order list, consulted only
+ * to re-check the RECONCILE source-condition guard against each exception's
+ * own orderId — it is never mutated here.
  */
 export function applyExceptionAction(
   exceptions: DemoException[],
+  orders: DemoOrder[],
   exceptionId: string,
   input: ExceptionActionInput
 ): { exceptions: DemoException[]; event: DemoEvent | null } {
   const target = exceptions.find((e) => e.id === exceptionId);
   if (!target) return { exceptions, event: null };
-  if (!canApplyExceptionAction(target, input)) return { exceptions, event: null };
+  const sourceOrder = orders.find((o) => o.id === target.orderId);
+  if (!canApplyExceptionAction(target, input, sourceOrder)) return { exceptions, event: null };
 
   const timestamp = new Date().toISOString();
   const before = snapshotException(target);

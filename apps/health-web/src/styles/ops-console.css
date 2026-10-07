@@ -434,6 +434,12 @@
   align-items: flex-start;
 }
 
+.oeq-action-hint {
+  font-size: 13px;
+  color: var(--hw-muted);
+  margin: 6px 0 0;
+}
+
 .oeq-action-row select,
 .oeq-action-row textarea {
   flex: 1 1 220px;

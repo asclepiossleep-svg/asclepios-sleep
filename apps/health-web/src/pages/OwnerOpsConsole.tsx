@@ -22,6 +22,7 @@ import {
   ExceptionOwnerRole,
   FULFILMENT_STATUS_LABELS,
   INVENTORY_STATUS_LABELS,
+  isExceptionSourceConditionOpen,
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_LABELS,
   PROVIDER_ACK_NOT_CONNECTED,
@@ -51,6 +52,14 @@ export default function OwnerOpsConsole() {
     [exceptions, selectedExceptionId]
   );
   const exceptionSummary = useMemo(() => summarizeExceptions(exceptions), [exceptions]);
+  const selectedExceptionSourceOrder = useMemo(
+    () => (selectedException ? orders.find((o) => o.id === selectedException.orderId) : undefined),
+    [orders, selectedException]
+  );
+  const reconcileBlockedBySourceCondition =
+    selectedException != null &&
+    selectedException.status !== "RECONCILED" &&
+    isExceptionSourceConditionOpen(selectedException, selectedExceptionSourceOrder);
 
   function runAction(action: DemoActionName) {
     const { orders: nextOrders, event } = applyDemoAction(orders, selected.id, action);
@@ -68,7 +77,7 @@ export default function OwnerOpsConsole() {
 
   function runAssignOwner() {
     if (!selectedException || draftOwnerRole === "") return;
-    const { exceptions: next, event } = applyExceptionAction(exceptions, selectedException.id, {
+    const { exceptions: next, event } = applyExceptionAction(exceptions, orders, selectedException.id, {
       action: "ASSIGN_OWNER",
       ownerRole: draftOwnerRole,
     });
@@ -79,7 +88,7 @@ export default function OwnerOpsConsole() {
 
   function runRecordRetry() {
     if (!selectedException) return;
-    const { exceptions: next, event } = applyExceptionAction(exceptions, selectedException.id, {
+    const { exceptions: next, event } = applyExceptionAction(exceptions, orders, selectedException.id, {
       action: "RECORD_RETRY",
       note: retryNote,
     });
@@ -91,7 +100,7 @@ export default function OwnerOpsConsole() {
 
   function runReconcile() {
     if (!selectedException) return;
-    const { exceptions: next, event } = applyExceptionAction(exceptions, selectedException.id, {
+    const { exceptions: next, event } = applyExceptionAction(exceptions, orders, selectedException.id, {
       action: "RECONCILE",
       note: reconcileNote,
     });
@@ -440,12 +449,24 @@ export default function OwnerOpsConsole() {
                       <button
                         type="button"
                         className="ooc-action-btn"
-                        disabled={!canApplyExceptionAction(selectedException, { action: "RECONCILE", note: reconcileNote })}
+                        disabled={
+                          !canApplyExceptionAction(
+                            selectedException,
+                            { action: "RECONCILE", note: reconcileNote },
+                            selectedExceptionSourceOrder
+                          )
+                        }
                         onClick={runReconcile}
                       >
                         Mark reconciled
                       </button>
                     </div>
+                    {reconcileBlockedBySourceCondition && (
+                      <p className="oeq-action-hint">
+                        Reconciliation is disabled: order <span className="ooc-list-id">{selectedException.orderId}</span>{" "}
+                        still carries the condition that created this exception. Resolve it on the order first.
+                      </p>
+                    )}
                   </div>
                 </div>
 
