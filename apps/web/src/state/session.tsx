@@ -78,7 +78,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         loadPreferences();
       })
       .catch(() => {
-        setSessionToken(null);
+        // A network outage, API 5xx, or deployment interruption does not prove
+        // the stored token is invalid. api/client.ts already clears the token
+        // and emits SESSION_EXPIRED_EVENT for an authenticated HTTP 401.
+        // Preserve the token for a later retry/relaunch in all other cases.
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
