@@ -63,8 +63,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // (see api/client.ts) means we can restore the session instead of
     // dropping straight back to Welcome on every reload. GET /auth/session
     // both validates the token is still good and gives us the current user
-    // in one call; an expired/invalid token just clears it and falls
-    // through to the normal logged-out state.
+    // in one call; an authenticated 401 clears it (see the catch below) and
+    // falls through to the normal logged-out state, while a transient
+    // failure leaves the token in place for the next retry.
     if (!sessionState.token) {
       setLoading(false);
       return;
