@@ -1,5 +1,6 @@
 import { chromium, devices } from 'playwright';
 import fs from 'node:fs/promises';
+import { verifySessionRestoreErrorClassification } from './session-restore-smoke.mjs';
 
 const baseURL = process.env.BASE_URL || 'http://127.0.0.1:4173';
 const outputDir = 'artifacts/browser-smoke';
@@ -118,6 +119,13 @@ for (const scenario of scenarios) {
   const passed = await verifyScenario(scenario);
   if (!passed) failed = true;
 }
+
+// Session-restore error classification (#139): an already-saved token must
+// survive a transient /auth/session failure (5xx, network outage) and only
+// be cleared on an authenticated 401. Reuses this script's browser/output
+// directory; see session-restore-smoke.mjs for the case matrix.
+const sessionRestorePassed = await verifySessionRestoreErrorClassification(browser, baseURL, outputDir);
+if (!sessionRestorePassed) failed = true;
 
 await browser.close();
 if (failed) process.exit(1);

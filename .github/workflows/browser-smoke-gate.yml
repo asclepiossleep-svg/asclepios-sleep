@@ -61,11 +61,6 @@ jobs:
           BASE_URL: http://127.0.0.1:4173
         run: node tests/browser-smoke.mjs
 
-      - name: Verify session-restore error classification (401 vs 5xx vs network failure)
-        env:
-          BASE_URL: http://127.0.0.1:4173
-        run: node tests/session-restore-smoke.mjs
-
       - name: Start built Health web preview
         run: |
           nohup npm run preview --workspace=apps/health-web -- --host 127.0.0.1 --port 4174 > /tmp/asclepios-health-vite-preview.log 2>&1 &
@@ -95,7 +90,6 @@ jobs:
           name: browser-smoke-${{ github.run_id }}
           path: |
             artifacts/browser-smoke/
-            artifacts/session-restore-smoke/
             artifacts/health-browser-smoke/
           if-no-files-found: warn
           retention-days: 7

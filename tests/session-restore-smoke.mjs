@@ -1,22 +1,18 @@
 // Regression coverage for the session-restore error-classification fix
 // (apps/web/src/state/session.tsx): an already-saved token must only be
 // deleted on an authenticated 401, never on a transient failure (5xx or a
-// network outage) during the initial GET /auth/session restore call. This
-// drives the real built app in a real browser (desktop + iPhone profile),
-// intercepting /auth/session rather than asserting on source text or a
+// network outage) during the initial GET /auth/session restore call.
+// Exported for tests/browser-smoke.mjs, which drives the real built app in
+// a real browser (desktop + iPhone profile) via the existing smoke gate —
+// this intercepts /auth/session rather than asserting on source text or a
 // duplicated helper.
-import { chromium, devices } from 'playwright';
-import fs from 'node:fs/promises';
-
-const baseURL = process.env.BASE_URL || 'http://127.0.0.1:4173';
-const outputDir = 'artifacts/session-restore-smoke';
-await fs.mkdir(outputDir, { recursive: true });
+import { devices } from 'playwright';
 
 const TOKEN_KEY = 'asclepios.session.token';
 const SEED_TOKEN = 'smoke-test-seed-token';
 const SESSION_EXPIRED_EVENT = 'asclepios:session-expired';
 
-const scenarios = [
+const deviceScenarios = [
   { name: 'desktop', context: { viewport: { width: 1440, height: 900 } } },
   { name: 'mobile', context: devices['iPhone 13'] },
 ];
@@ -42,11 +38,8 @@ const cases = [
   },
 ];
 
-const browser = await chromium.launch();
-let failed = false;
-
-async function runCase(scenario, testCase) {
-  const label = `${scenario.name}-${testCase.name}`;
+async function runCase(browser, baseURL, outputDir, scenario, testCase) {
+  const label = `session-restore-${scenario.name}-${testCase.name}`;
   const context = await browser.newContext(scenario.context);
   const page = await context.newPage();
   const pageErrors = [];
@@ -100,12 +93,13 @@ async function runCase(scenario, testCase) {
   }
 }
 
-for (const scenario of scenarios) {
-  for (const testCase of cases) {
-    const passed = await runCase(scenario, testCase);
-    if (!passed) failed = true;
+export async function verifySessionRestoreErrorClassification(browser, baseURL, outputDir) {
+  let allPassed = true;
+  for (const scenario of deviceScenarios) {
+    for (const testCase of cases) {
+      const passed = await runCase(browser, baseURL, outputDir, scenario, testCase);
+      if (!passed) allPassed = false;
+    }
   }
+  return allPassed;
 }
-
-await browser.close();
-if (failed) process.exit(1);
