@@ -78,7 +78,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         loadPreferences();
       })
       .catch(() => {
-        setSessionToken(null);
+        // A 401 here already clears the token and fires SESSION_EXPIRED_EVENT
+        // inside client.ts (it carries a token, so that branch applies). Any
+        // other failure — network outage, a 5xx, a canceled deploy — must not
+        // delete a still-valid persisted login.
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
