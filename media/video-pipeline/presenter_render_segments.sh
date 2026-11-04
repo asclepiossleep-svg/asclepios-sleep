@@ -10,7 +10,8 @@
 set -euo pipefail
 W="${PRESENTER_WORK:?set PRESENTER_WORK}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-STILL="$W/studio/Claire_Lee_Studio_v05_Coffee_Closer_20261104.png"
+# PRESENTER_STILL overrides the still (e.g. the v05r1 retouched master, owner request 6644776676)
+STILL="${PRESENTER_STILL:-$W/studio/Claire_Lee_Studio_v05_Coffee_Closer_20261104.png}"
 PTS="795,202 882,194 840,260 807,290 880,286"
 BBOX="757,120,930,350"
 mkdir -p "$W/segments" "$W/motion" "$W/lipsync"
@@ -30,5 +31,6 @@ for TAG in "$@"; do
     "$W/en-lines/$TAG.wav" "$W/lipsync/studio_${TAG}_finished.mp4" --bbox "$BBOX" --breath-px 0
   python "$HERE/presenter_body_motion.py" "$W/lipsync/studio_${TAG}_finished.mp4" "$STILL" "$W/en-lines/$TAG.wav" \
     "$W/segments/$TAG.mp4"
+  [ -n "${PRESENTER_KEEP_MOTION:-}" ] || rm -rf "$W/motion/studio_$TAG"   # frames are large; segment is final
   echo "== $TAG: done $(date -u +%H:%M:%S)"
 done
