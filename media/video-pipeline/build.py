@@ -414,13 +414,34 @@ def card_clip(png: Path, dur: float, out: Path, res: tuple[int, int]):
        "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-r", str(FPS), str(out))
 
 
-def still_clip(img: Path, dur: float, out: Path, res: tuple[int, int]):
-    """Supplied still, original aspect ratio, fitted without cropping, no motion."""
+def still_clip(img: Path, dur: float, out: Path, res: tuple[int, int], focus=None):
+    """Supplied still, original aspect ratio, fitted without cropping.
+
+    focus=[cx, cy, scale] (owner-approved Proposal A): the still shows in full,
+    eases in toward the text area (cx, cy as fractions of the image), holds,
+    and eases back to the full frame before the transition. The source image
+    itself is never altered.
+    """
     W, H = res
     frames = max(2, int(round(dur * FPS)))
-    ff("-loop", "1", "-framerate", str(FPS), "-i", str(img), "-frames:v", str(frames), "-vf",
-       f"scale={W}:{H}:force_original_aspect_ratio=decrease:flags=lanczos,"
-       f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=white,format=yuv420p,setsar=1",
+    fit = (f"scale={W}:{H}:force_original_aspect_ratio=decrease:flags=lanczos,"
+           f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=white")
+    hold_full, ease_in, ease_out, tail = 0.8, 1.6, 1.4, XFADE + 0.3
+    if focus and dur >= hold_full + ease_in + ease_out + tail + 0.8:
+        cx, cy, zs = focus
+        b = dur - tail - ease_out
+        q_in = f"clip((on/{FPS}-{hold_full})/{ease_in},0,1)"
+        q_out = f"clip((on/{FPS}-{b:.3f})/{ease_out},0,1)"
+        sm = lambda q: f"({q})*({q})*(3-2*({q}))"
+        z = f"1+{zs - 1:.4f}*({sm(q_in)}-{sm(q_out)})"
+        U = 3  # oversample so slow moves stay smooth (zoompan snaps to whole pixels)
+        vf = (f"{fit},scale={W * U}:{H * U}:flags=lanczos,"
+              f"zoompan=z='{z}':x='clip({cx}*iw-iw/zoom/2,0,iw-iw/zoom)':"
+              f"y='clip({cy}*ih-ih/zoom/2,0,ih-ih/zoom)':d=1:s={W}x{H}:fps={FPS},"
+              f"format=yuv420p,setsar=1")
+    else:
+        vf = f"{fit},format=yuv420p,setsar=1"
+    ff("-loop", "1", "-framerate", str(FPS), "-i", str(img), "-frames:v", str(frames), "-vf", vf,
        "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-r", str(FPS), str(out))
 
 
@@ -505,7 +526,7 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
         dur = (nxt - start) + (XFADE if i + 1 < len(shots) else 0)
         mp4 = work / f"clip_{i:02d}_{res[1]}.mp4"
         if kind == "img":
-            still_clip(img_root / seg["image"], dur, mp4, res)
+            still_clip(img_root / seg["image"], dur, mp4, res, seg.get("focus"))
         else:
             png = work / f"card_{i:02d}.jpg"
             draw_card(kind, seg, project, png)

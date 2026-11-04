@@ -20,12 +20,22 @@
       "id": "01",
       "en": "",
       "hold": 4.0,
-      "image": "01_Brand_Opening_en.jpg"
+      "image": "01_Brand_Opening_en.jpg",
+      "focus": [
+        0.5,
+        0.43,
+        1.6
+      ]
     },
     {
       "id": "02",
       "image": "02_Why_Timing_Matters_en.jpg",
-      "en": "When we think about healthy ageing, it is not just a question of what we take. We also need to ask: when?"
+      "en": "When we think about healthy ageing, it is not just a question of what we take. We also need to ask: when?",
+      "focus": [
+        0.7,
+        0.34,
+        1.35
+      ]
     },
     {
       "id": "03",
@@ -35,7 +45,12 @@
     {
       "id": "04",
       "image": "04_Delayed_Lunch_en.jpg",
-      "en": "But when life gets busy, mealtimes keep changing. Lunch gets pushed back again."
+      "en": "But when life gets busy, mealtimes keep changing. Lunch gets pushed back again.",
+      "focus": [
+        0.7,
+        0.3,
+        1.35
+      ]
     },
     {
       "id": "05",
@@ -158,5 +173,6 @@
   },
   "caption_scale": 1.5,
   "caption_line_chars": 38,
-  "caption_font": "Inter SemiBold"
+  "caption_font": "Inter SemiBold",
+  "focus_note": "Proposal A approved by owner 2026-11-04: temporary ease-in toward text; originals unaltered; applied only to shots with a 'focus' entry"
 }
