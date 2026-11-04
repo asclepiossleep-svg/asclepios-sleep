@@ -1,16 +1,16 @@
 {
-  "file": "ASCLEPIOS_HEALTH_A02_EN_preview_full_360p.mp4",
-  "bytes": 5139548,
-  "sha256": "0feab33d4430b06ffe80ac7bd6da15d5548d640b0edb71002da132b3f9fb3625",
-  "duration_s": 185.52,
+  "file": "ASCLEPIOS_HEALTH_A02_EN_preview_28s_360p.mp4",
+  "bytes": 1109810,
+  "sha256": "fd3f97ae950c5010e85f1958ece75f6a71609198c5155adf1affb57cc0f29220",
+  "duration_s": 28.4,
   "resolution": "640x360",
   "fps": "25/1",
   "video_codec": "h264",
   "audio_codec": "aac",
-  "loudness_LUFS": -16.0,
+  "loudness_LUFS": -15.7,
   "true_peak_dBFS": -1.4,
-  "LRA_LU": 1.8,
-  "caption_cues_en": 51,
+  "LRA_LU": 2.6,
+  "caption_cues_en": 7,
   "caption_cues_zh_hk": 0,
   "max_caption_cps": 19.2,
   "checks": {
@@ -29,6 +29,6 @@
     "SUBSTITUTE voice: Kokoro TTS bf_emma (approved narration not supplied)",
     "music: generated ambient pad (original, no third-party rights)"
   ],
-  "script_status": "A02_Narration_By_Shot_EN.txt from Drive ASCLEPIOS_VIDEO_001_A02_HANDOFF (owner handoff 2026-11-04); NOT yet compared with ZIP v6 source",
+  "script_status": "A02_Narration_By_Shot_EN.txt + A01/A05/A08/A09 from Drive ASCLEPIOS_VIDEO_001_A02_HANDOFF (owner handoff 2026-11-04); narration verbatim; not compared with ZIP v6",
   "cost": "GBP 0 (local FFmpeg/Pillow/Kokoro on session CPU)"
 }

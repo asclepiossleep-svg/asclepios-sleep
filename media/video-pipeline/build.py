@@ -380,6 +380,16 @@ def card_clip(png: Path, dur: float, out: Path, res: tuple[int, int]):
        "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-r", str(FPS), str(out))
 
 
+def still_clip(img: Path, dur: float, out: Path, res: tuple[int, int]):
+    """Supplied still, original aspect ratio, fitted without cropping, no motion."""
+    W, H = res
+    frames = max(2, int(round(dur * FPS)))
+    ff("-loop", "1", "-framerate", str(FPS), "-i", str(img), "-frames:v", str(frames), "-vf",
+       f"scale={W}:{H}:force_original_aspect_ratio=decrease:flags=lanczos,"
+       f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=white,format=yuv420p,setsar=1",
+       "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-r", str(FPS), str(out))
+
+
 # ------------------------------------------------------------------- build
 def build(project_dir: Path, out_dir: Path, preview: float | None):
     project = json.loads((project_dir / "project.json").read_text(encoding="utf-8"))
@@ -420,20 +430,40 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
     if cues_zh:
         write_captions(cues_zh, out_dir / "captions_zh-HK", SUB_FONT_ZH, None)
 
-    # 5 visuals: title card over lead-in, one card per segment, end card on tail
-    shots = [("title", project.get("title_card", {}), 0.0)]
-    for seg, (a, _) in zip(segments, spans):
-        shots.append(("seg", seg, a))
-    shots.append(("end", project.get("end_card", {}), spans[-1][1] + 0.3))
+    # 5 visuals
+    images_dir = project.get("images_dir")
+    if images_dir:
+        # Supplied stills only: one per narrative ID, in order, no generated
+        # cards/text. Shot 1 starts at 0 (covers the music-only lead-in); the
+        # last still holds through the music tail.
+        img_root = Path(images_dir).expanduser()
+        if not img_root.is_absolute():
+            img_root = (project_dir / img_root).resolve()
+        import os
+        if os.environ.get("ASCLEPIOS_IMAGES_DIR"):
+            img_root = Path(os.environ["ASCLEPIOS_IMAGES_DIR"])
+        missing = [s["image"] for s in segments if not (img_root / s["image"]).exists()]
+        if missing:
+            raise SystemExit("STOP - supplied images not readable: " + ", ".join(missing))
+        shots = [("img", seg, 0.0 if i == 0 else a) for i, (seg, (a, _)) in enumerate(zip(segments, spans))]
+    else:
+        # generated title card over lead-in, one card per segment, end card on tail
+        shots = [("title", project.get("title_card", {}), 0.0)]
+        for seg, (a, _) in zip(segments, spans):
+            shots.append(("seg", seg, a))
+        shots.append(("end", project.get("end_card", {}), spans[-1][1] + 0.3))
     shots = [s for s in shots if s[2] < total]
     clips = []
     for i, (kind, seg, start) in enumerate(shots):
         nxt = shots[i + 1][2] if i + 1 < len(shots) else total
         dur = (nxt - start) + (XFADE if i + 1 < len(shots) else 0)
-        png = work / f"card_{i:02d}.jpg"
-        draw_card(kind, seg, project, png)
         mp4 = work / f"clip_{i:02d}_{res[1]}.mp4"
-        card_clip(png, dur, mp4, res)
+        if kind == "img":
+            still_clip(img_root / seg["image"], dur, mp4, res)
+        else:
+            png = work / f"card_{i:02d}.jpg"
+            draw_card(kind, seg, project, png)
+            card_clip(png, dur, mp4, res)
         clips.append((mp4, dur, start))
     # crossfade chain
     if len(clips) == 1:
