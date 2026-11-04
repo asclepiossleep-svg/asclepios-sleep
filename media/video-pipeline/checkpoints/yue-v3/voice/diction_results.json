@@ -1,0 +1,40 @@
+[
+  {
+    "tag": "V1_sft_tc",
+    "text": "大家好，我係 Claire Lee，大家嘅健康科普主持人。",
+    "file": "V1_sft_tc.wav",
+    "render_s": 22.5,
+    "duration_s": 3.96,
+    "asr_yue": "大家好,我KC-C-C-C-L-E-L-Y,大家的健康科目主持人,",
+    "cer_vs_intended": 0.583
+  },
+  {
+    "tag": "V2_sft_sc",
+    "text": "大家好，我系 Claire Lee，大家嘅健康科普主持人。",
+    "file": "V2_sft_sc.wav",
+    "render_s": 21.9,
+    "duration_s": 3.72,
+    "asr_yue": "大家好,我是Kai Ali,大家的健康黑普主持人。",
+    "cer_vs_intended": 0.292
+  },
+  {
+    "tag": "V3_cv2_instruct",
+    "text": "大家好，我系 Claire Lee，大家嘅健康科普主持人。",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "file": "V3_cv2_instruct.wav",
+    "render_s": 24.7,
+    "duration_s": 5.04,
+    "asr_yue": "大家好,我是Claire Lee,大家的健康科普主持人。",
+    "cer_vs_intended": 0.0
+  },
+  {
+    "tag": "V4_cv2_split_name",
+    "text": "大家好，我系 | <|en|>Claire Lee. | 大家嘅健康科普主持人。",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "file": "V4_cv2_split_name.wav",
+    "render_s": 33.9,
+    "duration_s": 7.3,
+    "asr_yue": "大家好,我是Claire Lee,大家的健康科普主持人。",
+    "cer_vs_intended": 0.0
+  }
+]
