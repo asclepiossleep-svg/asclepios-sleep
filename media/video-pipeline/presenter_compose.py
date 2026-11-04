@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Compose the Claire Lee lip-sync test into a 1280x720 review MP4.
 
-Pale grey-blue background, presenter centred (chest-up), "AI 生成主持人"
-label, Cantonese captions burned in below the face (never over the mouth),
-no music. Also writes the SRT next to the MP4.
+Pale grey-blue background, presenter centred with both shoulders in frame,
+captions burned in below the face (never over the mouth), no music. Optional
+logo card (opening/closing pages only) and optional label (off by default). Also writes the SRT next to the MP4.
 
     python3 presenter_compose.py <talk_raw.mp4> <dry.wav> <out.mp4> "<caption text>" [audio_src.mp4]
 """
@@ -53,7 +53,7 @@ def _logo_card(logo: Path, card: Path, height: int = 132, pad: int = 10):
 
 
 def main(raw: Path, wav: Path, out: Path, text: str, audio_src: Path | None = None,
-         logo: Path | None = None, lang: str = "zh", delogo: bool = True):
+         logo: Path | None = None, lang: str = "zh", delogo: bool = True, label: str | None = None):
     d = build.duration(wav)  # captions follow the dry voice timing
     zh = lang == "zh"
     cues = speech_aligned_cues(text, wav, d, zh)
@@ -61,14 +61,13 @@ def main(raw: Path, wav: Path, out: Path, text: str, audio_src: Path | None = No
     build.write_captions(cues, stem, "WenQuanYi Zen Hei" if zh else "Inter SemiBold", None if zh else 38, 64,
                          ["Photo"] * len(cues))
     ass = stem.with_suffix(".ass")
-    label = "AI 生成主持人 · AI-generated presenter"
     vf = (
         # residual pocket-wordmark trace on the teal test jacket (source-still coords incl. sway margin)
         ("delogo=x=372:y=526:w=76:h=32," if delogo else "")
         + "crop=iw:ih-4:0:4,scale=-2:720:flags=lanczos,pad=1280:720:(ow-iw)/2:0:color=0xE9EEF3,"
-        f"drawtext=fontfile={FONT_ZH}:text='{label}':x=40:y=34:fontsize=26:fontcolor=white:"
-        "box=1:boxcolor=0x16233F@0.82:boxborderw=12,"
-        f"subtitles={ass}:fontsdir=/usr/share/fonts"
+        + (f"drawtext=fontfile={FONT_ZH}:text='{label}':x=40:y=34:fontsize=26:fontcolor=white:"
+           "box=1:boxcolor=0x16233F@0.82:boxborderw=12," if label else "")
+        +         f"subtitles={ass}:fontsdir=/usr/share/fonts"
     )
     inputs = ["-i", str(raw), "-i", str(audio_src or wav)]
     if logo:
@@ -94,6 +93,7 @@ if __name__ == "__main__":
     ap.add_argument("raw"); ap.add_argument("wav"); ap.add_argument("out"); ap.add_argument("text")
     ap.add_argument("audio_src", nargs="?")
     ap.add_argument("--logo"); ap.add_argument("--lang", default="zh"); ap.add_argument("--no-delogo", action="store_true")
+    ap.add_argument("--label", default=None, help="optional burned-in label (owner: none on the English version)")
     x = ap.parse_args()
     main(Path(x.raw), Path(x.wav), Path(x.out), x.text, Path(x.audio_src) if x.audio_src else None,
-         Path(x.logo) if x.logo else None, x.lang, not x.no_delogo)
+         Path(x.logo) if x.logo else None, x.lang, not x.no_delogo, x.label)

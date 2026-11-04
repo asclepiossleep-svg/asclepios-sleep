@@ -3,8 +3,8 @@
 
 Same voice as the film narration (Kokoro bf_emma, speed 0.95, en-GB, default
 G2P = the pronunciation used in the owner-reviewed film preview).
-Title wording uses the owner's later positioning ("health-education presenter")
-in place of the earlier spec phrase; swap TITLE below if the owner prefers.
+Text follows the owner's amendment (#142 6633840244) and correction (6640077234):
+no presenter title in speech or captions.
 
     KOKORO_MODEL_DIR=... python3 presenter_en_lines.py <out_dir>
 """
@@ -13,11 +13,10 @@ import os
 import sys
 from pathlib import Path
 
-TITLE = "your health-education presenter"   # spec original: "your guide to healthy ageing and cellular maintenance"
 LINES = {
     # on camera after 01; the next sentence continues as voice-over on still 02 (02's own narration is not re-read)
-    "open_cam": f"Hello, I'm Claire Lee, {TITLE}. Welcome to ASCLEPIOS HEALTH.",
-    "open_vo": "Today, let's explore why healthy ageing involves considering not only what we take, "
+    "open_cam": "Hello, I'm Claire Lee. Welcome to ASCLEPIOS HEALTH.",
+    "open_vo": "Today, let's explore why healthy ageing is about considering not only what we take, "
                "but when we take it.",
     # P02: after 05, before 06 (first sentence of A02 shot 06)
     "p02_cam": "So, is taking a supplement enough?",
@@ -28,7 +27,7 @@ LINES = {
                "rhythms, and practical application.",
     # ending after 19, before 20
     "end_cam": "That's all for today. We'll be sharing more videos, exploring cells, how the body works, and "
-               f"everyday life, to help you understand what healthy ageing really means. I'm Claire Lee, {TITLE}. "
+               "everyday life, to help us better understand what healthy ageing really means. I'm Claire Lee. "
                "See you next time. Bye for now!",
 }
 

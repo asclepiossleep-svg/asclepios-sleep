@@ -26,6 +26,56 @@ BG = np.array([233, 238, 243], np.float32)   # pale grey-blue (RGB)
 COAT_TEAL = np.array([24, 96, 92], np.float32)
 COAT_NAVY = np.array([26, 40, 74], np.float32)
 INNER_LIGHT_BLUE = np.array([176, 204, 232], np.float32)
+INNER_BLUE = np.array([112, 158, 212], np.float32)
+BOARD_CROP_PNG_WIDE = (0, 80, 760, 1024)  # full front-portrait width: both shoulder contours inside the frame
+
+
+def white_jacket_variant(board: Path, out: Path, logo: Path, name="claire_v06_white_blue_logo_test.png"):
+    """Owner 2026-11-04 (#142 6640077234): white jacket kept as approved (pixels untouched), teal inner top ->
+    blue, the illustrative pocket lettering replaced by the official logo artwork (unaltered, multiplied onto
+    the white fabric), wide crop so both shoulders are complete. Face/hair untouched."""
+    out.mkdir(parents=True, exist_ok=True)
+    im = Image.open(board).convert("RGB").crop(BOARD_CROP_PNG_WIDE)
+    rgb = np.asarray(im).astype(np.float32)
+    h, w, _ = rgb.shape
+    alpha = np.asarray(remove(im, session=new_session("u2net_human_seg"), only_mask=True)).astype(np.float32) / 255
+    alpha = cv2.GaussianBlur(alpha, (3, 3), 0)
+    # the neighbouring full-body figure's hand intrudes at the upper-right edge of this crop: not Claire
+    alpha[: int(h * 0.56), int(w * 0.93):] = 0
+    hsv = cv2.cvtColor(rgb.astype(np.uint8), cv2.COLOR_RGB2HSV).astype(np.float32)
+    hue, sat, val = hsv[..., 0], hsv[..., 1] / 255, hsv[..., 2] / 255
+    yy = np.arange(h)[:, None].repeat(w, 1)
+    chin = int(h * 0.47)
+    # 1. illustrative pocket lettering (teal on white) -> remove
+    zone = np.zeros((h, w), bool); zone[int(h * 0.66):int(h * 0.80), int(w * 0.62):int(w * 0.90)] = True
+    letters = zone & (sat > 0.2) & (val < 0.8) & (alpha > 0.5)
+    ys, xs = np.nonzero(letters)
+    cx, cy = int(xs.mean()), int(ys.mean())
+    tw = int(xs.max() - xs.min())
+    lm = cv2.dilate(letters.astype(np.uint8), np.ones((7, 7), np.uint8))
+    clean = cv2.inpaint(rgb.astype(np.uint8), lm * 255, 6, cv2.INPAINT_TELEA).astype(np.float32)
+    # 2. teal inner top -> blue (shading kept)
+    inner = (alpha > 0.5) & (yy > chin) & (hue > 70) & (hue < 100) & (sat > 0.18) & ~zone
+    inner = cv2.morphologyEx(inner.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8)).astype(bool)
+    il = cv2.cvtColor(clean.astype(np.uint8), cv2.COLOR_RGB2GRAY).astype(np.float32)
+    ish = np.clip(il / (np.median(il[inner]) if inner.any() else 90), 0.6, 1.25)[..., None]
+    mi = cv2.GaussianBlur(inner.astype(np.float32), (5, 5), 0)[..., None]
+    person = clean * (1 - mi) + np.clip(INNER_BLUE * ish, 0, 255) * mi
+    # 3. official logo, unaltered artwork, multiplied onto the jacket at the lettering position
+    lg = Image.open(logo).convert("RGB")
+    from PIL import ImageChops
+    bbox = ImageChops.difference(lg, Image.new("RGB", lg.size, lg.getpixel((2, 2)))).convert("L") \
+        .point(lambda v: 255 if v > 18 else 0).getbbox()
+    lg = lg.crop(bbox)
+    lw = int(tw * 1.05); lh = int(lg.height * lw / lg.width)
+    lg = np.asarray(lg.resize((lw, lh), Image.LANCZOS)).astype(np.float32) / 255
+    x0, y0 = cx - lw // 2, cy - lh // 2
+    roi = person[y0:y0 + lh, x0:x0 + lw]
+    person[y0:y0 + lh, x0:x0 + lw] = roi * lg     # multiply: white logo ground vanishes on white fabric
+    a = alpha[..., None]
+    final = person * a + BG * (1 - a)
+    Image.fromarray(final.astype(np.uint8)).save(out / name)
+    print("lettering centre", (cx, cy), "logo size", (lw, lh), "inner px", int(inner.sum()), "size", (w, h))
 
 
 def main(board: Path, out: Path, crop=BOARD_CROP, coat_rgb=COAT_TEAL, inner_rgb=None, name="claire_v06_teal_test.png"):
@@ -87,9 +137,12 @@ def main(board: Path, out: Path, crop=BOARD_CROP, coat_rgb=COAT_TEAL, inner_rgb=
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("board"); ap.add_argument("out")
-    ap.add_argument("--variant", choices=["teal", "navy"], default="teal")
+    ap.add_argument("--variant", choices=["teal", "navy", "white"], default="teal")
+    ap.add_argument("--logo")
     a = ap.parse_args()
-    if a.variant == "navy":   # owner 2026-11-04: dark blue outerwear + light blue innerwear, from the v0.6 PNG
+    if a.variant == "white":
+        white_jacket_variant(Path(a.board), Path(a.out), Path(a.logo))
+    elif a.variant == "navy":   # owner 2026-11-04: dark blue outerwear + light blue innerwear, from the v0.6 PNG
         main(Path(a.board), Path(a.out), BOARD_CROP_PNG, COAT_NAVY, INNER_LIGHT_BLUE, "claire_v06_navy_lightblue_test.png")
     else:
         main(Path(a.board), Path(a.out))
