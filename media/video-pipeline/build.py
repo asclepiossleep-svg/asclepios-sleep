@@ -185,6 +185,16 @@ def align_supplied(wav: Path, segments: list[dict], work: Path) -> tuple[Path, l
 def make_music(project: dict, total: float, work: Path, base: Path) -> tuple[Path, str]:
     out = work / "music.wav"
     src = project.get("music")
+    if src == "generate:melodic":
+        sys.path.insert(0, str(HERE))
+        import music_gen
+        import soundfile as sf
+        dry = work / "music_dry.wav"
+        sf.write(dry, music_gen.compose(total), music_gen.SR)
+        ff("-i", str(dry), "-af",
+           "highpass=f=45,lowpass=f=11000,aecho=0.8:0.6:43|89|137|211:0.30|0.24|0.18|0.12,"
+           "aresample=48000", "-ac", "2", str(out))
+        return out, "generated: music_gen.py 'melodic' (original procedural composition, no third-party material)"
     if src:
         p = (base / src).resolve()
         if not p.exists():
@@ -281,7 +291,27 @@ def wrap2(text: str, width: int) -> str:
     return text[:cut].strip() + "\n" + text[cut:].strip() if cut > 0 else text
 
 
-def write_captions(cues: list[tuple[float, float, str]], stem: Path, font_name: str, wrap: int | None):
+CAPTION_STYLES = {
+    # name: (primary, outline, back, borderstyle, outline_w, shadow)
+    "Cap":     ("&H00FFFFFF", "&H00301A0D", "&H96000000", 1, 2.6, 1.4),   # generated-card mode
+    "Diagram": ("&H003F2316", "&H00FFFFFF", "&H00FFFFFF", 1, 3.5, 0),     # navy text, white edge: white diagrams
+    "Photo":   ("&H00FFFFFF", "&H003F2316", "&H4D3F2316", 4, 0, 16),      # white on translucent navy box: photos
+    "Dark":    ("&H00FFFFFF", "&H003F2316", "&H80000000", 1, 3.5, 2),     # white, navy edge + shadow: dark photos
+}
+
+
+def caption_style_for(img: Path | None) -> str:
+    """Pick a caption style from the brightness of the still's bottom band."""
+    if img is None:
+        return "Cap"
+    from PIL import ImageStat
+    g = Image.open(img).convert("L")
+    w, h = g.size
+    lum = ImageStat.Stat(g.crop((0, int(h * 0.78), w, h))).mean[0]
+    return "Diagram" if lum >= 225 else ("Dark" if lum < 90 else "Photo")
+
+
+def write_captions(cues, stem: Path, font_name: str, wrap: int | None, size: int = 48, styles=None):
     srt, vtt = [], ["WEBVTT", ""]
     for i, (a, b, t) in enumerate(cues, 1):
         body = wrap2(t, wrap) if wrap else t
@@ -293,13 +323,17 @@ def write_captions(cues: list[tuple[float, float, str]], stem: Path, font_name: 
            "[V4+ Styles]",
            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, "
            "Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
-           "Alignment, MarginL, MarginR, MarginV, Encoding",
-           f"Style: Cap,{font_name},48,&H00FFFFFF,&H00FFFFFF,&H00301A0D,&H96000000,0,0,0,0,100,100,0.5,0,"
-           "1,2.6,1.4,2,220,220,64,1", "",
-           "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
-    for a, b, t in cues:
+           "Alignment, MarginL, MarginR, MarginV, Encoding"]
+    margin_lr = 220 if size <= 48 else 160
+    margin_v = 64 if size <= 48 else 44
+    for name, (pc, oc, bc, bs, ow, sh) in CAPTION_STYLES.items():
+        ass.append(f"Style: {name},{font_name},{size},{pc},{pc},{oc},{bc},0,0,0,0,100,100,0.3,0,"
+                   f"{bs},{ow},{sh},2,{margin_lr},{margin_lr},{margin_v},1")
+    ass += ["", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
+    for i, (a, b, t) in enumerate(cues):
         body = (wrap2(t, wrap) if wrap else t).replace("\n", "\\N")
-        ass.append(f"Dialogue: 0,{ts(a, '.')[:-1]},{ts(b, '.')[:-1]},Cap,,0,0,0,,{body}")
+        st = styles[i] if styles else "Cap"
+        ass.append(f"Dialogue: 0,{ts(a, '.')[:-1]},{ts(b, '.')[:-1]},{st},,0,0,0,,{body}")
     stem.with_suffix(".ass").write_text("\n".join(ass), encoding="utf-8")
 
 
@@ -419,14 +453,26 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
     master = mix_master(narr, music, total, work, float(project.get("music_db", -17)))
 
     # 4 captions
-    cues_en, cues_zh = [], []
+    cues_en, cues_zh, styles_en = [], [], []
+    scale = float(project.get("caption_scale", 1.0))
+    line_chars = 42 if scale <= 1.0 else int(project.get("caption_line_chars", 38))
+    img_dir = None
+    if project.get("images_dir"):
+        import os
+        img_dir = Path(os.environ.get("ASCLEPIOS_IMAGES_DIR") or (project_dir / project["images_dir"]))
     for seg, (a, b) in zip(segments, spans):
-        cues_en += split_cues(seg["en"], a, b, 84)
+        new = split_cues(seg["en"], a, b, line_chars * 2)
+        cues_en += new
+        st = caption_style_for(img_dir / seg["image"]) if img_dir and seg.get("image") else "Cap"
+        styles_en += [st] * len(new)
         if seg.get("zh_hk"):
             cues_zh += split_cues(seg["zh_hk"], a, b, 22, cjk=True)
     clip = lambda cues: [(a, min(b, total), t) for a, b, t in cues if a < total - 0.2]
+    keep = [i for i, (a, _, _) in enumerate(cues_en) if a < total - 0.2]
+    styles_en = [styles_en[i] for i in keep]
     cues_en, cues_zh = clip(cues_en), clip(cues_zh)
-    write_captions(cues_en, out_dir / "captions_en", SUB_FONT_EN, 42)
+    caption_font = project.get("caption_font", SUB_FONT_EN)
+    write_captions(cues_en, out_dir / "captions_en", caption_font, line_chars, int(round(48 * scale)), styles_en)
     if cues_zh:
         write_captions(cues_zh, out_dir / "captions_zh-HK", SUB_FONT_ZH, None)
 

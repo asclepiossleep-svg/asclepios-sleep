@@ -13,7 +13,7 @@
     "lang": "en-gb"
   },
   "narration_wav": null,
-  "music": null,
+  "music": "generate:melodic",
   "music_db": -17,
   "segments": [
     {
@@ -155,5 +155,8 @@
     "18_Research_to_Practice_en.jpg": "b06e88342b84d69243bd7cefcffc76ed86a05b692aa20ab67828da2403b84c21",
     "19_Invitation_to_Explore_en.jpg": "ae01ea1752d0c23293464a23690ff65154f13bcc9a681b63ff3b0d6765c408e9",
     "20_Brand_Ending_en.jpg": "385dc68aa6bbbd753ba88d857097760ee8abb72dacac74fa7e82cc31353eed78"
-  }
+  },
+  "caption_scale": 1.5,
+  "caption_line_chars": 38,
+  "caption_font": "Inter SemiBold"
 }
