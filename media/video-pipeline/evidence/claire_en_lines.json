@@ -1,0 +1,44 @@
+{
+  "open_cam": {
+    "text": "Hello, I'm Claire Lee, your health-education presenter. Welcome to ASCLEPIOS HEALTH.",
+    "duration_s": 5.16,
+    "voice": "bf_emma",
+    "speed": 0.95,
+    "phonemes": "həlˈəʊ, aɪm klˈeə lˈiː, jɔː hˈɛlθˌɛdʒuːkˈeɪʃən pɹɪzˈɛntə. wˈɛlkʌm tʊ ɐsklˈɛpɪˌəʊz hˈɛlθ."
+  },
+  "open_vo": {
+    "text": "Today, let's explore why healthy ageing involves considering not only what we take, but when we take it.",
+    "duration_s": 6.06,
+    "voice": "bf_emma",
+    "speed": 0.95,
+    "phonemes": "tədˈeɪ, lˈɛts ɛksplˈɔː wˌaɪ hˈɛlθi ˈeɪdʒɪŋ ɪnvˈɒlvz kənsˈɪdəɹɪŋ nˌɒt ˈəʊnli wɒt wiː tˈeɪk, bˌʌt wɛn wiː tˈeɪk ɪt."
+  },
+  "p02_cam": {
+    "text": "So, is taking a supplement enough?",
+    "duration_s": 2.09,
+    "voice": "bf_emma",
+    "speed": 0.95,
+    "phonemes": "sˈəʊ, ɪz tˈeɪkɪŋ ɐ sˈʌplɪmənt ɪnˈʌf?"
+  },
+  "p03_cam": {
+    "text": "But cellular activity also follows a timetable.",
+    "duration_s": 2.97,
+    "voice": "bf_emma",
+    "speed": 0.95,
+    "phonemes": "bˌʌt sˈɛljʊləɹ aktˈɪvɪti ˈɔːlsəʊ fˈɒləʊz ɐ tˈaɪmteɪbəl."
+  },
+  "p04_cam": {
+    "text": "This is the ASCLEPIOS HEALTH approach: a whole-system perspective, respect for biological rhythms, and practical application.",
+    "duration_s": 7.55,
+    "voice": "bf_emma",
+    "speed": 0.95,
+    "phonemes": "ðɪs ɪz ðɪ ɐsklˈɛpɪˌəʊz hˈɛlθ ɐpɹˈəʊtʃ: ɐ hˈəʊlsˈɪstəm pəspˈɛktɪv, ɹɪspˈɛkt fɔː bˌaɪəlˈɒdʒɪkəl ɹˈɪðəmz, and pɹˈaktɪkəl ˌaplɪkˈeɪʃən."
+  },
+  "end_cam": {
+    "text": "That's all for today. We'll be sharing more videos, exploring cells, how the body works, and everyday life, to help you understand what healthy ageing really means. I'm Claire Lee, your health-education presenter. See you next time. Bye for now!",
+    "duration_s": 13.93,
+    "voice": "bf_emma",
+    "speed": 0.95,
+    "phonemes": "ðats ˈɔːl fɔː tədˈeɪ. wiːl biː ʃˈeəɹɪŋ mˈɔː vˈɪdɪəʊz, ɛksplˈɔːɹɪŋ sˈɛlz, hˌaʊ ðə bˈɒdi wˈɜːks, and ˈɛvɹɪdˌeɪ lˈaɪf, tə hˈɛlp juː ˌʌndəstˈand wɒt hˈɛlθi ˈeɪdʒɪŋ ɹˈiəlɪ mˈiːnz. aɪm klˈeə lˈiː, jɔː hˈɛlθˌɛdʒuːkˈeɪʃən pɹɪzˈɛntə. sˈiː juː nˈɛkst tˈaɪm. bˈaɪ fɔː nˈaʊ!"
+  }
+}
