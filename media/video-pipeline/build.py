@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -35,6 +36,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 HERE = Path(__file__).resolve().parent
 FPS = 25
 XFADE = 0.8           # seconds of crossfade between cards
+CUT = 0.04            # near-hard cut into / out of presenter video shots (one frame)
 SEG_GAP = 0.55        # silence between TTS segments
 LEAD_IN = 1.2         # silence before first narration line
 TAIL = 2.5            # music tail after last line
@@ -122,7 +124,15 @@ def tts_kokoro(project: dict, segments: list[dict], work: Path) -> tuple[Path, l
     pieces, spans, t = [np.zeros(int(LEAD_IN * sr), dtype="float32")], [], LEAD_IN
     for i, seg in enumerate(segments):
         cache = work / f"tts_{seg['id']}_{hashlib.md5((seg['en'] + json.dumps(voice)).encode()).hexdigest()[:8]}.wav"
-        if not seg["en"].strip():  # music-only shot: hold the card, no narration
+        if seg.get("audio"):  # presenter on-camera line: its own pre-rendered voice (same Kokoro voice)
+            import os
+            root = Path(os.environ.get("ASCLEPIOS_PRESENTER_DIR") or project.get("_dir", "."))
+            samples, a_sr = sf.read(root / seg["audio"], dtype="float32")
+            if samples.ndim > 1:
+                samples = samples.mean(axis=1)
+            if a_sr != sr:
+                raise SystemExit(f"presenter audio {seg['audio']} is {a_sr} Hz, expected {sr}")
+        elif not seg["en"].strip():  # music-only shot: hold the card, no narration
             samples = np.zeros(int(float(seg.get("hold", 4.0)) * sr), dtype="float32")
         elif cache.exists():
             samples, sr = sf.read(cache, dtype="float32")
@@ -473,14 +483,47 @@ def still_clip(img: Path, dur: float, out: Path, res: tuple[int, int], focus=Non
        "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-r", str(FPS), str(out))
 
 
+def video_clip(src: Path, dur: float, out: Path, res: tuple[int, int]):
+    """Pre-rendered presenter shot, scaled to the film frame; the last frame is held
+    if the slot is longer than the clip. Its own audio is dropped here (the voice
+    is already in the master narration track at the same time)."""
+    W, H = res
+    ff("-i", str(src), "-t", f"{dur:.3f}", "-an", "-vf",
+       f"scale={W}:{H}:force_original_aspect_ratio=decrease:flags=lanczos,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2,"
+       f"setsar=1,fps={FPS},tpad=stop_mode=clone:stop_duration=5,format=yuv420p",
+       "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-r", str(FPS), str(out))
+
+
+def logo_card(logo: Path, out: Path, height: int, pad: int) -> Path:
+    """Official logo on a small white rounded card (logo pixels unchanged, only
+    its white border trimmed and scaled)."""
+    from PIL import ImageChops
+    im = Image.open(logo).convert("RGBA")
+    bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
+    flat = Image.alpha_composite(bg, im).convert("RGB")
+    bbox = ImageChops.difference(flat, Image.new("RGB", flat.size, (255, 255, 255))).getbbox()
+    if bbox:
+        flat = flat.crop(bbox)
+    inner = height - 2 * pad
+    flat = flat.resize((max(1, round(flat.width * inner / flat.height)), inner), Image.LANCZOS)
+    card = Image.new("RGBA", (flat.width + 2 * pad, height), (0, 0, 0, 0))
+    m = Image.new("L", card.size, 0)
+    ImageDraw.Draw(m).rounded_rectangle([0, 0, card.width - 1, height - 1], radius=pad, fill=235)
+    card.paste(Image.new("RGBA", card.size, (255, 255, 255, 255)), (0, 0), m)
+    card.paste(flat, (pad, pad))
+    card.save(out)
+    return out
+
+
 # ------------------------------------------------------------------- build
-def build(project_dir: Path, out_dir: Path, preview: float | None):
+def build(project_dir: Path, out_dir: Path, preview: float | None, preview_res: tuple[int, int] = (640, 360)):
     project = json.loads((project_dir / "project.json").read_text(encoding="utf-8"))
+    project["_dir"] = str(project_dir)
     segments = project["segments"]
     if not segments:
         raise SystemExit("project.json has no segments")
     work = out_dir / "work"; work.mkdir(parents=True, exist_ok=True)
-    res = (640, 360) if preview else (1920, 1080)
+    res = preview_res if preview else (1920, 1080)
     notes: list[str] = []
 
     # 1 narration
@@ -510,9 +553,14 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
         import os
         img_dir = Path(os.environ.get("ASCLEPIOS_IMAGES_DIR") or (project_dir / project["images_dir"]))
     for seg, (a, b) in zip(segments, spans):
+        if not seg["en"].strip():  # music-only hold: no empty cue
+            continue
         new = split_cues(seg["en"], a, b, line_chars * 2)
         cues_en += new
-        st = caption_style_for(img_dir / seg["image"], seg.get("focus")) if img_dir and seg.get("image") else "Cap"
+        if seg.get("video"):
+            st = "Photo"
+        else:
+            st = caption_style_for(img_dir / seg["image"], seg.get("focus")) if img_dir and seg.get("image") else "Cap"
         styles_en += [st] * len(new)
         if seg.get("zh_hk"):
             cues_zh += split_cues(seg["zh_hk"], a, b, 22, cjk=True)
@@ -537,10 +585,13 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
         import os
         if os.environ.get("ASCLEPIOS_IMAGES_DIR"):
             img_root = Path(os.environ["ASCLEPIOS_IMAGES_DIR"])
-        missing = [s["image"] for s in segments if not (img_root / s["image"]).exists()]
+        vid_root = Path(os.environ.get("ASCLEPIOS_PRESENTER_DIR") or project_dir)
+        missing = [s["video"] for s in segments if s.get("video") and not (vid_root / s["video"]).exists()]
+        missing += [s["image"] for s in segments if not s.get("video") and not (img_root / s["image"]).exists()]
         if missing:
-            raise SystemExit("STOP - supplied images not readable: " + ", ".join(missing))
-        shots = [("img", seg, 0.0 if i == 0 else a) for i, (seg, (a, _)) in enumerate(zip(segments, spans))]
+            raise SystemExit("STOP - supplied media not readable: " + ", ".join(missing))
+        shots = [("vid" if seg.get("video") else "img", seg, 0.0 if i == 0 else a)
+                 for i, (seg, (a, _)) in enumerate(zip(segments, spans))]
     else:
         # generated title card over lead-in, one card per segment, end card on tail
         shots = [("title", project.get("title_card", {}), 0.0)]
@@ -548,12 +599,21 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
             shots.append(("seg", seg, a))
         shots.append(("end", project.get("end_card", {}), spans[-1][1] + 0.3))
     shots = [s for s in shots if s[2] < total]
+    # presenter shots start on the first frame of their voice, so they cut in/out
+    # (a crossfade would show her mouth moving before/after her line)
+    fades = [0.0] + [CUT if "vid" in (shots[i - 1][0], shots[i][0]) else XFADE for i in range(1, len(shots))]
     clips = []
     for i, (kind, seg, start) in enumerate(shots):
+        if kind == "vid" and i > 0:  # align the clip's first frame with the voice start
+            start = spans[segments.index(seg)][0]
+            shots[i] = (kind, seg, start)
+    for i, (kind, seg, start) in enumerate(shots):
         nxt = shots[i + 1][2] if i + 1 < len(shots) else total
-        dur = (nxt - start) + (XFADE if i + 1 < len(shots) else 0)
+        dur = (nxt - start) + (fades[i + 1] if i + 1 < len(shots) else 0)
         mp4 = work / f"clip_{i:02d}_{res[1]}.mp4"
-        if kind == "img":
+        if kind == "vid":
+            video_clip(vid_root / seg["video"], dur, mp4, res)
+        elif kind == "img":
             still_clip(img_root / seg["image"], dur, mp4, res, seg.get("focus"))
         else:
             png = work / f"card_{i:02d}.jpg"
@@ -570,7 +630,7 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
         for i in range(1, len(clips)):
             off = clips[i][2]
             label = f"[x{i}]"
-            chain.append(f"{last}[{i}:v]xfade=transition=fade:duration={XFADE}:offset={off:.3f}{label}")
+            chain.append(f"{last}[{i}:v]xfade=transition=fade:duration={fades[i]}:offset={off:.3f}{label}")
             last = label
         video = work / f"video_{res[1]}.mp4"
         ff(*inputs, "-filter_complex", ";".join(chain), "-map", last, "-c:v", "libx264",
@@ -579,7 +639,7 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
     # 6 render
     name = project.get("output_name", "ASCLEPIOS_HEALTH")
     tag = "full" if preview and preview >= 1e8 else f"{int(preview or 0)}s"
-    final = out_dir / (f"{name}_preview_{tag}_360p.mp4" if preview else f"{name}_1080p.mp4")
+    final = out_dir / (f"{name}_preview_{tag}_{res[1]}p.mp4" if preview else f"{name}_1080p.mp4")
     ass = out_dir / "captions_en.ass"
     sub_inputs, sub_maps, sub_meta = ["-i", str(out_dir / "captions_en.srt")], ["-map", "2:0"], \
         ["-metadata:s:s:0", "language=eng", "-metadata:s:s:0", "title=English"]
@@ -587,9 +647,28 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
         sub_inputs += ["-i", str(out_dir / "captions_zh-HK.srt")]
         sub_maps += ["-map", "3:0"]
         sub_meta += ["-metadata:s:s:1", "language=chi", "-metadata:s:s:1", "title=繁體中文 (zh-HK)"]
-    vf = f"subtitles={ass}:fontsdir=/usr/share/fonts" + (f",scale={res[0]}:{res[1]}" if preview else "")
-    ff("-i", str(video), "-i", str(master), *sub_inputs, "-map", "0:v", "-map", "1:a", *sub_maps,
-       "-vf", vf, "-t", f"{total:.3f}", "-c:v", "libx264", "-preset", "medium" if not preview else "veryfast",
+    subs_f = f"subtitles={ass}:fontsdir=/usr/share/fonts" + (f",scale={res[0]}:{res[1]}" if preview else "")
+    extra_in, vmap, vargs = [], ["-map", "0:v"], ["-vf", subs_f]
+    lc = project.get("logo_card")
+    if lc and images_dir:
+        # official logo only on the named shots (opening / company intro and closing page)
+        wins = [(st, shots[i + 1][2] if i + 1 < len(shots) else total)
+                for i, (_, sg, st) in enumerate(shots) if str(sg.get("id")) in [str(x) for x in lc["shots"]]]
+        lp = Path(lc["path"]).expanduser()
+        if not lp.is_absolute():
+            lp = Path(os.environ.get("ASCLEPIOS_PRESENTER_DIR") or project_dir) / lp
+        hgt = round(float(lc.get("height", 132)) * res[1] / 1080)
+        card = logo_card(lp, work / f"logo_card_{res[1]}.png", hgt, max(4, round(hgt * 0.14)))
+        mg = round(40 * res[1] / 1080)
+        en = "+".join(f"between(t,{a_:.3f},{b_:.3f})" for a_, b_ in wins)
+        idx = 2 + len(sub_inputs) // 2
+        extra_in = ["-loop", "1", "-i", str(card)]
+        vargs = ["-filter_complex", f"[0:v][{idx}:v]overlay=x=W-w-{mg}:y={mg}:shortest=1:enable='{en}',{subs_f}[vo]"]
+        vmap = ["-map", "[vo]"]
+        notes.append(f"logo card: {lp.name} on shots {lc['shots']} only, windows "
+                     f"{[(round(a_, 2), round(b_, 2)) for a_, b_ in wins]}")
+    ff("-i", str(video), "-i", str(master), *sub_inputs, *extra_in, *vmap, "-map", "1:a", *sub_maps,
+       *vargs, "-t", f"{total:.3f}", "-c:v", "libx264", "-preset", "medium" if not preview else "veryfast",
        "-crf", "19" if not preview else "26", "-profile:v", "high", "-pix_fmt", "yuv420p", "-r", str(FPS),
        "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-c:s", "mov_text", *sub_meta,
        "-movflags", "+faststart", str(final))
@@ -661,10 +740,12 @@ def main():
     ap.add_argument("--preview", type=float, default=None, help="render a low-res technical preview of N seconds")
     ap.add_argument("--lowres", action="store_true", help="render the full length at 640x360 (review preview)")
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--preview-res", default="640x360", help="preview frame size WxH (e.g. 960x540)")
     args = ap.parse_args()
     out = args.out or (args.project / "out")
     out.mkdir(parents=True, exist_ok=True)
-    qa = build(args.project.resolve(), out.resolve(), 1e9 if args.lowres and not args.preview else args.preview)
+    pr = tuple(int(x) for x in args.preview_res.lower().split("x"))
+    qa = build(args.project.resolve(), out.resolve(), 1e9 if args.lowres and not args.preview else args.preview, pr)
     sys.exit(0 if qa["all_pass"] else 2)
 
 
