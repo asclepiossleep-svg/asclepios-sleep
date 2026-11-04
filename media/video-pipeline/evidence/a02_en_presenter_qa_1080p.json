@@ -1,7 +1,7 @@
 {
   "file": "ASCLEPIOS_HEALTH_A02_EN_presenter_1080p.mp4",
-  "bytes": 48375250,
-  "sha256": "c407e9dc8c10b953d0d42b65e50b0ea214f594ba7e62889ef333edf144f6481c",
+  "bytes": 48207039,
+  "sha256": "f78229279e164d91b183eaa7e94af8c360a919b0c5c7714ba394bf466744534e",
   "duration_s": 212.0,
   "resolution": "1920x1080",
   "fps": "25/1",
@@ -29,7 +29,7 @@
   "notes": [
     "SUBSTITUTE voice: Kokoro TTS bf_emma (approved narration not supplied)",
     "music: generated: music_gen.py 'melodic' (original procedural composition, no third-party material)",
-    "logo card: ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg on shots ['P01', '20'] only, windows [(5.75, 9.48), (204.71, 211.99)]"
+    "logo card: ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg on shots ['P01'] only, windows [(5.75, 9.48)]"
   ],
   "script_status": "A02_Narration_By_Shot_EN.txt + A01/A05/A08/A09 from Drive ASCLEPIOS_VIDEO_001_A02_HANDOFF (owner handoff 2026-11-04); narration verbatim; not compared with ZIP v6; presenter edition: Claire Lee lines per owner amendment #142 6633840244 / correction 6640077234 (P02-P04 are the first sentence of A02 shots 06/12/18 moved on camera, not re-read; shot 02 narration replaced by the owner's opening voice-over). Original A02 project unchanged in projects/a02-english.",
   "cost": "GBP 0 (local FFmpeg/Pillow/Kokoro on session CPU)"
