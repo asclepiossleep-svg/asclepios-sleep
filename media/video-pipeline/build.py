@@ -266,6 +266,14 @@ def split_cues(text: str, start: float, end: float, max_chars: int, cjk: bool = 
                     clauses[-1] = f"{clauses[-1]} {c}"
                 else:
                     clauses.append(c)
+        # fold very short clauses ("Today,") into the next clause of the same sentence
+        folded: list[str] = []
+        for c in clauses:
+            if folded and len(folded[-1]) < 16 and not folded[-1].endswith((".", "!", "?")):
+                folded[-1] = f"{folded[-1]} {c}"
+            else:
+                folded.append(c)
+        clauses = folded
         for s in clauses:
             if len(s) <= max_chars:
                 chunks.append(s); continue

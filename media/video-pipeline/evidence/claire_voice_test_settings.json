@@ -1,0 +1,38 @@
+[
+  {
+    "file": "claire_en_A_default_dry.wav",
+    "srt": "claire_en_A_default_dry.srt",
+    "language": "en-GB",
+    "engine": "Kokoro-82M v1.0 (onnx)",
+    "voice_id": "bf_emma",
+    "speed": 0.95,
+    "phonemes": "həlˈəʊ, aɪm klˈeə lˈiː, jɔː hˈɛlθˌɛdʒuːkˈeɪʃən pɹɪzˈɛntə. wˈɛlkʌm tʊ ɐsklˈɛpɪˌəʊz hˈɛlθ. tədˈeɪ, lˈɛts ɛksplˈɔː wˌaɪ hˈɛlθi ˈeɪdʒɪŋ ɪnvˈɒlvz kənsˈɪdəɹɪŋ nˌɒt ˈəʊnli wɒt wiː tˈeɪk, bˌʌt wɛn wiː tˈeɪk ɪt.",
+    "duration_s": 11.43,
+    "render_s": 4.2,
+    "text": "Hello, I'm Claire Lee, your health-education presenter. Welcome to ASCLEPIOS HEALTH. Today, let's explore why healthy ageing involves considering not only what we take, but when we take it."
+  },
+  {
+    "file": "claire_en_B_asKLEEpeeoss_dry.wav",
+    "srt": "claire_en_B_asKLEEpeeoss_dry.srt",
+    "language": "en-GB",
+    "engine": "Kokoro-82M v1.0 (onnx)",
+    "voice_id": "bf_emma",
+    "speed": 0.95,
+    "phonemes": "həlˈəʊ, aɪm klˈeə lˈiː, jɔː hˈɛlθˌɛdʒuːkˈeɪʃən pɹɪzˈɛntə. wˈɛlkʌm tʊ æsklˈiːpiɒs hˈɛlθ. tədˈeɪ, lˈɛts ɛksplˈɔː wˌaɪ hˈɛlθi ˈeɪdʒɪŋ ɪnvˈɒlvz kənsˈɪdəɹɪŋ nˌɒt ˈəʊnli wɒt wiː tˈeɪk, bˌʌt wɛn wiː tˈeɪk ɪt.",
+    "duration_s": 11.5,
+    "render_s": 3.9,
+    "text": "Hello, I'm Claire Lee, your health-education presenter. Welcome to ASCLEPIOS HEALTH. Today, let's explore why healthy ageing involves considering not only what we take, but when we take it."
+  },
+  {
+    "file": "claire_yue_espeak_REFERENCE_dry.wav",
+    "srt": "claire_yue_espeak_REFERENCE_dry.srt",
+    "language": "yue (Hong Kong Cantonese)",
+    "engine": "espeak-ng 1.51",
+    "voice_id": "yue+f3",
+    "speed_wpm": 150,
+    "duration_s": 15.61,
+    "render_s": 0.2,
+    "text": "大家好，我係 Claire Lee，大家嘅健康科普主持人。歡迎嚟到 ASCLEPIOS HEALTH！今次想同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。",
+    "note": "formant synthesiser: pronunciation reference only, not a natural voice"
+  }
+]

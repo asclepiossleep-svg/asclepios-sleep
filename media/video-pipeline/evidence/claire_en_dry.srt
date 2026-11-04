@@ -1,0 +1,22 @@
+1
+00:00:00,050 --> 00:00:03,420
+Hello, I'm Claire Lee, your
+health-education presenter.
+
+2
+00:00:03,420 --> 00:00:05,135
+Welcome to ASCLEPIOS HEALTH.
+
+3
+00:00:05,135 --> 00:00:07,525
+Today, let's explore
+why healthy ageing
+
+4
+00:00:07,525 --> 00:00:10,159
+involves considering
+not only what we take,
+
+5
+00:00:10,159 --> 00:00:11,385
+but when we take it.
