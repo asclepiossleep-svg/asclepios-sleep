@@ -29,7 +29,12 @@ TEXTS = {
     # same text, brand written in title case (caps can be read letter by letter)
     "B_titlecase": "大家好，我係 Claire Lee，大家嘅健康科普主持人。歡迎嚟到 Asclepios Health！"
                    "今次想同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。",
+    # adds the Chinese name after the English one so the name is anchored
+    "C_name_zh": "大家好，我係 Claire Lee 李嘉晴，大家嘅健康科普主持人。歡迎嚟到 Asclepios Health！"
+                 "今次想同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。",
 }
+if os.environ.get("YUE_ONLY"):
+    TEXTS = {k: v for k, v in TEXTS.items() if k in os.environ["YUE_ONLY"].split(",")}
 SPEAKER = "粤语女"
 
 

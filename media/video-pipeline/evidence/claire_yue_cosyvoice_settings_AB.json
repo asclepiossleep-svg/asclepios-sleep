@@ -1,0 +1,32 @@
+{
+  "engine": "CosyVoice-300M-SFT",
+  "speaker": "粤语女",
+  "speakers_available": [
+    "中文女",
+    "中文男",
+    "日语男",
+    "粤语女",
+    "英文女",
+    "英文男",
+    "韩语女"
+  ],
+  "model_load_s": 48.1,
+  "device": "cpu",
+  "speed": 1.0,
+  "clips": [
+    {
+      "file": "claire_yue_cosyvoice_A_caps_dry.wav",
+      "text": "大家好，我係 Claire Lee，大家嘅健康科普主持人。歡迎嚟到 ASCLEPIOS HEALTH！今次想同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。",
+      "sample_rate": 22050,
+      "duration_s": 7.45,
+      "render_s": 48.7
+    },
+    {
+      "file": "claire_yue_cosyvoice_B_titlecase_dry.wav",
+      "text": "大家好，我係 Claire Lee，大家嘅健康科普主持人。歡迎嚟到 Asclepios Health！今次想同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。",
+      "sample_rate": 22050,
+      "duration_s": 13.21,
+      "render_s": 105.0
+    }
+  ]
+}
