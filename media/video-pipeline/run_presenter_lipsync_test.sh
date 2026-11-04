@@ -16,7 +16,12 @@ mkdir -p "$W/lipsync"
 . "$W/cosy/venv/bin/activate"
 AUDIO="${PRESENTER_AUDIO:-$W/voice-test-yue-c/claire_yue_cosyvoice_C_name_zh_dry.wav}"
 TAG="${PRESENTER_TAG:-claire_yue}"
-ARGS=(--image "$W/claire/claire_v06_teal_test.png" --audio "$AUDIO" --shift-frames "${PRESENTER_SHIFT:-0}")
+if [ -n "${PRESENTER_FRAMES:-}" ]; then
+  SRC=(--frames-dir "$PRESENTER_FRAMES")         # LivePortrait motion frames
+else
+  SRC=(--image "$W/claire/claire_v06_teal_test.png")
+fi
+ARGS=("${SRC[@]}" --audio "$AUDIO" --shift-frames "${PRESENTER_SHIFT:-0}" --bbox "${PRESENTER_BBOX:-150,92,338,318}")
 if [ "$SECS" = "full" ]; then
   OUT="$W/lipsync/${TAG}_full_raw.mp4"
 else

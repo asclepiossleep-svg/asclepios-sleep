@@ -50,7 +50,8 @@ def lower_face_mask(h, w):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--image", required=True)
+    ap.add_argument("--image", default=None, help="single still (legacy mode, adds synthetic sway)")
+    ap.add_argument("--frames-dir", default=None, help="per-frame motion frames (LivePortrait); no synthetic sway")
     ap.add_argument("--audio", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--bbox", default="150,92,338,318", help="x1,y1,x2,y2 face box in the still")
@@ -86,30 +87,42 @@ def main():
         k = -a.shift_frames
         chunks = torch.cat([chunks[k:], chunks[-1:].repeat(k, *[1] * (chunks.dim() - 1))])
 
-    frame = cv2.imread(str(Path(a.image).resolve()))
     x1, y1, x2, y2 = map(int, a.bbox.split(","))
-    y2 = min(y2 + 10, frame.shape[0])  # v1.5 extra margin
-    crop = cv2.resize(frame[y1:y2, x1:x2], (256, 256), interpolation=cv2.INTER_LANCZOS4)
-    latent = vae.get_latents_for_unet(crop)
+    if a.frames_dir:
+        files = sorted(Path(a.frames_dir).glob("*.png"))
+        src_frames = [cv2.imread(str(f)) for f in files[:len(chunks)]]
+    else:
+        src_frames = [cv2.imread(str(Path(a.image).resolve()))]
+    H = src_frames[0].shape[0]
+    y2 = min(y2 + 10, H)  # v1.5 extra margin
+    latents = [vae.get_latents_for_unet(cv2.resize(f[y1:y2, x1:x2], (256, 256), interpolation=cv2.INTER_LANCZOS4))
+               for f in src_frames]
     mask = lower_face_mask(y2 - y1, x2 - x1)
 
     frames = []
-    gen = datagen(whisper_chunks=chunks, vae_encode_latents=[latent], batch_size=a.batch, delay_frame=0, device=device)
+    gen = datagen(whisper_chunks=chunks, vae_encode_latents=latents, batch_size=a.batch, delay_frame=0, device=device)
+    k = 0
     with torch.no_grad():
         for wb, lb in gen:
             pred = unet.model(lb.to(torch.float32), timesteps, encoder_hidden_states=pe(wb)).sample
             for r in vae.decode_latents(pred):
+                base = src_frames[k % len(src_frames)]
                 r = cv2.resize(r.astype(np.uint8), (x2 - x1, y2 - y1)).astype(np.float32)
-                f = frame.astype(np.float32).copy()
+                f = base.astype(np.float32).copy()
                 roi = f[y1:y2, x1:x2]
                 f[y1:y2, x1:x2] = roi * (1 - mask) + r * mask
                 frames.append(f.astype(np.uint8))
+                k += 1
+    frame = src_frames[0]
     infer_s = time.time() - t0
 
     # gentle sway: ~0.4% scale breathing + <=1.5 px drift, slow sinusoids
     h, w = frame.shape[:2]
     tmp = Path(tempfile.mkdtemp())
     for i, f in enumerate(frames):
+        if a.frames_dir:  # real motion already present: no synthetic sway
+            cv2.imwrite(str(tmp / f"{i:06d}.png"), f)
+            continue
         t = i / FPS
         s = 1.0 + 0.004 * math.sin(2 * math.pi * t / 5.3)
         dx, dy = 1.5 * math.sin(2 * math.pi * t / 7.1), 1.0 * math.sin(2 * math.pi * t / 4.7 + 1)
@@ -117,7 +130,7 @@ def main():
         M[:, 2] += (dx, dy)
         cv2.imwrite(str(tmp / f"{i:06d}.png"), cv2.warpAffine(f, M, (w, h), borderMode=cv2.BORDER_REFLECT))
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-framerate", str(FPS), "-i", str(tmp / "%06d.png"),
-                    "-i", str(audio), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac",
+                    "-i", str(audio), "-vf", "crop=trunc(iw/2)*2:trunc(ih/2)*2", "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac",
                     "-shortest", a.out], check=True)
     print(f"frames={len(frames)} infer_s={infer_s:.1f} total_s={time.time() - t0:.1f}")
 
