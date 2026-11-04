@@ -267,13 +267,20 @@ def split_cues(text: str, start: float, end: float, max_chars: int, cjk: bool = 
                 else:
                     clauses.append(c)
         for s in clauses:
-            words, line = s.split(), ""
+            if len(s) <= max_chars:
+                chunks.append(s); continue
+            # balanced split: n roughly equal chunks, so no orphan last word
+            words = s.split()
+            n = math.ceil(len(s) / max_chars)
+            limit = min(max_chars, len(s) / n * 1.08)
+            parts, line = [], ""
             for w in words:
-                if len(line) + len(w) + 1 > max_chars and line:
-                    chunks.append(line); line = w
+                if line and len(line) + len(w) + 1 > limit and len(parts) < n - 1:
+                    parts.append(line); line = w
                 else:
                     line = f"{line} {w}".strip()
-            if line: chunks.append(line)
+            if line: parts.append(line)
+            chunks.extend(parts)
     weights = [max(1, len(c)) for c in chunks]
     cues, t = [], start
     for c, w in zip(chunks, weights):
@@ -300,14 +307,25 @@ CAPTION_STYLES = {
 }
 
 
-def caption_style_for(img: Path | None) -> str:
-    """Pick a caption style from the brightness of the still's bottom band."""
+def caption_style_for(img: Path | None, focus=None) -> str:
+    """Pick a caption style from the brightness of the still's bottom band.
+
+    For focus shots the band is also measured on the zoomed framing, and the
+    darker / busier result wins, so captions stay legible through the move.
+    """
     if img is None:
         return "Cap"
     from PIL import ImageStat
     g = Image.open(img).convert("L")
     w, h = g.size
-    lum = ImageStat.Stat(g.crop((0, int(h * 0.78), w, h))).mean[0]
+    views = [g]
+    if focus:
+        cx, cy, zs = focus
+        cw, ch = w / zs, h / zs
+        x0 = min(max(cx * w - cw / 2, 0), w - cw)
+        y0 = min(max(cy * h - ch / 2, 0), h - ch)
+        views.append(g.crop((int(x0), int(y0), int(x0 + cw), int(y0 + ch))))
+    lum = min(ImageStat.Stat(v.crop((0, int(v.size[1] * 0.78), v.size[0], v.size[1]))).mean[0] for v in views)
     return "Diagram" if lum >= 225 else ("Dark" if lum < 90 else "Photo")
 
 
@@ -484,7 +502,7 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
     for seg, (a, b) in zip(segments, spans):
         new = split_cues(seg["en"], a, b, line_chars * 2)
         cues_en += new
-        st = caption_style_for(img_dir / seg["image"]) if img_dir and seg.get("image") else "Cap"
+        st = caption_style_for(img_dir / seg["image"], seg.get("focus")) if img_dir and seg.get("image") else "Cap"
         styles_en += [st] * len(new)
         if seg.get("zh_hk"):
             cues_zh += split_cues(seg["zh_hk"], a, b, 22, cjk=True)
