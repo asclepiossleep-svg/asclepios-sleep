@@ -122,7 +122,9 @@ def tts_kokoro(project: dict, segments: list[dict], work: Path) -> tuple[Path, l
     pieces, spans, t = [np.zeros(int(LEAD_IN * sr), dtype="float32")], [], LEAD_IN
     for i, seg in enumerate(segments):
         cache = work / f"tts_{seg['id']}_{hashlib.md5((seg['en'] + json.dumps(voice)).encode()).hexdigest()[:8]}.wav"
-        if cache.exists():
+        if not seg["en"].strip():  # music-only shot: hold the card, no narration
+            samples = np.zeros(int(float(seg.get("hold", 4.0)) * sr), dtype="float32")
+        elif cache.exists():
             samples, sr = sf.read(cache, dtype="float32")
         else:
             samples, sr = kok.create(seg["en"], voice=voice.get("voice", "bf_emma"),
@@ -451,7 +453,8 @@ def build(project_dir: Path, out_dir: Path, preview: float | None):
 
     # 6 render
     name = project.get("output_name", "ASCLEPIOS_HEALTH")
-    final = out_dir / (f"{name}_preview_{int(preview)}s_360p.mp4" if preview else f"{name}_1080p.mp4")
+    tag = "full" if preview and preview >= 1e8 else f"{int(preview or 0)}s"
+    final = out_dir / (f"{name}_preview_{tag}_360p.mp4" if preview else f"{name}_1080p.mp4")
     ass = out_dir / "captions_en.ass"
     sub_inputs, sub_maps, sub_meta = ["-i", str(out_dir / "captions_en.srt")], ["-map", "2:0"], \
         ["-metadata:s:s:0", "language=eng", "-metadata:s:s:0", "title=English"]
@@ -531,11 +534,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("project", type=Path)
     ap.add_argument("--preview", type=float, default=None, help="render a low-res technical preview of N seconds")
+    ap.add_argument("--lowres", action="store_true", help="render the full length at 640x360 (review preview)")
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
     out = args.out or (args.project / "out")
     out.mkdir(parents=True, exist_ok=True)
-    qa = build(args.project.resolve(), out.resolve(), args.preview)
+    qa = build(args.project.resolve(), out.resolve(), 1e9 if args.lowres and not args.preview else args.preview)
     sys.exit(0 if qa["all_pass"] else 2)
 
 

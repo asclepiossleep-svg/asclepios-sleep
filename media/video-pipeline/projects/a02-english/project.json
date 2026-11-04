@@ -1,16 +1,174 @@
 {
-  "script_status": "BLOCKED - awaiting approved ASCLEPIOS HEALTH A02 English script (issue #142)",
+  "script_status": "A02_Narration_By_Shot_EN.txt from Drive ASCLEPIOS_VIDEO_001_A02_HANDOFF (owner handoff 2026-11-04); NOT yet compared with ZIP v6 source",
   "output_name": "ASCLEPIOS_HEALTH_A02_EN",
   "brand": {
-    "wordmark": "ASCLEPIOS",
-    "sub": "HEALTH PLATFORM",
-    "end_line": "Better People · A Brighter Tomorrow"
+    "wordmark": "ASCLEPIOS HEALTH",
+    "sub": "ENGLISH EDITION",
+    "end_line": "ASCLEPIOS HEALTH"
   },
-  "title_card": { "headline": "ASCLEPIOS HEALTH", "kicker": "" },
-  "end_card": { "kicker": "" },
-  "voice": { "engine": "kokoro", "voice": "bf_emma", "speed": 0.95, "lang": "en-gb" },
+  "title_card": {
+    "headline": "ASCLEPIOS HEALTH",
+    "kicker": "Starting with the cell"
+  },
+  "end_card": {
+    "kicker": "Starting with the cell. Working with the rhythms of life."
+  },
+  "voice": {
+    "engine": "kokoro",
+    "voice": "bf_emma",
+    "speed": 0.95,
+    "lang": "en-gb"
+  },
   "narration_wav": null,
   "music": null,
   "music_db": -17,
-  "segments": []
+  "segments": [
+    {
+      "id": "01",
+      "en": "",
+      "hold": 4.0,
+      "kicker": "",
+      "headline": "ASCLEPIOS HEALTH",
+      "image": "01_*_en.jpg"
+    },
+    {
+      "id": "02",
+      "image": "02_Why_Timing_Matters_en.jpg",
+      "kicker": "Shot 02",
+      "headline": "Why Timing Matters",
+      "en": "When we think about healthy ageing, it is not just a question of what we take. We also need to ask: when?"
+    },
+    {
+      "id": "03",
+      "image": "03_Daily_Supplement_en.jpg",
+      "kicker": "Shot 03",
+      "headline": "Daily Supplement",
+      "en": "Imagine you start paying more attention to nutrition. You choose a supplement, and remember to take it every day."
+    },
+    {
+      "id": "04",
+      "image": "04_Delayed_Lunch_en.jpg",
+      "kicker": "Shot 04",
+      "headline": "Delayed Lunch",
+      "en": "But when life gets busy, mealtimes keep changing. Lunch gets pushed back again."
+    },
+    {
+      "id": "05",
+      "image": "05_Late_Night_Phone_en.jpg",
+      "kicker": "Shot 05",
+      "headline": "Late Night Phone",
+      "en": "At night, a little more time on your phone turns into another late bedtime."
+    },
+    {
+      "id": "06",
+      "image": "06_Inside_the_Cell_en.jpg",
+      "kicker": "Shot 06",
+      "headline": "Inside the Cell",
+      "en": "So, is taking a supplement enough? To explore that question, let us look inside the cell: a city that works around the clock."
+    },
+    {
+      "id": "07",
+      "image": "07_Mitochondria_Energy_en.jpg",
+      "kicker": "Shot 07",
+      "headline": "Mitochondria Energy",
+      "en": "Mitochondria are like power stations. They help supply the energy cells need to function."
+    },
+    {
+      "id": "08",
+      "image": "08_Daily_Movement_en.jpg",
+      "kicker": "Shot 08",
+      "headline": "Daily Movement",
+      "en": "Every walk, every movement, depends on energy supplied by your cells."
+    },
+    {
+      "id": "09",
+      "image": "09_Lysosome_Recycling_en.jpg",
+      "kicker": "Shot 09",
+      "headline": "Lysosome Recycling",
+      "en": "This city also has recycling centres. Lysosomes break down and recycle some damaged proteins and cellular components."
+    },
+    {
+      "id": "10",
+      "image": "10_DNA_Repair_en.jpg",
+      "kicker": "Shot 10",
+      "headline": "DNA Repair",
+      "en": "There is maintenance work, too. DNA repair, for example, helps cells maintain the integrity of their genetic material."
+    },
+    {
+      "id": "11",
+      "image": "11_Cellular_Ageing_en.jpg",
+      "kicker": "Shot 11",
+      "headline": "Cellular Ageing",
+      "en": "As we age, some energy-producing, clearing and maintenance functions may become less effective. Damage can gradually accumulate, potentially affecting cells, tissues and organs."
+    },
+    {
+      "id": "12",
+      "image": "12_Morning_Light_en.jpg",
+      "kicker": "Shot 12",
+      "headline": "Morning Light",
+      "en": "But cellular activity also follows a timetable. Morning light is an important signal that helps set that timing."
+    },
+    {
+      "id": "13",
+      "image": "13_Circadian_Coordination_en.jpg",
+      "kicker": "Shot 13",
+      "headline": "Circadian Coordination",
+      "en": "Light influences the master clock in the brain, which helps coordinate clocks in different organs and cells. Metabolism and some maintenance processes are regulated by circadian rhythms. Ageing, cellular function and these rhythms can also influence one another."
+    },
+    {
+      "id": "14",
+      "image": "14_Winding_Down_en.jpg",
+      "kicker": "Shot 14",
+      "headline": "Winding Down",
+      "en": "That is why sleep and daily rhythms deserve attention together. But repair does not happen only at night. Different processes follow different rhythms."
+    },
+    {
+      "id": "15",
+      "image": "15_Meal_Timing_Metabolism_en.jpg",
+      "kicker": "Shot 15",
+      "headline": "Meal Timing Metabolism",
+      "en": "Mealtimes can also influence some peripheral clocks and metabolic rhythms. What we eat, and when we eat, are two questions worth considering together."
+    },
+    {
+      "id": "16",
+      "image": "16_Ingredient_Research_en.jpg",
+      "kicker": "Shot 16",
+      "headline": "Ingredient Research",
+      "en": "Studying an ingredient is a little like studying how to improve one power station. To look after the whole city, we also need to consider the bigger picture."
+    },
+    {
+      "id": "17",
+      "image": "17_Whole_Body_Systems_en.jpg",
+      "kicker": "Shot 17",
+      "headline": "Whole Body Systems",
+      "en": "Nutrition and metabolism provide materials and energy. Hormones carry regulatory signals, while the immune system also helps shape the cellular environment. Cellular function and whole-body systems continually influence one another."
+    },
+    {
+      "id": "18",
+      "image": "18_Research_to_Practice_en.jpg",
+      "kicker": "Shot 18",
+      "headline": "Research to Practice",
+      "en": "This is the ASCLEPIOS HEALTH approach: a whole-system perspective, respect for biological rhythms, and practical application. Start with the foundations of diet, movement and sleep. Then consider nutritional support according to individual needs and evidence. What to use, how to use it, and when to use it must be considered individually. Not every supplement belongs in a fixed morning, afternoon or evening slot."
+    },
+    {
+      "id": "19",
+      "image": "19_Invitation_to_Explore_en.jpg",
+      "kicker": "Shot 19",
+      "headline": "Invitation to Explore",
+      "en": "With ASCLEPIOS HEALTH, we will explore cellular energy, recycling and repair, and how body functions and biological rhythms can inform choices you can make every day. This journey towards healthy ageing begins with understanding yourself."
+    },
+    {
+      "id": "20",
+      "image": "20_Brand_Ending_en.jpg",
+      "kicker": "Shot 20",
+      "headline": "ASCLEPIOS HEALTH",
+      "en": "ASCLEPIOS HEALTH. Starting with the cell. Working with the rhythms of life."
+    }
+  ],
+  "watermark": "REVIEW PREVIEW - placeholder visuals (supplied shot JPGs not received) - substitute TTS voice",
+  "source": {
+    "file": "A02_Narration_By_Shot_EN.txt",
+    "bytes": 3704,
+    "sha256": "29a7296bd0a3c86bdb4d1c46cf08eccecfc92ed88244a8aee43dbc0e4773bec6"
+  }
 }
