@@ -18,6 +18,8 @@ small so the warp stays invisible.
 import argparse
 import math
 import subprocess
+import atexit
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -82,7 +84,7 @@ def main():
                 v = max(v, 0.5 * (1 + math.cos(math.pi * (t - s0) / 2.5)))
         return v
 
-    tmp = Path(tempfile.mkdtemp())
+    tmp = Path(tempfile.mkdtemp()); atexit.register(shutil.rmtree, tmp, True)  # frames are large
     subprocess.run(["ffmpeg", "-loglevel", "error", "-i", a.inp, str(tmp / "%06d.png")], check=True)
     files = sorted(tmp.glob("*.png"))
     for i, f in enumerate(files):

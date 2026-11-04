@@ -14,6 +14,8 @@
 import argparse
 import math
 import subprocess
+import atexit
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -35,7 +37,7 @@ def main():
     a = ap.parse_args()
     x1, y1, x2, y2 = map(int, a.bbox.split(",")); y2 += 10
     refs = sorted(Path(a.frames).glob("*.png"))
-    tmp = Path(tempfile.mkdtemp())
+    tmp = Path(tempfile.mkdtemp()); atexit.register(shutil.rmtree, tmp, True)  # frames are large
     subprocess.run(["ffmpeg", "-loglevel", "error", "-i", a.raw, str(tmp / "r%06d.png")], check=True)
     raws = sorted(tmp.glob("r*.png"))
     h, w = cv2.imread(str(raws[0])).shape[:2]   # encoded size (even); motion frames are cropped to match

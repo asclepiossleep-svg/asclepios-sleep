@@ -13,6 +13,8 @@ reported: +N frames (+N*40 ms) means the mouth moves LATER than the voice,
 import json
 import subprocess
 import sys
+import atexit
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -42,7 +44,7 @@ def main(video, wav, still, bbox="150,92,338,318", ref_frames=None):
     bw, bh = x2 - x1, y2 - y1
     mask = np.zeros((h, w), np.float32)
     cv2.ellipse(mask, (x1 + bw // 2, y1 + int(bh * 0.74)), (int(bw * 0.28), int(bh * 0.14)), 0, 0, 360, 1.0, -1)
-    tmp = Path(tempfile.mkdtemp())
+    tmp = Path(tempfile.mkdtemp()); atexit.register(shutil.rmtree, tmp, True)  # frames are large
     subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(video), str(tmp / "%06d.png")], check=True)
     files = sorted(tmp.glob("*.png"))
     mouth = []

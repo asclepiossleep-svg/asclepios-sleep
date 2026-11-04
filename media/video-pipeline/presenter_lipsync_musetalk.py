@@ -20,6 +20,8 @@ import math
 import os
 import subprocess
 import sys
+import atexit
+import shutil
 import tempfile
 import time
 from pathlib import Path
@@ -65,7 +67,8 @@ def main():
 
     audio = Path(a.audio).resolve()
     if a.seconds:
-        cut = Path(tempfile.mkdtemp()) / "cut.wav"
+        cut_dir = Path(tempfile.mkdtemp()); atexit.register(shutil.rmtree, cut_dir, True)
+        cut = cut_dir / "cut.wav"
         subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(audio), "-t", str(a.seconds),
                         "-ar", "16000", "-ac", "1", str(cut)], check=True)
         audio = cut
@@ -118,7 +121,7 @@ def main():
 
     # gentle sway: ~0.4% scale breathing + <=1.5 px drift, slow sinusoids
     h, w = frame.shape[:2]
-    tmp = Path(tempfile.mkdtemp())
+    tmp = Path(tempfile.mkdtemp()); atexit.register(shutil.rmtree, tmp, True)  # frames are large
     for i, f in enumerate(frames):
         if a.frames_dir:  # real motion already present: no synthetic sway
             cv2.imwrite(str(tmp / f"{i:06d}.png"), f)

@@ -12,6 +12,8 @@ import math
 import re
 import subprocess
 import sys
+import atexit
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -48,7 +50,7 @@ def main(raw, still, wav, out, bbox="150,92,338,318"):
     cv2.ellipse(mask, (x1 + bw // 2, y1 + int(bh * 0.74)), (int(bw * 0.34), int(bh * 0.22)), 0, 0, 360, 1.0, -1)
     mask = cv2.GaussianBlur(mask, (31, 31), 0)
     gaps = silences(wav)
-    tmp = Path(tempfile.mkdtemp())
+    tmp = Path(tempfile.mkdtemp()); atexit.register(shutil.rmtree, tmp, True)  # frames are large
     subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(raw), str(tmp / "%06d.png")], check=True)
     files = sorted(tmp.glob("*.png"))
     n_closed = 0
