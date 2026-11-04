@@ -38,7 +38,7 @@ def audio_env(wav: Path, n: int):
     return env
 
 
-def main(video, wav, still, bbox="150,92,338,318", ref_frames=None):
+def main(video, wav, still, bbox="150,92,338,318", ref_frames=None, temporal=False):
     x1, y1, x2, y2 = map(int, bbox.split(",")); y2 += 10
     src = cv2.imread(str(still)); h, w = src.shape[:2]
     bw, bh = x2 - x1, y2 - y1
@@ -49,8 +49,15 @@ def main(video, wav, still, bbox="150,92,338,318", ref_frames=None):
     files = sorted(tmp.glob("*.png"))
     mouth = []
     refs = sorted(Path(ref_frames).glob("*.png")) if ref_frames else None
+    prev = None
     for i, f in enumerate(files):
         fr = cv2.imread(str(f)).astype(np.float32)
+        if temporal:  # no reference: mouth-region change between consecutive frames
+            hh, ww = fr.shape[:2]
+            m = mask[:hh, :ww] > 0.5
+            mouth.append(0.0 if prev is None else float(np.abs(fr - prev)[m].mean()))
+            prev = fr
+            continue
         if refs:  # motion clip: compare with the same motion frame's relaxed closed lips
             hh, ww = fr.shape[:2]
             ref = cv2.imread(str(refs[min(i, len(refs) - 1)]))[:hh, :ww].astype(np.float32)
@@ -91,5 +98,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("video"); ap.add_argument("wav"); ap.add_argument("still")
     ap.add_argument("bbox", nargs="?", default="150,92,338,318"); ap.add_argument("--ref-frames")
+    ap.add_argument("--temporal", action="store_true", help="reference-free: frame-to-frame mouth change")
     x = ap.parse_args()
-    main(Path(x.video), Path(x.wav), Path(x.still), x.bbox, x.ref_frames)
+    main(Path(x.video), Path(x.wav), Path(x.still), x.bbox, x.ref_frames, x.temporal)

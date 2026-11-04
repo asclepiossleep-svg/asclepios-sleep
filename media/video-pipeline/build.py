@@ -609,7 +609,9 @@ def build(project_dir: Path, out_dir: Path, preview: float | None, preview_res: 
             shots[i] = (kind, seg, start)
     for i, (kind, seg, start) in enumerate(shots):
         nxt = shots[i + 1][2] if i + 1 < len(shots) else total
-        dur = (nxt - start) + (fades[i + 1] if i + 1 < len(shots) else 0)
+        # +3 spare frames: xfade drops frames past each transition, but a clip one frame
+        # short of offset+duration ends the whole chain early
+        dur = (nxt - start) + (fades[i + 1] + 0.12 if i + 1 < len(shots) else 0)
         mp4 = work / f"clip_{i:02d}_{res[1]}.mp4"
         if kind == "vid":
             video_clip(vid_root / seg["video"], dur, mp4, res)
@@ -712,6 +714,7 @@ def run_qa(final, master, cues_en, cues_zh, total, res, preview, out_dir, notes,
     checks = {
         "resolution": (int(v["width"]), int(v["height"])) == res,
         "duration_matches_audio_plan": abs(dur - total) < 0.25,
+        "video_stream_full_length": abs(float(v.get("duration", 0)) - total) < 0.25,
         "loudness_within_1LU_of_target": abs(I - TARGET_LUFS) <= 1.0,
         "true_peak_below_-1dBTP": TP <= -1.0,
         "captions_ordered_non_overlapping": ordered,
