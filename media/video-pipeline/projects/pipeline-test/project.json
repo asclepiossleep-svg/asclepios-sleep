@@ -1,0 +1,39 @@
+{
+  "script_status": "PIPELINE TEST ONLY - placeholder text, NOT the approved A02 script",
+  "output_name": "PIPELINE_TEST",
+  "watermark": "PIPELINE TEST - NOT APPROVED CONTENT",
+  "brand": {
+    "wordmark": "ASCLEPIOS",
+    "sub": "HEALTH PLATFORM",
+    "end_line": "Better People · A Brighter Tomorrow"
+  },
+  "title_card": { "headline": "Pipeline Test", "kicker": "Technical render check" },
+  "end_card": { "kicker": "Technical render check complete" },
+  "voice": { "engine": "kokoro", "voice": "bf_emma", "speed": 0.95, "lang": "en-gb" },
+  "narration_wav": null,
+  "music": null,
+  "music_db": -17,
+  "segments": [
+    {
+      "id": "t01",
+      "kicker": "Test segment one",
+      "headline": "This is a technical test of the video pipeline",
+      "en": "This is a technical test of the video pipeline. It checks the voice, the music, and the captions.",
+      "zh_hk": "這是影片製作流程的技術測試。它會檢查旁白、音樂及字幕。"
+    },
+    {
+      "id": "t02",
+      "kicker": "Test segment two",
+      "headline": "Captions should follow the speech",
+      "en": "Each caption should appear while its words are spoken, and the music should sit quietly underneath.",
+      "zh_hk": "每句字幕應在說出相應內容時出現，而背景音樂應保持輕柔。"
+    },
+    {
+      "id": "t03",
+      "kicker": "Test segment three",
+      "headline": "The approved script will replace this text",
+      "en": "When the approved script is supplied, it will replace this placeholder text in a single step.",
+      "zh_hk": "當獲批准的稿件提供後，只需一個步驟便可取代這段佔位文字。"
+    }
+  ]
+}

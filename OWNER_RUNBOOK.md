@@ -71,6 +71,12 @@ done — never all three at once.
   authoritative in the meantime.
 - `04_SaaS_Backend_Admin_Data_Architecture.pdf` — referenced in the
   original handoff pack's index but never supplied either.
+- **Separate media goal ASCLEPIOS-VIDEO-001 (issue #142):** the approved
+  ASCLEPIOS HEALTH **A02 English script** (text). It is not in the repo,
+  Drive or Gmail. The pipeline in `media/video-pipeline/` is built and
+  tested, and the script is the only item blocking the real render. The
+  Manus narration/music WAVs are preferred but optional (TTS fallback is
+  marked as a substitute). This doesn't touch the main queue above.
 
-Neither gap stops implementation. Flagging here so the next person who
+Neither of the two specification gaps stops implementation. Flagging here so the next person who
 opens this project sees it immediately instead of re-discovering it.

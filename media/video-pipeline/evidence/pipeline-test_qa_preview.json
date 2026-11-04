@@ -1,0 +1,34 @@
+{
+  "file": "PIPELINE_TEST_preview_25s_360p.mp4",
+  "bytes": 630671,
+  "sha256": "1a2e847fdf353973e14d0674faff553f9649e3ff2d35b70ba8b2052200649056",
+  "duration_s": 20.96,
+  "resolution": "640x360",
+  "fps": "25/1",
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "loudness_LUFS": -16.0,
+  "true_peak_dBFS": -1.8,
+  "LRA_LU": 2.7,
+  "caption_cues_en": 6,
+  "caption_cues_zh_hk": 6,
+  "max_caption_cps": 19.1,
+  "checks": {
+    "resolution": true,
+    "duration_matches_audio_plan": true,
+    "loudness_within_1LU_of_target": true,
+    "true_peak_below_-1dBTP": true,
+    "captions_ordered_non_overlapping": true,
+    "captions_within_duration": true,
+    "caption_reading_speed_le_20cps": true,
+    "audio_48k_stereo": true,
+    "soft_caption_tracks": true
+  },
+  "all_pass": true,
+  "notes": [
+    "SUBSTITUTE voice: Kokoro TTS bf_emma (approved narration not supplied)",
+    "music: generated ambient pad (original, no third-party rights)"
+  ],
+  "script_status": "PIPELINE TEST ONLY - placeholder text, NOT the approved A02 script",
+  "cost": "GBP 0 (local FFmpeg/Pillow/Kokoro on session CPU)"
+}

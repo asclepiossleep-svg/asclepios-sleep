@@ -1,0 +1,28 @@
+1
+00:00:01,200 --> 00:00:03,811
+This is a technical test
+of the video pipeline.
+
+2
+00:00:03,811 --> 00:00:06,533
+It checks the voice, the
+music, and the captions.
+
+3
+00:00:07,083 --> 00:00:09,905
+Each caption should appear
+while its words are spoken,
+
+4
+00:00:09,905 --> 00:00:12,203
+and the music should
+sit quietly underneath.
+
+5
+00:00:12,753 --> 00:00:14,812
+When the approved script is supplied,
+
+6
+00:00:14,812 --> 00:00:17,873
+it will replace this placeholder
+text in a single step.

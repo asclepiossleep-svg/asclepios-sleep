@@ -1,0 +1,16 @@
+{
+  "script_status": "BLOCKED - awaiting approved ASCLEPIOS HEALTH A02 English script (issue #142)",
+  "output_name": "ASCLEPIOS_HEALTH_A02_EN",
+  "brand": {
+    "wordmark": "ASCLEPIOS",
+    "sub": "HEALTH PLATFORM",
+    "end_line": "Better People · A Brighter Tomorrow"
+  },
+  "title_card": { "headline": "ASCLEPIOS HEALTH", "kicker": "" },
+  "end_card": { "kicker": "" },
+  "voice": { "engine": "kokoro", "voice": "bf_emma", "speed": 0.95, "lang": "en-gb" },
+  "narration_wav": null,
+  "music": null,
+  "music_db": -17,
+  "segments": []
+}

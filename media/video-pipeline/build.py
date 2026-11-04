@@ -1,0 +1,543 @@
+#!/usr/bin/env python3
+"""
+ASCLEPIOS HEALTH educational video pipeline (ASCLEPIOS-VIDEO-001).
+
+Free / local only: FFmpeg + Pillow, optional Kokoro TTS (Apache-2.0, runs on
+CPU). No paid API, no cloud rendering.
+
+    python3 media/video-pipeline/build.py <project-dir> [--preview 25] [--out DIR]
+
+<project-dir> holds project.json (see README.md). Stages:
+  1. narration  - approved WAV (aligned to segments by silence detection)
+                  or Kokoro TTS per segment (voice marked SUBSTITUTE)
+  2. music      - supplied licensed/owned file, or a self-generated ambient
+                  pad (no third-party rights); ducked under speech
+  3. master     - two-pass EBU R128 loudness normalisation
+  4. captions   - EN (+ optional zh-HK) SRT/VTT/ASS from segment timings
+  5. visuals    - branded 1920x1080 cards, slow push-in, crossfades
+  6. render     - H.264/AAC MP4, burned EN captions + soft caption tracks
+  7. QA         - ffprobe/ebur128 checks, contact sheet, qa.json, sha256
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+HERE = Path(__file__).resolve().parent
+FPS = 25
+XFADE = 0.8           # seconds of crossfade between cards
+SEG_GAP = 0.55        # silence between TTS segments
+LEAD_IN = 1.2         # silence before first narration line
+TAIL = 2.5            # music tail after last line
+TARGET_LUFS = -16.0
+TARGET_TP = -1.5
+
+BRAND = {
+    "navy": (22, 35, 63),
+    "navy_deep": (13, 22, 42),
+    "teal": (18, 143, 134),
+    "teal_dark": (12, 107, 100),
+    "teal_soft": (228, 244, 242),
+    "teal_light": (94, 196, 186),
+    "cream": (243, 241, 234),
+    "muted": (124, 135, 156),
+}
+
+FONT_SERIF = ["/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"]
+FONT_SANS = ["/usr/share/fonts/opentype/inter/Inter-Regular.otf",
+             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]
+FONT_SANS_BOLD = ["/usr/share/fonts/opentype/inter/Inter-SemiBold.otf",
+                  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]
+SUB_FONT_EN = "Inter"
+SUB_FONT_ZH = "WenQuanYi Zen Hei"
+
+
+# ----------------------------------------------------------------- helpers
+def run(cmd: list[str], capture: bool = False) -> str:
+    res = subprocess.run(cmd, stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
+                         stderr=subprocess.PIPE, text=True)
+    if res.returncode != 0:
+        sys.stderr.write(res.stderr[-4000:])
+        raise SystemExit(f"command failed: {' '.join(cmd[:6])} ...")
+    return (res.stdout or "") + (res.stderr or "")
+
+
+def ff(*args: str, capture: bool = False) -> str:
+    return run(["ffmpeg", "-hide_banner", "-y", "-loglevel", "error" if not capture else "info", *args],
+               capture=capture)
+
+
+def duration(path: Path) -> float:
+    out = run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+               "-of", "default=nw=1:nk=1", str(path)], capture=True)
+    return float(out.strip().splitlines()[0])
+
+
+def font(paths: list[str], size: int) -> ImageFont.FreeTypeFont:
+    for p in paths:
+        if Path(p).exists():
+            return ImageFont.truetype(p, size)
+    return ImageFont.load_default()
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def ts(t: float, sep: str = ",") -> str:
+    t = max(0.0, t)
+    h, rem = divmod(int(round(t * 1000)), 3600_000)
+    m, rem = divmod(rem, 60_000)
+    s, ms = divmod(rem, 1000)
+    return f"{h:02d}:{m:02d}:{s:02d}{sep}{ms:03d}"
+
+
+# --------------------------------------------------------------- narration
+def tts_kokoro(project: dict, segments: list[dict], work: Path) -> tuple[Path, list[tuple[float, float]]]:
+    try:
+        from kokoro_onnx import Kokoro  # type: ignore
+        import soundfile as sf  # type: ignore
+        import numpy as np
+    except ImportError:
+        raise SystemExit("Kokoro TTS not installed: pip install kokoro-onnx soundfile "
+                         "(model files: see README.md)")
+    voice = project.get("voice", {})
+    import os
+    model_dir = Path(os.environ.get("KOKORO_MODEL_DIR") or voice.get("model_dir") or HERE / "models").expanduser()
+    kok = Kokoro(str(model_dir / "kokoro-v1.0.onnx"), str(model_dir / "voices-v1.0.bin"))
+    sr = 24000
+    pieces, spans, t = [np.zeros(int(LEAD_IN * sr), dtype="float32")], [], LEAD_IN
+    for i, seg in enumerate(segments):
+        cache = work / f"tts_{seg['id']}_{hashlib.md5((seg['en'] + json.dumps(voice)).encode()).hexdigest()[:8]}.wav"
+        if cache.exists():
+            samples, sr = sf.read(cache, dtype="float32")
+        else:
+            samples, sr = kok.create(seg["en"], voice=voice.get("voice", "bf_emma"),
+                                     speed=float(voice.get("speed", 0.95)), lang=voice.get("lang", "en-gb"))
+            sf.write(cache, samples, sr)
+        d = len(samples) / sr
+        spans.append((t, t + d))
+        pieces.append(samples.astype("float32"))
+        gap = float(seg.get("pause_after", SEG_GAP))
+        pieces.append(np.zeros(int(gap * sr), dtype="float32"))
+        t += d + gap
+    out = work / "narration_raw.wav"
+    sf.write(out, np.concatenate(pieces), sr)
+    return out, spans
+
+
+def align_supplied(wav: Path, segments: list[dict], work: Path) -> tuple[Path, list[tuple[float, float]]]:
+    """Map script segments onto an approved narration WAV without re-voicing it.
+
+    Expected boundaries come from character share; each is snapped to the
+    nearest detected pause. QA later reports the snap distances so a human can
+    see how confident the alignment is.
+    """
+    out = work / "narration_raw.wav"
+    ff("-f", "lavfi", "-t", str(LEAD_IN), "-i", "anullsrc=r=48000:cl=mono", "-i", str(wav),
+       "-filter_complex", "[1:a]aresample=48000,pan=mono|c0=c0[n];[0:a][n]concat=n=2:v=0:a=1",
+       str(out))
+    total = duration(out)
+    log = run(["ffmpeg", "-hide_banner", "-i", str(out), "-af",
+               "silencedetect=noise=-38dB:d=0.30", "-f", "null", "-"], capture=True)
+    starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", log)]
+    ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", log)]
+    pauses = [((s + e) / 2, s, e) for s, e in zip(starts, ends)]
+    speech_start = ends[0] if starts and starts[0] < 0.05 and ends else LEAD_IN
+    speech_end = starts[-1] if starts and len(starts) > len(ends) else total
+    chars = [max(1, len(s["en"])) for s in segments]
+    acc, bounds = 0, []
+    for c in chars[:-1]:
+        acc += c
+        bounds.append(speech_start + (speech_end - speech_start) * acc / sum(chars))
+    snapped, offsets = [], []
+    for b in bounds:
+        cand = min(pauses, key=lambda p: abs(p[0] - b)) if pauses else (b, b, b)
+        snapped.append(cand)
+        offsets.append(round(cand[0] - b, 2))
+    spans, cur = [], speech_start
+    for i in range(len(segments)):
+        if i < len(snapped):
+            spans.append((cur, snapped[i][1]))
+            cur = snapped[i][2]
+        else:
+            spans.append((cur, speech_end))
+    (work / "alignment.json").write_text(json.dumps({"snap_offsets_s": offsets, "pauses": len(pauses)}, indent=2))
+    return out, spans
+
+
+# ------------------------------------------------------------------- music
+def make_music(project: dict, total: float, work: Path, base: Path) -> tuple[Path, str]:
+    out = work / "music.wav"
+    src = project.get("music")
+    if src:
+        p = (base / src).resolve()
+        if not p.exists():
+            raise SystemExit(f"music file not found: {p}")
+        ff("-stream_loop", "-1", "-i", str(p), "-t", f"{total:.3f}", "-af",
+           f"aresample=48000,afade=t=in:d=2,afade=t=out:st={max(0, total - 3):.3f}:d=3", "-ac", "2", str(out))
+        return out, f"supplied: {src}"
+    # Self-generated ambient pad: slow-breathing sine chord (D major add9 voicing)
+    # + filtered noise "air". Original, generated here, no third-party rights.
+    freqs = [73.42, 146.83, 220.0, 277.18, 329.63, 440.0]
+    amps = [0.22, 0.18, 0.12, 0.08, 0.07, 0.04]
+    terms = "+".join(f"{a}*sin(2*PI*{f}*t)*(0.75+0.25*sin(2*PI*{0.05 + i * 0.013:.3f}*t))"
+                     for i, (f, a) in enumerate(zip(freqs, amps)))
+    ff("-f", "lavfi", "-i", f"aevalsrc='{terms}':s=48000:d={total:.3f}",
+       "-f", "lavfi", "-i", f"anoisesrc=c=pink:a=0.035:d={total:.3f}:r=48000",
+       "-filter_complex",
+       "[0:a]lowpass=f=1800,aecho=0.8:0.7:120|260:0.25|0.18[p];"
+       "[1:a]lowpass=f=900,highpass=f=120[nz];"
+       f"[p][nz]amix=inputs=2:weights=1 0.6:normalize=0,"
+       f"afade=t=in:d=3,afade=t=out:st={max(0, total - 4):.3f}:d=4,pan=stereo|c0=c0|c1=c0,"
+       "aphaser=type=t:speed=0.1:decay=0.3[m]",
+       "-map", "[m]", str(out))
+    return out, "generated ambient pad (original, no third-party rights)"
+
+
+def mix_master(narr: Path, music: Path, total: float, work: Path, music_db: float) -> Path:
+    mixed = work / "mix.wav"
+    ff("-i", str(narr), "-i", str(music), "-filter_complex",
+       f"[0:a]aresample=48000,apad,atrim=0:{total:.3f},highpass=f=70,"
+       "acompressor=threshold=-20dB:ratio=2.5:attack=8:release=120:makeup=2,"
+       "pan=stereo|c0=c0|c1=c0,asplit=2[v][sc];"
+       f"[1:a]aresample=48000,volume={music_db}dB[mu];"
+       "[mu][sc]sidechaincompress=threshold=0.015:ratio=10:attack=40:release=600:makeup=1[duck];"
+       "[v][duck]amix=inputs=2:normalize=0[o]",
+       "-map", "[o]", "-ar", "48000", str(mixed))
+    # two-pass loudnorm
+    log = run(["ffmpeg", "-hide_banner", "-i", str(mixed), "-af",
+               f"loudnorm=I={TARGET_LUFS}:TP={TARGET_TP}:LRA=11:print_format=json", "-f", "null", "-"],
+              capture=True)
+    m = json.loads(log[log.rindex("{"):log.rindex("}") + 1])
+    master = work / "master.wav"
+    ff("-i", str(mixed), "-af",
+       f"loudnorm=I={TARGET_LUFS}:TP={TARGET_TP}:LRA=11:measured_I={m['input_i']}:"
+       f"measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:"
+       f"offset={m['target_offset']}:linear=true", "-ar", "48000", str(master))
+    return master
+
+
+# ---------------------------------------------------------------- captions
+def split_cues(text: str, start: float, end: float, max_chars: int, cjk: bool = False) -> list[tuple[float, float, str]]:
+    if cjk:
+        parts = [p for p in re.split(r"(?<=[。！？；])", text) if p.strip()]
+        chunks: list[str] = []
+        for p in parts:
+            while len(p) > max_chars:
+                cut = max((p.rfind(c, 0, max_chars) for c in "，、："), default=-1)
+                cut = cut + 1 if cut > 4 else max_chars
+                chunks.append(p[:cut]); p = p[cut:]
+            if p: chunks.append(p)
+    else:
+        sentences = re.split(r"(?<=[.!?;])\s+", text.strip())
+        chunks = []
+        clauses = []
+        for s in sentences:
+            if len(s) <= max_chars:
+                clauses.append(s); continue
+            for c in re.split(r"(?<=,)\s+", s):
+                if clauses and len(clauses[-1]) + len(c) + 1 <= max_chars and not clauses[-1].endswith((".", "!", "?")):
+                    clauses[-1] = f"{clauses[-1]} {c}"
+                else:
+                    clauses.append(c)
+        for s in clauses:
+            words, line = s.split(), ""
+            for w in words:
+                if len(line) + len(w) + 1 > max_chars and line:
+                    chunks.append(line); line = w
+                else:
+                    line = f"{line} {w}".strip()
+            if line: chunks.append(line)
+    weights = [max(1, len(c)) for c in chunks]
+    cues, t = [], start
+    for c, w in zip(chunks, weights):
+        d = (end - start) * w / sum(weights)
+        cues.append((t, t + d, c)); t += d
+    return cues
+
+
+def wrap2(text: str, width: int) -> str:
+    if len(text) <= width:
+        return text
+    mid = len(text) // 2
+    left, right = text.rfind(" ", 0, mid + 1), text.find(" ", mid)
+    cut = left if (right == -1 or (left != -1 and mid - left <= right - mid)) else right
+    return text[:cut].strip() + "\n" + text[cut:].strip() if cut > 0 else text
+
+
+def write_captions(cues: list[tuple[float, float, str]], stem: Path, font_name: str, wrap: int | None):
+    srt, vtt = [], ["WEBVTT", ""]
+    for i, (a, b, t) in enumerate(cues, 1):
+        body = wrap2(t, wrap) if wrap else t
+        srt += [str(i), f"{ts(a)} --> {ts(b)}", body, ""]
+        vtt += [f"{ts(a, '.')} --> {ts(b, '.')}", body, ""]
+    stem.with_suffix(".srt").write_text("\n".join(srt), encoding="utf-8")
+    stem.with_suffix(".vtt").write_text("\n".join(vtt), encoding="utf-8")
+    ass = ["[Script Info]", "ScriptType: v4.00+", "PlayResX: 1920", "PlayResY: 1080", "WrapStyle: 2", "",
+           "[V4+ Styles]",
+           "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, "
+           "Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
+           "Alignment, MarginL, MarginR, MarginV, Encoding",
+           f"Style: Cap,{font_name},48,&H00FFFFFF,&H00FFFFFF,&H00301A0D,&H96000000,0,0,0,0,100,100,0.5,0,"
+           "1,2.6,1.4,2,220,220,64,1", "",
+           "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
+    for a, b, t in cues:
+        body = (wrap2(t, wrap) if wrap else t).replace("\n", "\\N")
+        ass.append(f"Dialogue: 0,{ts(a, '.')[:-1]},{ts(b, '.')[:-1]},Cap,,0,0,0,,{body}")
+    stem.with_suffix(".ass").write_text("\n".join(ass), encoding="utf-8")
+
+
+# ----------------------------------------------------------------- visuals
+def gradient(w: int, h: int, top: tuple, bottom: tuple) -> Image.Image:
+    base = Image.new("RGB", (w, h), top)
+    px = Image.linear_gradient("L").resize((w, h))
+    return Image.composite(Image.new("RGB", (w, h), bottom), base, px)
+
+
+def draw_card(kind: str, seg: dict, project: dict, path: Path, size=(2112, 1188)):
+    """Card is rendered 10% oversized so the push-in never shows an edge."""
+    W, H = size
+    s = W / 1920
+    img = gradient(W, H, BRAND["navy_deep"], BRAND["navy"])
+    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    g = ImageDraw.Draw(glow)
+    cx, cy = int(W * 0.78), int(H * 0.42)
+    for r, a in [(620, 26), (470, 30), (330, 34)]:
+        g.ellipse([cx - r * s, cy - r * s, cx + r * s, cy + r * s], fill=(*BRAND["teal"], a))
+    glow = glow.filter(ImageFilter.GaussianBlur(60 * s))
+    img = Image.alpha_composite(img.convert("RGBA"), glow)
+    arcs = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    da = ImageDraw.Draw(arcs)
+    # thin botanical-style concentric arcs (abstract, original)
+    for i, r in enumerate([300, 360, 420]):
+        da.arc([cx - r * s, cy - r * s, cx + r * s, cy + r * s], 200 + i * 12, 340 - i * 6,
+               fill=(*BRAND["teal_soft"], 90 - i * 22), width=max(1, int(2 * s)))
+    img = Image.alpha_composite(img, arcs)
+    d = ImageDraw.Draw(img)
+    ox, oy = int((W - 1920 * s) / 2 + 96 * s + (W - 1920) / 2), int((H - 1080) / 2 + 80 * s)
+    brand = project.get("brand", {})
+    d.text((ox, oy), brand.get("wordmark", "ASCLEPIOS"), font=font(FONT_SERIF, int(40 * s)), fill=BRAND["cream"])
+    d.text((ox + 2, oy + 54 * s), brand.get("sub", "HEALTH PLATFORM"), font=font(FONT_SANS_BOLD, int(18 * s)),
+           fill=BRAND["teal_soft"], spacing=4)
+    if kind == "title":
+        d.text((ox, int(H * 0.40)), seg.get("headline", ""), font=font(FONT_SERIF, int(92 * s)), fill=BRAND["cream"])
+        d.text((ox + 4, int(H * 0.40 + 130 * s)), seg.get("kicker", ""), font=font(FONT_SANS, int(34 * s)),
+               fill=BRAND["teal_soft"])
+    elif kind == "end":
+        d.text((ox, int(H * 0.38)), brand.get("end_line", "Better People · A Brighter Tomorrow"),
+               font=font(FONT_SERIF, int(64 * s)), fill=BRAND["cream"])
+        d.text((ox + 4, int(H * 0.38 + 100 * s)), seg.get("kicker", ""), font=font(FONT_SANS, int(30 * s)),
+               fill=BRAND["teal_soft"])
+    else:
+        if seg.get("kicker"):
+            d.text((ox + 4, int(H * 0.30)), seg["kicker"].upper(), font=font(FONT_SANS_BOLD, int(24 * s)),
+                   fill=BRAND["teal_light"])
+        y = int(H * 0.30 + 50 * s)
+        for line in wrap_px(d, seg.get("headline", ""), font(FONT_SERIF, int(70 * s)), int(1050 * s)):
+            d.text((ox, y), line, font=font(FONT_SERIF, int(70 * s)), fill=BRAND["cream"]); y += int(88 * s)
+        d.rectangle([ox, y + 24 * s, ox + 90 * s, y + 28 * s], fill=BRAND["teal"])
+    if project.get("watermark"):
+        d.text((ox, int(H - (H - 1080) / 2 - 140 * s)), project["watermark"], font=font(FONT_SANS_BOLD, int(24 * s)),
+               fill=(255, 196, 120))
+    img.convert("RGB").save(path, quality=95)
+
+
+def wrap_px(d: ImageDraw.ImageDraw, text: str, f, maxw: int) -> list[str]:
+    words, lines, line = text.split(), [], ""
+    for w in words:
+        trial = f"{line} {w}".strip()
+        if d.textlength(trial, font=f) > maxw and line:
+            lines.append(line); line = w
+        else:
+            line = trial
+    return lines + ([line] if line else [])
+
+
+def card_clip(png: Path, dur: float, out: Path, res: tuple[int, int]):
+    W, H = res
+    frames = max(2, int(round(dur * FPS)))
+    # slow push-in from 100% to ~104% using crop on the oversized card
+    ff("-loop", "1", "-framerate", str(FPS), "-i", str(png), "-frames:v", str(frames), "-vf",
+       f"scale=2112:1188,crop=w='2112-160*n/{frames}':h='1188-90*n/{frames}':"
+       f"x='(2112-(2112-160*n/{frames}))/2':y='(1188-(1188-90*n/{frames}))/2',"
+       f"scale={W}:{H}:flags=lanczos,format=yuv420p,setsar=1",
+       "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-r", str(FPS), str(out))
+
+
+# ------------------------------------------------------------------- build
+def build(project_dir: Path, out_dir: Path, preview: float | None):
+    project = json.loads((project_dir / "project.json").read_text(encoding="utf-8"))
+    segments = project["segments"]
+    if not segments:
+        raise SystemExit("project.json has no segments")
+    work = out_dir / "work"; work.mkdir(parents=True, exist_ok=True)
+    res = (640, 360) if preview else (1920, 1080)
+    notes: list[str] = []
+
+    # 1 narration
+    if project.get("narration_wav"):
+        narr, spans = align_supplied((project_dir / project["narration_wav"]).resolve(), segments, work)
+        voice_status = f"APPROVED narration: {project['narration_wav']}"
+    else:
+        narr, spans = tts_kokoro(project, segments, work)
+        v = project.get("voice", {})
+        voice_status = f"SUBSTITUTE voice: Kokoro TTS {v.get('voice', 'bf_emma')} (approved narration not supplied)"
+    notes.append(voice_status)
+    total = duration(narr) + TAIL
+    if preview:
+        total = min(total, preview)
+
+    # 2-3 music + master
+    music, music_status = make_music(project, total, work, project_dir)
+    notes.append(f"music: {music_status}")
+    master = mix_master(narr, music, total, work, float(project.get("music_db", -17)))
+
+    # 4 captions
+    cues_en, cues_zh = [], []
+    for seg, (a, b) in zip(segments, spans):
+        cues_en += split_cues(seg["en"], a, b, 84)
+        if seg.get("zh_hk"):
+            cues_zh += split_cues(seg["zh_hk"], a, b, 22, cjk=True)
+    clip = lambda cues: [(a, min(b, total), t) for a, b, t in cues if a < total - 0.2]
+    cues_en, cues_zh = clip(cues_en), clip(cues_zh)
+    write_captions(cues_en, out_dir / "captions_en", SUB_FONT_EN, 42)
+    if cues_zh:
+        write_captions(cues_zh, out_dir / "captions_zh-HK", SUB_FONT_ZH, None)
+
+    # 5 visuals: title card over lead-in, one card per segment, end card on tail
+    shots = [("title", project.get("title_card", {}), 0.0)]
+    for seg, (a, _) in zip(segments, spans):
+        shots.append(("seg", seg, a))
+    shots.append(("end", project.get("end_card", {}), spans[-1][1] + 0.3))
+    shots = [s for s in shots if s[2] < total]
+    clips = []
+    for i, (kind, seg, start) in enumerate(shots):
+        nxt = shots[i + 1][2] if i + 1 < len(shots) else total
+        dur = (nxt - start) + (XFADE if i + 1 < len(shots) else 0)
+        png = work / f"card_{i:02d}.jpg"
+        draw_card(kind, seg, project, png)
+        mp4 = work / f"clip_{i:02d}_{res[1]}.mp4"
+        card_clip(png, dur, mp4, res)
+        clips.append((mp4, dur, start))
+    # crossfade chain
+    if len(clips) == 1:
+        video = clips[0][0]
+    else:
+        inputs, chain, last = [], [], "[0:v]"
+        for c, _, _ in clips:
+            inputs += ["-i", str(c)]
+        for i in range(1, len(clips)):
+            off = clips[i][2]
+            label = f"[x{i}]"
+            chain.append(f"{last}[{i}:v]xfade=transition=fade:duration={XFADE}:offset={off:.3f}{label}")
+            last = label
+        video = work / f"video_{res[1]}.mp4"
+        ff(*inputs, "-filter_complex", ";".join(chain), "-map", last, "-c:v", "libx264",
+           "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", str(video))
+
+    # 6 render
+    name = project.get("output_name", "ASCLEPIOS_HEALTH")
+    final = out_dir / (f"{name}_preview_{int(preview)}s_360p.mp4" if preview else f"{name}_1080p.mp4")
+    ass = out_dir / "captions_en.ass"
+    sub_inputs, sub_maps, sub_meta = ["-i", str(out_dir / "captions_en.srt")], ["-map", "2:0"], \
+        ["-metadata:s:s:0", "language=eng", "-metadata:s:s:0", "title=English"]
+    if cues_zh:
+        sub_inputs += ["-i", str(out_dir / "captions_zh-HK.srt")]
+        sub_maps += ["-map", "3:0"]
+        sub_meta += ["-metadata:s:s:1", "language=chi", "-metadata:s:s:1", "title=繁體中文 (zh-HK)"]
+    vf = f"subtitles={ass}:fontsdir=/usr/share/fonts" + (f",scale={res[0]}:{res[1]}" if preview else "")
+    ff("-i", str(video), "-i", str(master), *sub_inputs, "-map", "0:v", "-map", "1:a", *sub_maps,
+       "-vf", vf, "-t", f"{total:.3f}", "-c:v", "libx264", "-preset", "medium" if not preview else "veryfast",
+       "-crf", "19" if not preview else "26", "-profile:v", "high", "-pix_fmt", "yuv420p", "-r", str(FPS),
+       "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-c:s", "mov_text", *sub_meta,
+       "-movflags", "+faststart", str(final))
+
+    # 7 QA
+    qa = run_qa(final, master, cues_en, cues_zh, total, res, preview, out_dir, notes, project)
+    print(json.dumps(qa, indent=2, ensure_ascii=False))
+    return qa
+
+
+def run_qa(final, master, cues_en, cues_zh, total, res, preview, out_dir, notes, project):
+    probe = json.loads(run(["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(final)],
+                           capture=True))
+    v = next(s for s in probe["streams"] if s["codec_type"] == "video")
+    a = next(s for s in probe["streams"] if s["codec_type"] == "audio")
+    subs = [s for s in probe["streams"] if s["codec_type"] == "subtitle"]
+    dur = float(probe["format"]["duration"])
+    log = run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(final), "-map", "0:a", "-af",
+               "ebur128=peak=true", "-f", "null", "-"], capture=True)
+    tail = log[log.rfind("Summary:"):]
+    I = float(re.search(r"I:\s+(-?[\d.]+) LUFS", tail).group(1))
+    TP = float(re.search(r"Peak:\s+(-?[\d.]+) dBFS", tail).group(1))
+    LRA = float(re.search(r"LRA:\s+(-?[\d.]+) LU", tail).group(1))
+    ordered = all(cues_en[i][0] <= cues_en[i][1] <= cues_en[i + 1][0] + 1e-3 for i in range(len(cues_en) - 1))
+    max_cps = max((len(t) / max(0.01, b - a_) for a_, b, t in cues_en), default=0)
+    # contact sheet: one frame per caption-mid (up to 12)
+    picks = cues_en[:: max(1, len(cues_en) // 12)][:12]
+    sheet_frames = []
+    for i, (a_, b, _) in enumerate(picks):
+        fp = out_dir / "work" / f"qa_{i:02d}.jpg"
+        ff("-ss", f"{(a_ + b) / 2:.2f}", "-i", str(final), "-frames:v", "1", "-vf", "scale=480:-1", str(fp))
+        sheet_frames.append(fp)
+    if sheet_frames:
+        ims = [Image.open(p) for p in sheet_frames]
+        w, h = ims[0].size
+        cols = 3; rows = math.ceil(len(ims) / cols)
+        sheet = Image.new("RGB", (w * cols, h * rows), (0, 0, 0))
+        for i, im in enumerate(ims):
+            sheet.paste(im, ((i % cols) * w, (i // cols) * h))
+        sheet.save(out_dir / ("contact_sheet_preview.jpg" if preview else "contact_sheet.jpg"), quality=88)
+    checks = {
+        "resolution": (int(v["width"]), int(v["height"])) == res,
+        "duration_matches_audio_plan": abs(dur - total) < 0.25,
+        "loudness_within_1LU_of_target": abs(I - TARGET_LUFS) <= 1.0,
+        "true_peak_below_-1dBTP": TP <= -1.0,
+        "captions_ordered_non_overlapping": ordered,
+        "captions_within_duration": all(b <= dur + 0.05 for _, b, _ in cues_en),
+        "caption_reading_speed_le_20cps": max_cps <= 20.0,
+        "audio_48k_stereo": a.get("sample_rate") == "48000" and a.get("channels") == 2,
+        "soft_caption_tracks": len(subs) == (2 if cues_zh else 1),
+    }
+    qa = {
+        "file": final.name, "bytes": final.stat().st_size, "sha256": sha256(final),
+        "duration_s": round(dur, 3), "resolution": f"{v['width']}x{v['height']}", "fps": v.get("r_frame_rate"),
+        "video_codec": v["codec_name"], "audio_codec": a["codec_name"],
+        "loudness_LUFS": I, "true_peak_dBFS": TP, "LRA_LU": LRA,
+        "caption_cues_en": len(cues_en), "caption_cues_zh_hk": len(cues_zh),
+        "max_caption_cps": round(max_cps, 1), "checks": checks, "all_pass": all(checks.values()),
+        "notes": notes, "script_status": project.get("script_status", "UNSPECIFIED"),
+        "cost": "GBP 0 (local FFmpeg/Pillow/Kokoro on session CPU)",
+    }
+    (out_dir / ("qa_preview.json" if preview else "qa.json")).write_text(json.dumps(qa, indent=2, ensure_ascii=False))
+    return qa
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("project", type=Path)
+    ap.add_argument("--preview", type=float, default=None, help="render a low-res technical preview of N seconds")
+    ap.add_argument("--out", type=Path, default=None)
+    args = ap.parse_args()
+    out = args.out or (args.project / "out")
+    out.mkdir(parents=True, exist_ok=True)
+    qa = build(args.project.resolve(), out.resolve(), args.preview)
+    sys.exit(0 if qa["all_pass"] else 2)
+
+
+if __name__ == "__main__":
+    main()
