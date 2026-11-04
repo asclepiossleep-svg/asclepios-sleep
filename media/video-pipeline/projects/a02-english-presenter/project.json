@@ -213,13 +213,14 @@
     },
     {
       "id": "20",
-      "image": "20_Brand_Ending_en.jpg",
+      "image": "20_Brand_Ending_en_logo_v1.jpg",
       "en": "ASCLEPIOS HEALTH. Starting with the cell. Working with the rhythms of life.",
       "focus": [
         0.5,
-        0.43,
-        1.6
-      ]
+        0.42,
+        1.2
+      ],
+      "image_note": "owner request: closing page with official logo, English only; made by make_opening_page.py from 20_Brand_Ending_en.jpg + ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg (originals unchanged)"
     }
   ],
   "source": {
@@ -252,7 +253,8 @@
     "18_Research_to_Practice_en.jpg": "b06e88342b84d69243bd7cefcffc76ed86a05b692aa20ab67828da2403b84c21",
     "19_Invitation_to_Explore_en.jpg": "ae01ea1752d0c23293464a23690ff65154f13bcc9a681b63ff3b0d6765c408e9",
     "20_Brand_Ending_en.jpg": "385dc68aa6bbbd753ba88d857097760ee8abb72dacac74fa7e82cc31353eed78",
-    "01_Brand_Opening_en_logo_v1.jpg": "fd6e788acca267ab6a191aa9f28e9c4e9402f18059b92c725156a0012afe984a"
+    "01_Brand_Opening_en_logo_v1.jpg": "fd6e788acca267ab6a191aa9f28e9c4e9402f18059b92c725156a0012afe984a",
+    "20_Brand_Ending_en_logo_v1.jpg": "fd6e788acca267ab6a191aa9f28e9c4e9402f18059b92c725156a0012afe984a"
   },
   "caption_scale": 1.5,
   "caption_line_chars": 38,
@@ -266,8 +268,7 @@
   "logo_card": {
     "path": "brand/ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg",
     "shots": [
-      "P01",
-      "20"
+      "P01"
     ],
     "height": 150
   }

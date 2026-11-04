@@ -24,6 +24,7 @@ Each decision gives its source on #142 or in the owner's session; the issue hold
 | D9 | All English captions at **bottom centre** | owner, final brief |
 | D10 | The extra official logo goes only on the opening/company introduction and the closing page | owner |
 | D11 | The **opening page was rebuilt with the official logo**, English only. The corner card is removed from 01 so the logo isn't doubled; the card stays on P01 and 20 | owner, 2026-11-04 |
+| D11b | The **closing page (20) also carries the official logo**, built the same way as the opening; the corner card is now only on P01 | owner, 2026-11-04 |
 | D12 | Cut (one frame), not crossfade, into and out of presenter shots, so the mouth never moves during a fade | Rex, disclosed in the preview |
 | D13 | The 1920×1080 master was owner-authorised without a second preview round | owner, 2026-11-04 |
 | D14 | No InsightFace (non-commercial). Each tool's licence is verified before use; installs that hit "Code from External" ran only after owner approval, and that check was never bypassed | owner approvals in session |
@@ -102,9 +103,11 @@ export S=<work dir>   # holds a02-images/ studio/ brand/ en-lines/ segments/ kok
 KOKORO_MODEL_DIR=$S/kokoro python3 presenter_en_lines.py $S/en-lines
 # 2. Claire segments (skip any already in $S/segments)
 PRESENTER_WORK=$S bash presenter_render_segments.sh open_cam p02_cam p03_cam p04_cam end_cam
-# 3. opening page
+# 3. opening and closing pages (01 and 20 are the same original still)
 python3 make_opening_page.py $S/a02-images/01_Brand_Opening_en.jpg \
   $S/brand/ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg $S/a02-images/01_Brand_Opening_en_logo_v1.jpg
+python3 make_opening_page.py $S/a02-images/20_Brand_Ending_en.jpg \
+  $S/brand/ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg $S/a02-images/20_Brand_Ending_en_logo_v1.jpg
 # 4. review preview, then the master
 export KOKORO_MODEL_DIR=$S/kokoro ASCLEPIOS_IMAGES_DIR=$S/a02-images ASCLEPIOS_PRESENTER_DIR=$S
 python3 build.py projects/a02-english-presenter --lowres --preview-res 960x540 --out $S/out-presenter

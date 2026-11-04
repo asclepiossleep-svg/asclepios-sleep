@@ -31,7 +31,7 @@ evidence files; Google Drive holds the media (see `STORAGE_PLAN.md`).
 
 | Asset | Location | Version | Status | Use | Reuse limits |
 |---|---|---|---|---|---|
-| Official full logo (symbol + ASCLEPIOS™ HEALTH) | `drive:1bc4kv3saZXaAs9tQwxk-5o9WuLnHDzWL` · `ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg` · sha256 `f405d7b3e76cfed6…` | v1 2026-11-04 | **APPROVED** (owner supplied as original) | opening page, P01/20 corner card | Never redraw, recolour or crop into the mark. Only trimming its white border and scaling are allowed. Keep the ™. |
+| Official full logo (symbol + ASCLEPIOS™ HEALTH) | `drive:1bc4kv3saZXaAs9tQwxk-5o9WuLnHDzWL` · `ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg` · sha256 `f405d7b3e76cfed6…` | v1 2026-11-04 | **APPROVED** (owner supplied as original) | opening and closing pages, P01 corner card | Never redraw, recolour or crop into the mark. Only trimming its white border and scaling are allowed. Keep the ™. |
 | Official symbol-only logo | `drive:1QBOHddhgUV_90lBgfc-4MHEEN35niKn2` · `…Logo_Symbol_Original_v1_20261104.jpeg` · sha256 `32f5f0d8010343f4…` | v1 | **APPROVED** | small marks, favicons | same as above |
 | Brand colours | `apps/health-web/src/styles/tokens.css` | repo HEAD | **APPROVED** (in product) | generated cards, captions | none |
 
@@ -44,6 +44,7 @@ evidence files; Google Drive holds the media (see `STORAGE_PLAN.md`).
 | `00_Cover_en.jpg` | Drive folder above | **APPROVED** | thumbnail/cover only, not shown in the film |
 | `01_Brand_Opening_en.jpg` … `20_Brand_Ending_en.jpg` | Drive folder above | **APPROVED** | never altered. Proposal A zoom-to-text (`focus`) is a camera move, not an edit to the image |
 | `01_Brand_Opening_en_logo_v1.jpg` | `session:a02-images/` · sha256 `fd6e788acca267ab…` · built by `git:make_opening_page.py` | **LATEST** (owner-requested 2026-11-04, in the 1080p master) | the 01 background art, with its text wordmark replaced by the official logo. English only. To rebuild it: `python3 make_opening_page.py 01_Brand_Opening_en.jpg <full logo> out.jpg` |
+| `20_Brand_Ending_en_logo_v1.jpg` | `session:a02-images/` · built by `git:make_opening_page.py` from `20_Brand_Ending_en.jpg` (byte-identical to 01) | **LATEST** (owner-requested 2026-11-04: closing page must also carry the official logo; in the 1080p master) | same treatment as the opening page; English only |
 | Layout proposal A/B | `git:evidence/a02-en_layout_proposal_before_after.jpg` | **APPROVED (A)** | reference only |
 
 ## 3. Presenter: Claire Lee
@@ -122,4 +123,4 @@ These `session:` items are lost when this session ends. Upload them to Drive
 1. `ASCLEPIOS_HEALTH_A02_EN_presenter_1080p.mp4` (master)
 2. `segments/*.mp4` (P01–P05)
 3. `en-lines/*.wav` + `en_lines.json`
-4. `01_Brand_Opening_en_logo_v1.jpg`
+4. `01_Brand_Opening_en_logo_v1.jpg` and `20_Brand_Ending_en_logo_v1.jpg`
