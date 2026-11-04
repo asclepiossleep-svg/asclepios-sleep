@@ -29,6 +29,9 @@ def main():
     ap.add_argument("--bbox", default="197,121,444,417")
     ap.add_argument("--neck-y", type=int, default=470)
     ap.add_argument("--breath-px", type=float, default=3.0)
+    ap.add_argument("--rebg", action="store_true",
+                    help="re-segment every frame (rembg/U2-Net) and lay it on one flat background: removes the "
+                         "LivePortrait paste-back rectangle")
     a = ap.parse_args()
     x1, y1, x2, y2 = map(int, a.bbox.split(",")); y2 += 10
     refs = sorted(Path(a.frames).glob("*.png"))
@@ -58,6 +61,11 @@ def main():
                 v = max(v, 0.5 * (1 + math.cos(math.pi * (t - s0) / 2.5)))
         return v
 
+    if a.rebg:
+        from PIL import Image as _Im
+        from rembg import new_session, remove
+        seg = new_session("u2net_human_seg")
+        BG = np.array([243, 238, 233], np.float32)  # BGR of the pale grey-blue (233,238,243) used everywhere
     n_out = len(refs)
     blended = 0
     for i in range(n_out):
@@ -83,6 +91,11 @@ def main():
         if b > 0.05:
             map_y = (yy + b * w_rows)[:, None].repeat(w, 1)
             fr = cv2.remap(fr, map_x, map_y.astype(np.float32), cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+        if a.rebg:
+            rgb = cv2.cvtColor(fr.astype(np.uint8), cv2.COLOR_BGR2RGB)
+            al = np.asarray(remove(_Im.fromarray(rgb), session=seg, only_mask=True)).astype(np.float32) / 255
+            al = cv2.GaussianBlur(al, (3, 3), 0)[..., None]
+            fr = fr * al + BG * (1 - al)
         cv2.imwrite(str(tmp / f"o{i:06d}.png"), fr.astype(np.uint8))
     total = n_out / FPS
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-framerate", str(FPS), "-i", str(tmp / "o%06d.png"),

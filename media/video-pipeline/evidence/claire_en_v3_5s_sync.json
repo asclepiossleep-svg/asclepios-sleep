@@ -1,0 +1,16 @@
+[
+  {
+    "start_s": 0.0,
+    "end_s": 1.26,
+    "lag_frames": -3,
+    "lag_ms": -120,
+    "corr": 0.58
+  },
+  {
+    "start_s": 1.57,
+    "end_s": 3.32,
+    "lag_frames": 0,
+    "lag_ms": 0,
+    "corr": 0.68
+  }
+]

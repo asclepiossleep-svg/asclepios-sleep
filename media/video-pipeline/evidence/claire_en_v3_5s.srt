@@ -1,0 +1,7 @@
+1
+00:00:00,000 --> 00:00:01,264
+Hello, I'm Claire Lee.
+
+2
+00:00:01,574 --> 00:00:03,328
+Welcome to ASCLEPIOS HEALTH.
