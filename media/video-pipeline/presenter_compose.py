@@ -65,7 +65,7 @@ def main(raw: Path, wav: Path, out: Path, text: str, audio_src: Path | None = No
     vf = (
         # residual pocket-wordmark trace on the teal test jacket (source-still coords incl. sway margin)
         ("delogo=x=372:y=526:w=76:h=32," if delogo else "")
-        + "scale=-2:720:flags=lanczos,pad=1280:720:(ow-iw)/2:0:color=0xE9EEF3,"
+        + "crop=iw:ih-4:0:4,scale=-2:720:flags=lanczos,pad=1280:720:(ow-iw)/2:0:color=0xE9EEF3,"
         f"drawtext=fontfile={FONT_ZH}:text='{label}':x=40:y=34:fontsize=26:fontcolor=white:"
         "box=1:boxcolor=0x16233F@0.82:boxborderw=12,"
         f"subtitles={ass}:fontsdir=/usr/share/fonts"
