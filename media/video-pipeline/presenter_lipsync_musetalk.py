@@ -56,6 +56,8 @@ def main():
     ap.add_argument("--bbox", default="150,92,338,318", help="x1,y1,x2,y2 face box in the still")
     ap.add_argument("--seconds", type=float, default=None)
     ap.add_argument("--batch", type=int, default=8)
+    ap.add_argument("--shift-frames", type=int, default=0,
+                    help="+N delays the mouth by N frames (mouth was early); -N advances it (mouth was late)")
     a = ap.parse_args()
     torch.set_num_threads(os.cpu_count() or 4)
     t0 = time.time()
@@ -77,6 +79,12 @@ def main():
     feats, length = ap_.get_audio_feature(str(audio))
     chunks = ap_.get_whisper_chunk(feats, device, torch.float32, whisper, length, fps=FPS,
                                    audio_padding_length_left=2, audio_padding_length_right=2)
+
+    if a.shift_frames > 0:
+        chunks = torch.cat([chunks[:1].repeat(a.shift_frames, *[1] * (chunks.dim() - 1)), chunks[:-a.shift_frames]])
+    elif a.shift_frames < 0:
+        k = -a.shift_frames
+        chunks = torch.cat([chunks[k:], chunks[-1:].repeat(k, *[1] * (chunks.dim() - 1))])
 
     frame = cv2.imread(str(Path(a.image).resolve()))
     x1, y1, x2, y2 = map(int, a.bbox.split(","))

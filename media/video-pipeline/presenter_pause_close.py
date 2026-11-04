@@ -56,8 +56,9 @@ def main(raw, still, wav, out, bbox="150,92,338,318"):
         t = i / FPS
         a = 0.0
         for s, e in gaps:
-            if s - RAMP <= t <= e + RAMP:
-                a = max(a, min(1.0, (t - (s - RAMP)) / RAMP, ((e + RAMP) - t) / RAMP))
+            # ramps stay INSIDE the silence so speech frames are never altered
+            if e - s >= 2 * RAMP + 0.04 and s <= t <= e:
+                a = max(a, min(1.0, (t - s) / RAMP, (e - t) / RAMP))
         if a <= 0:
             continue
         n_closed += 1
@@ -72,14 +73,15 @@ def main(raw, still, wav, out, bbox="150,92,338,318"):
         i = n + k
         M = sway(i, w, h)
         cv2.imwrite(str(tmp / f"{i + 1:06d}.png"), cv2.warpAffine(src, M, (w, h), borderMode=cv2.BORDER_REFLECT))
-    for k in range(1, 4):  # 3-frame ease into the hold
-        i = n - k
-        a = (4 - k) / 4
+    last = cv2.imread(str(files[-1])).astype(np.float32)
+    for k in range(3):  # ease into the hold AFTER the last spoken frame
+        i = n + k
+        a = (k + 1) / 4
         M = sway(i, w, h)
         still_w = cv2.warpAffine(src, M, (w, h), borderMode=cv2.BORDER_REFLECT).astype(np.float32)
         m = cv2.warpAffine(mask, M, (w, h))[..., None] * a
-        fr = cv2.imread(str(files[i])).astype(np.float32)
-        cv2.imwrite(str(files[i]), (fr * (1 - m) + still_w * m).astype(np.uint8))
+        last_w = cv2.warpAffine(last, M, (w, h), borderMode=cv2.BORDER_REFLECT)
+        cv2.imwrite(str(tmp / f"{i + 1:06d}.png"), (last_w * (1 - m) + still_w * m).astype(np.uint8))
     total = (n + TAIL_FRAMES) / FPS
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-framerate", str(FPS), "-i", str(tmp / "%06d.png"),
                     "-i", str(wav), "-map", "0:v", "-map", "1:a", "-af", f"apad,atrim=0:{total:.3f}",

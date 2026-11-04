@@ -14,12 +14,13 @@ SECS="${1:-5}"
 mkdir -p "$W/lipsync"
 # shellcheck disable=SC1091
 . "$W/cosy/venv/bin/activate"
-ARGS=(--image "$W/claire/claire_v06_teal_test.png"
-      --audio "$W/voice-test-yue-c/claire_yue_cosyvoice_C_name_zh_dry.wav")
+AUDIO="${PRESENTER_AUDIO:-$W/voice-test-yue-c/claire_yue_cosyvoice_C_name_zh_dry.wav}"
+TAG="${PRESENTER_TAG:-claire_yue}"
+ARGS=(--image "$W/claire/claire_v06_teal_test.png" --audio "$AUDIO" --shift-frames "${PRESENTER_SHIFT:-0}")
 if [ "$SECS" = "full" ]; then
-  OUT="$W/lipsync/claire_yue_full_raw.mp4"
+  OUT="$W/lipsync/${TAG}_full_raw.mp4"
 else
-  OUT="$W/lipsync/claire_yue_${SECS}s_raw.mp4"; ARGS+=(--seconds "$SECS")
+  OUT="$W/lipsync/${TAG}_${SECS}s_raw.mp4"; ARGS+=(--seconds "$SECS")
 fi
 MUSETALK_REPO="$W/muse/MuseTalk" python "$HERE/presenter_lipsync_musetalk.py" "${ARGS[@]}" --out "$OUT"
 echo "wrote $OUT"
