@@ -337,7 +337,8 @@ def caption_style_for(img: Path | None, focus=None) -> str:
     return "Diagram" if lum >= 225 else ("Dark" if lum < 90 else "Photo")
 
 
-def write_captions(cues, stem: Path, font_name: str, wrap: int | None, size: int = 48, styles=None):
+def write_captions(cues, stem: Path, font_name: str, wrap: int | None, size: int = 48, styles=None,
+                   align: int = 2, margins: tuple | None = None):
     srt, vtt = [], ["WEBVTT", ""]
     for i, (a, b, t) in enumerate(cues, 1):
         body = wrap2(t, wrap) if wrap else t
@@ -352,9 +353,10 @@ def write_captions(cues, stem: Path, font_name: str, wrap: int | None, size: int
            "Alignment, MarginL, MarginR, MarginV, Encoding"]
     margin_lr = 220 if size <= 48 else 160
     margin_v = 64 if size <= 48 else 44
+    ml, mr, mv = margins if margins else (margin_lr, margin_lr, margin_v)
     for name, (pc, oc, bc, bs, ow, sh) in CAPTION_STYLES.items():
         ass.append(f"Style: {name},{font_name},{size},{pc},{pc},{oc},{bc},0,0,0,0,100,100,0.3,0,"
-                   f"{bs},{ow},{sh},2,{margin_lr},{margin_lr},{margin_v},1")
+                   f"{bs},{ow},{sh},{align},{ml},{mr},{mv},1")
     ass += ["", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
     for i, (a, b, t) in enumerate(cues):
         body = (wrap2(t, wrap) if wrap else t).replace("\n", "\\N")
