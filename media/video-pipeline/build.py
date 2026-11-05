@@ -132,12 +132,12 @@ def tts_kokoro(project: dict, segments: list[dict], work: Path) -> tuple[Path, l
                 samples = samples.mean(axis=1)
             if a_sr != sr:
                 raise SystemExit(f"presenter audio {seg['audio']} is {a_sr} Hz, expected {sr}")
-        elif not seg["en"].strip():  # music-only shot: hold the card, no narration
+        elif not seg["_text"].strip():  # music-only shot: hold the card, no narration
             samples = np.zeros(int(float(seg.get("hold", 4.0)) * sr), dtype="float32")
         elif cache.exists():
             samples, sr = sf.read(cache, dtype="float32")
         else:
-            samples, sr = kok.create(seg["en"], voice=voice.get("voice", "bf_emma"),
+            samples, sr = kok.create(seg["_text"], voice=voice.get("voice", "bf_emma"),
                                      speed=float(voice.get("speed", 0.95)), lang=voice.get("lang", "en-gb"))
             sf.write(cache, samples, sr)
         d = len(samples) / sr
@@ -170,7 +170,7 @@ def align_supplied(wav: Path, segments: list[dict], work: Path) -> tuple[Path, l
     pauses = [((s + e) / 2, s, e) for s, e in zip(starts, ends)]
     speech_start = ends[0] if starts and starts[0] < 0.05 and ends else LEAD_IN
     speech_end = starts[-1] if starts and len(starts) > len(ends) else total
-    chars = [max(1, len(s["en"])) for s in segments]
+    chars = [max(1, len(s["_text"])) for s in segments]
     acc, bounds = 0, []
     for c in chars[:-1]:
         acc += c
@@ -347,11 +347,26 @@ def caption_style_for(img: Path | None, focus=None) -> str:
     return "Diagram" if lum >= 225 else ("Dark" if lum < 90 else "Photo")
 
 
+def wrap_cjk(text: str, width: int) -> str:
+    """Two balanced lines for Chinese: break at the punctuation nearest the middle,
+    else in the middle; subtitle-style trailing ，。 removed."""
+    text = text.strip().rstrip("，。、；")
+    if len(text) <= width:
+        return text
+    mid = len(text) / 2
+    cands = [i + 1 for i, c in enumerate(text[:-1]) if c in "，、：；？！"]
+    cut = min(cands, key=lambda i: abs(i - mid)) if cands else 0
+    if not cands or abs(cut - mid) > len(text) * 0.3:
+        cut = int(round(mid))
+    return text[:cut].rstrip("，、") + "\n" + text[cut:].strip()
+
+
 def write_captions(cues, stem: Path, font_name: str, wrap: int | None, size: int = 48, styles=None,
-                   align: int = 2, margins: tuple | None = None):
+                   align: int = 2, margins: tuple | None = None, cjk: bool = False):
     srt, vtt = [], ["WEBVTT", ""]
+    wrapper = wrap_cjk if cjk else wrap2
     for i, (a, b, t) in enumerate(cues, 1):
-        body = wrap2(t, wrap) if wrap else t
+        body = wrapper(t, wrap) if wrap else t
         srt += [str(i), f"{ts(a)} --> {ts(b)}", body, ""]
         vtt += [f"{ts(a, '.')} --> {ts(b, '.')}", body, ""]
     stem.with_suffix(".srt").write_text("\n".join(srt), encoding="utf-8")
@@ -369,7 +384,7 @@ def write_captions(cues, stem: Path, font_name: str, wrap: int | None, size: int
                    f"{bs},{ow},{sh},{align},{ml},{mr},{mv},1")
     ass += ["", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
     for i, (a, b, t) in enumerate(cues):
-        body = (wrap2(t, wrap) if wrap else t).replace("\n", "\\N")
+        body = (wrapper(t, wrap) if wrap else t).replace("\n", "\\N")
         st = styles[i] if styles else "Cap"
         ass.append(f"Dialogue: 0,{ts(a, '.')[:-1]},{ts(b, '.')[:-1]},{st},,0,0,0,,{body}")
     stem.with_suffix(".ass").write_text("\n".join(ass), encoding="utf-8")
@@ -520,6 +535,12 @@ def build(project_dir: Path, out_dir: Path, preview: float | None, preview_res: 
     project = json.loads((project_dir / "project.json").read_text(encoding="utf-8"))
     project["_dir"] = str(project_dir)
     segments = project["segments"]
+    # text_field / caption_lang: "en" (default, English editions) or e.g. "yue" + "zh-HK"
+    text_key = project.get("text_field", "en")
+    lang = project.get("caption_lang", "en")
+    cjk = lang.startswith("zh")
+    for seg in segments:
+        seg["_text"] = seg.get(text_key, "")
     if not segments:
         raise SystemExit("project.json has no segments")
     work = out_dir / "work"; work.mkdir(parents=True, exist_ok=True)
@@ -548,14 +569,15 @@ def build(project_dir: Path, out_dir: Path, preview: float | None, preview_res: 
     cues_en, cues_zh, styles_en = [], [], []
     scale = float(project.get("caption_scale", 1.0))
     line_chars = 42 if scale <= 1.0 else int(project.get("caption_line_chars", 38))
+    zh_line = int(project.get("caption_line_chars_zh", 16))
     img_dir = None
     if project.get("images_dir"):
         import os
         img_dir = Path(os.environ.get("ASCLEPIOS_IMAGES_DIR") or (project_dir / project["images_dir"]))
     for seg, (a, b) in zip(segments, spans):
-        if not seg["en"].strip():  # music-only hold: no empty cue
+        if not seg["_text"].strip():  # music-only hold: no empty cue
             continue
-        new = split_cues(seg["en"], a, b, line_chars * 2)
+        new = split_cues(seg["_text"], a, b, zh_line * 2 if cjk else line_chars * 2, cjk=cjk)
         cues_en += new
         if seg.get("video"):
             st = "Photo"
@@ -569,7 +591,9 @@ def build(project_dir: Path, out_dir: Path, preview: float | None, preview_res: 
     styles_en = [styles_en[i] for i in keep]
     cues_en, cues_zh = clip(cues_en), clip(cues_zh)
     caption_font = project.get("caption_font", SUB_FONT_EN)
-    write_captions(cues_en, out_dir / "captions_en", caption_font, line_chars, int(round(48 * scale)), styles_en)
+    cap_stem = out_dir / f"captions_{lang}"
+    write_captions(cues_en, cap_stem, caption_font, zh_line if cjk else line_chars, int(round(48 * scale)), styles_en,
+                   cjk=cjk)
     if cues_zh:
         write_captions(cues_zh, out_dir / "captions_zh-HK", SUB_FONT_ZH, None)
 
@@ -642,9 +666,10 @@ def build(project_dir: Path, out_dir: Path, preview: float | None, preview_res: 
     name = project.get("output_name", "ASCLEPIOS_HEALTH")
     tag = "full" if preview and preview >= 1e8 else f"{int(preview or 0)}s"
     final = out_dir / (f"{name}_preview_{tag}_{res[1]}p.mp4" if preview else f"{name}_1080p.mp4")
-    ass = out_dir / "captions_en.ass"
-    sub_inputs, sub_maps, sub_meta = ["-i", str(out_dir / "captions_en.srt")], ["-map", "2:0"], \
-        ["-metadata:s:s:0", "language=eng", "-metadata:s:s:0", "title=English"]
+    ass = cap_stem.with_suffix(".ass")
+    sub_inputs, sub_maps, sub_meta = ["-i", str(cap_stem.with_suffix(".srt"))], ["-map", "2:0"], \
+        ["-metadata:s:s:0", f"language={'chi' if cjk else 'eng'}", "-metadata:s:s:0",
+         f"title={'繁體中文（香港）' if cjk else 'English'}"]
     if cues_zh:
         sub_inputs += ["-i", str(out_dir / "captions_zh-HK.srt")]
         sub_maps += ["-map", "3:0"]
@@ -695,7 +720,10 @@ def run_qa(final, master, cues_en, cues_zh, total, res, preview, out_dir, notes,
     TP = float(re.search(r"Peak:\s+(-?[\d.]+) dBFS", tail).group(1))
     LRA = float(re.search(r"LRA:\s+(-?[\d.]+) LU", tail).group(1))
     ordered = all(cues_en[i][0] <= cues_en[i][1] <= cues_en[i + 1][0] + 1e-3 for i in range(len(cues_en) - 1))
-    max_cps = max((len(t) / max(0.01, b - a_) for a_, b, t in cues_en), default=0)
+    cjk = project.get("caption_lang", "en").startswith("zh")
+    count = (lambda t: len(re.sub(r"[\s，。、：；？！「」]", "", t))) if cjk else len
+    max_cps = max((count(t) / max(0.01, b - a_) for a_, b, t in cues_en), default=0)
+    cps_limit = float(project.get("caption_max_cps", 9.0 if cjk else 20.0))
     # contact sheet: one frame per caption-mid (up to 12)
     picks = cues_en[:: max(1, len(cues_en) // 12)][:12]
     sheet_frames = []
@@ -719,7 +747,7 @@ def run_qa(final, master, cues_en, cues_zh, total, res, preview, out_dir, notes,
         "true_peak_below_-1dBTP": TP <= -1.0,
         "captions_ordered_non_overlapping": ordered,
         "captions_within_duration": all(b <= dur + 0.05 for _, b, _ in cues_en),
-        "caption_reading_speed_le_20cps": max_cps <= 20.0,
+        "caption_reading_speed_ok": max_cps <= cps_limit,
         "audio_48k_stereo": a.get("sample_rate") == "48000" and a.get("channels") == 2,
         "soft_caption_tracks": len(subs) == (2 if cues_zh else 1),
     }
@@ -728,6 +756,7 @@ def run_qa(final, master, cues_en, cues_zh, total, res, preview, out_dir, notes,
         "duration_s": round(dur, 3), "resolution": f"{v['width']}x{v['height']}", "fps": v.get("r_frame_rate"),
         "video_codec": v["codec_name"], "audio_codec": a["codec_name"],
         "loudness_LUFS": I, "true_peak_dBFS": TP, "LRA_LU": LRA,
+        "caption_lang": project.get("caption_lang", "en"), "caption_cps_limit": cps_limit,
         "caption_cues_en": len(cues_en), "caption_cues_zh_hk": len(cues_zh),
         "max_caption_cps": round(max_cps, 1), "checks": checks, "all_pass": all(checks.values()),
         "notes": notes, "script_status": project.get("script_status", "UNSPECIFIED"),
