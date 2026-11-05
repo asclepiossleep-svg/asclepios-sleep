@@ -1,0 +1,100 @@
+{
+  "segments_face_qa": {
+    "open_cam": {
+      "frames": 94,
+      "red_mark_peak_before": [
+        4.49,
+        4.78
+      ],
+      "red_mark_peak_after": [
+        3.67,
+        4.98
+      ],
+      "red_mark_mean_after": [
+        3.07,
+        3.73
+      ],
+      "red_flicker_after_max_step": 2.48,
+      "texture_before_mean": 1.741,
+      "texture_after_mean": 1.864,
+      "texture_flicker_after_cv": 0.171
+    },
+    "p02_cam": {
+      "frames": 64,
+      "red_mark_peak_before": [
+        4.04,
+        3.67
+      ],
+      "red_mark_peak_after": [
+        3.89,
+        4.32
+      ],
+      "red_mark_mean_after": [
+        2.68,
+        3.38
+      ],
+      "red_flicker_after_max_step": 1.74,
+      "texture_before_mean": 1.811,
+      "texture_after_mean": 1.632,
+      "texture_flicker_after_cv": 0.234
+    },
+    "p03_cam": {
+      "frames": 85,
+      "red_mark_peak_before": [
+        4.2,
+        4.01
+      ],
+      "red_mark_peak_after": [
+        4.27,
+        4.26
+      ],
+      "red_mark_mean_after": [
+        3.37,
+        3.35
+      ],
+      "red_flicker_after_max_step": 0.87,
+      "texture_before_mean": 1.712,
+      "texture_after_mean": 1.54,
+      "texture_flicker_after_cv": 0.235
+    },
+    "p04_cam": {
+      "frames": 140,
+      "red_mark_peak_before": [
+        4.96,
+        4.16
+      ],
+      "red_mark_peak_after": [
+        4.37,
+        4.42
+      ],
+      "red_mark_mean_after": [
+        3.35,
+        3.16
+      ],
+      "red_flicker_after_max_step": 1.86,
+      "texture_before_mean": 1.641,
+      "texture_after_mean": 1.82,
+      "texture_flicker_after_cv": 0.152
+    },
+    "end_cam": {
+      "frames": 297,
+      "red_mark_peak_before": [
+        4.86,
+        3.92
+      ],
+      "red_mark_peak_after": [
+        4.29,
+        4.22
+      ],
+      "red_mark_mean_after": [
+        3.2,
+        2.87
+      ],
+      "red_flicker_after_max_step": 1.64,
+      "texture_before_mean": 1.625,
+      "texture_after_mean": 1.535,
+      "texture_flicker_after_cv": 0.197
+    }
+  },
+  "note": "before = accepted English v05r1 segment, after = Cantonese segment (same v05r1 still). Former red-mark peak stays at the natural lid-rim level; no recurrence or flicker."
+}

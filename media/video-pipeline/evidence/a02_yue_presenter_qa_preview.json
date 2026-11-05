@@ -1,0 +1,38 @@
+{
+  "file": "ASCLEPIOS_HEALTH_A02_YUE_presenter_preview_full_540p.mp4",
+  "bytes": 10696310,
+  "sha256": "b80c27003e1fd7729ee0a9d518e1f8b913508cb7cb8666472b1e2af7914e5b8c",
+  "duration_s": 222.403,
+  "resolution": "960x540",
+  "fps": "25/1",
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "loudness_LUFS": -16.0,
+  "true_peak_dBFS": -2.0,
+  "LRA_LU": 2.7,
+  "caption_lang": "zh-HK",
+  "caption_cps_limit": 9.0,
+  "caption_cues_en": 43,
+  "caption_cues_zh_hk": 0,
+  "max_caption_cps": 6.1,
+  "checks": {
+    "resolution": true,
+    "duration_matches_audio_plan": true,
+    "video_stream_full_length": true,
+    "loudness_within_1LU_of_target": true,
+    "true_peak_below_-1dBTP": true,
+    "captions_ordered_non_overlapping": true,
+    "captions_within_duration": true,
+    "caption_reading_speed_ok": true,
+    "audio_48k_stereo": true,
+    "soft_caption_tracks": true
+  },
+  "all_pass": true,
+  "notes": [
+    "SUBSTITUTE voice: Kokoro TTS bf_emma (approved narration not supplied)",
+    "music: generated: music_gen.py 'melodic' (original procedural composition, no third-party material)",
+    "logo card: ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg on shots ['P01'] only, windows [(5.75, 11.78)]"
+  ],
+  "script_status": "Cantonese edition of the accepted English master 7974d69a (structure, cuts, music). Narration verbatim from Manus A02_Narration_By_Shot.txt (Drive 1lBfxce05mXLh_J_KD0k1Qaf9uRmWxC3s); Claire lines from #142 6633840244 and Director Handoff v1; bilingual page text from the Manus stills (folder 1XVSwo65ZThru7nxVCb4QSkPdyOr69ex8) + English master wording.",
+  "cost": "GBP 0 (local FFmpeg/Pillow/Kokoro on session CPU)"
+}

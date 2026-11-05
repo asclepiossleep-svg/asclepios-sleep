@@ -157,5 +157,502 @@
       }
     ],
     "render_s": 1619.7
+  },
+  "n03": {
+    "text_tc": "試諗吓，你開始留意營養，揀咗補充品，每日都記得食。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "试谂吓，你开始留意营养，拣咗补充品，每日都记得食。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 03",
+    "duration_s": 5.19,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "試諗吓，你開始留意營養，揀咗補充品，每日都記得食。",
+        "take": 0,
+        "cer": 0.143,
+        "asr": "试想下,你开始留意营养,选了补充品,每日都记得食。"
+      }
+    ],
+    "render_s": 114.3
+  },
+  "n04": {
+    "text_tc": "但忙起上嚟，食飯時間成日變，午餐又推遲咗。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "但忙起上嚟，食饭时间成日变，午餐又推迟咗。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 04",
+    "duration_s": 4.94,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "但忙起上嚟，食飯時間成日變，午餐又推遲咗。",
+        "take": 1,
+        "cer": 0.056,
+        "asr": "但忙起上来,食饭时间成日变,午餐又推辞了。"
+      }
+    ],
+    "render_s": 110.1
+  },
+  "n05": {
+    "text_tc": "夜晚再睇多一陣手機，不知不覺，又夜咗瞓。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "夜晚再睇多一阵手机，不知不觉，又夜咗瞓。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 05",
+    "duration_s": 4.02,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "夜晚再睇多一陣手機，不知不覺，又夜咗瞓。",
+        "take": 1,
+        "cer": 0.118,
+        "asr": "夜晚再看多一阵手机不知不觉又夜了睡"
+      }
+    ],
+    "render_s": 89.2
+  },
+  "n06": {
+    "text_tc": "要答呢個問題，我哋先睇吓細胞呢座日夜運作嘅城市。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "要答呢个问题，我哋先睇吓细胞呢座日夜运作嘅城市。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 06 (after the on-camera sentence)",
+    "duration_s": 5.62,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "要答呢個問題，我哋先睇吓細胞呢座日夜運作嘅城市。",
+        "take": 0,
+        "cer": 0.091,
+        "asr": "要答这个问题,我们先看看细胞这座日夜运作的城市"
+      }
+    ],
+    "render_s": 97.1
+  },
+  "n07": {
+    "text_tc": "線粒體，好似發電站，幫細胞提供運作需要嘅能量。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "线粒体，好似发电站，帮细胞提供运作需要嘅能量。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 07",
+    "duration_s": 5.43,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "線粒體，好似發電站，幫細胞提供運作需要嘅能量。",
+        "take": 1,
+        "cer": 0.1,
+        "asr": "善粒体, 好自发电站, 帮细胞提供运作需要的能量。"
+      }
+    ],
+    "render_s": 108.2
+  },
+  "n08": {
+    "text_tc": "你每日行路、活動，背後都有細胞嘅能量供應。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "你每日行路、活动，背后都有细胞嘅能量供应。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 08",
+    "duration_s": 4.33,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "你每日行路、活動，背後都有細胞嘅能量供應。",
+        "take": 1,
+        "cer": 0.0,
+        "asr": "你每日行路、活动、背后都有细胞的能量供应。"
+      }
+    ],
+    "render_s": 58.1
+  },
+  "n09": {
+    "text_tc": "呢座城市亦有回收站。溶酶體，會分解同回收部分受損嘅蛋白質同部件。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "呢座城市亦有回收站。",
+      "溶酶体，会分解同回收部分受损嘅蛋白质同部件。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 09",
+    "duration_s": 8.51,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "呢座城市亦有回收站。",
+        "take": 0,
+        "cer": 0.0,
+        "asr": "这座城市亦有回收站"
+      },
+      {
+        "chunk": "溶酶體，會分解同回收部分受損嘅蛋白質同部件。",
+        "take": 1,
+        "cer": 0.15,
+        "asr": "由媒体会分解和回收部分受损的蛋白质同部件"
+      }
+    ],
+    "render_s": 129.8
+  },
+  "n10": {
+    "text_tc": "仲有維修工作。例如DNA修復，就係幫細胞維護遺傳物質嘅完整性。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "仲有维修工作。",
+      "例如DNA修复，就系帮细胞维护遗传物质嘅完整性。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 10",
+    "duration_s": 7.36,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 6,
+    "model_text_override": null,
+    "chunk_scores": [
+      {
+        "chunk": "仲有維修工作。",
+        "take": 3,
+        "cer": 0.0,
+        "asr": "还有维修工作"
+      },
+      {
+        "chunk": "例如DNA修復，就係幫細胞維護遺傳物質嘅完整性。",
+        "take": 4,
+        "cer": 0.0,
+        "asr": "例如DNA修复,就是幫細胞维护遺传物质的完整性。"
+      }
+    ],
+    "render_s": 277.0
+  },
+  "n11": {
+    "text_tc": "隨住年齡增長，部分能量、清理同維護功能可能減弱。損傷日積月累，就可能影響細胞，以至組織同器官嘅表現。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "随住年龄增长，部分能量、清理同维护功能可能减弱。",
+      "损伤日积月累，就可能影响细胞，以至组织同器官嘅表现。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 11",
+    "duration_s": 13.15,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "隨住年齡增長，部分能量、清理同維護功能可能減弱。",
+        "take": 2,
+        "cer": 0.095,
+        "asr": "随着年龄增长,部分能量清理和维护功能可能减弱。"
+      },
+      {
+        "chunk": "損傷日積月累，就可能影響細胞，以至組織同器官嘅表現。",
+        "take": 0,
+        "cer": 0.174,
+        "asr": "損傷日积如来,就可能影响细胞,以致组织和器官的表现。"
+      }
+    ],
+    "render_s": 235.1
+  },
+  "n12": {
+    "text_tc": "而朝早嘅光線，就係重要嘅時間訊號。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "而朝早嘅光线，就系重要嘅时间讯号。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 12 (after the on-camera sentence)",
+    "duration_s": 3.55,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "而朝早嘅光線，就係重要嘅時間訊號。",
+        "take": 0,
+        "cer": 0.2,
+        "asr": "而焦组的光线就是重要的时间信号"
+      }
+    ],
+    "render_s": 83.8
+  },
+  "n13": {
+    "text_tc": "光線會影響腦內嘅主時鐘，再協調唔同器官同細胞嘅時鐘。代謝同部分維護工作，都受到日夜節律調節。節律同細胞功能，亦會隨住衰老互相影響。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "光线会影响脑内嘅主时钟，再协调唔同器官同细胞嘅时钟。",
+      "代谢同部分维护工作，都受到日夜节律调节。",
+      "节律同细胞功能，亦会随住衰老互相影响。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 13",
+    "duration_s": 16.85,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 6,
+    "model_text_override": null,
+    "chunk_scores": [
+      {
+        "chunk": "光線會影響腦內嘅主時鐘，再協調唔同器官同細胞嘅時鐘。",
+        "take": 1,
+        "cer": 0.125,
+        "asr": "光线会影响扭来的主时钟再协调不同器官同细胞的时钟"
+      },
+      {
+        "chunk": "代謝同部分維護工作，都受到日夜節律調節。",
+        "take": 1,
+        "cer": 0.111,
+        "asr": "代謝同步分维护工作都受到日夜截律调节"
+      },
+      {
+        "chunk": "節律同細胞功能，亦會隨住衰老互相影響。",
+        "take": 5,
+        "cer": 0.176,
+        "asr": "哲律和细胞功能亦会随着衰老互相影响"
+      }
+    ],
+    "render_s": 659.9
+  },
+  "n14": {
+    "text_tc": "所以，睡眠同節律值得一齊照顧。但修復唔係只喺夜晚發生，唔同工作，有各自嘅節奏。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "所以，睡眠同节律值得一齐照顾。",
+      "但修复唔系只喺夜晚发生，唔同工作，有各自嘅节奏。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 14",
+    "duration_s": 8.69,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "所以，睡眠同節律值得一齊照顧。",
+        "take": 1,
+        "cer": 0.077,
+        "asr": "所以睡眠同节律值得一起照顾"
+      },
+      {
+        "chunk": "但修復唔係只喺夜晚發生，唔同工作，有各自嘅節奏。",
+        "take": 2,
+        "cer": 0.19,
+        "asr": "但修讽不是只在夜晚发生不同工作有各自的节奏"
+      }
+    ],
+    "render_s": 182.0
+  },
+  "n15": {
+    "text_tc": "進餐時間，亦會影響部分外周時鐘同代謝節律。食乜，同幾時食，係兩個值得一齊理解嘅問題。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "进餐时间，亦会影响部分外周时钟同代谢节律。",
+      "食乜，同几时食，系两个值得一齐理解嘅问题。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 15",
+    "duration_s": 10.54,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "進餐時間，亦會影響部分外周時鐘同代謝節律。",
+        "take": 0,
+        "cer": 0.211,
+        "asr": "进参时间,也会影响部分外周时钟和代謝节路。"
+      },
+      {
+        "chunk": "食乜，同幾時食，係兩個值得一齊理解嘅問題。",
+        "take": 2,
+        "cer": 0.158,
+        "asr": "食物 和 几时食 是两个值得 一齊理解的问题"
+      }
+    ],
+    "render_s": 199.6
+  },
+  "n16": {
+    "text_tc": "研究一種成分，好似研究點樣改善一個發電站。但要照顧成座城市，就要再睇埋整體。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "研究一种成分，好似研究点样改善一个发电站。",
+      "但要照顾成座城市，就要再睇埋整体。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 16",
+    "duration_s": 8.26,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "研究一種成分，好似研究點樣改善一個發電站。",
+        "take": 0,
+        "cer": 0.105,
+        "asr": "研究一种成分, 好像研究怎样改善一个发电站,"
+      },
+      {
+        "chunk": "但要照顧成座城市，就要再睇埋整體。",
+        "take": 0,
+        "cer": 0.267,
+        "asr": "但要照顾城庄城市,就要再看整体,"
+      }
+    ],
+    "render_s": 191.3
+  },
+  "n17": {
+    "text_tc": "營養同代謝提供原料同能量，荷爾蒙傳遞調節訊息，免疫亦參與細胞環境嘅調節。細胞功能，同全身系統一直互相影響。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "营养同代谢提供原料同能量，荷尔蒙传递调节讯息，免疫亦参与细胞环境嘅调节。",
+      "细胞功能，同全身系统一直互相影响。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 17",
+    "duration_s": 12.85,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 6,
+    "model_text_override": null,
+    "chunk_scores": [
+      {
+        "chunk": "營養同代謝提供原料同能量，荷爾蒙傳遞調節訊息，免疫亦參與細胞環境嘅調節。",
+        "take": 5,
+        "cer": 0.303,
+        "asr": "營氧和代謝提供原料和能量荷尔蒙传逮调治信息免疫亦参与绅細波环典的调子"
+      },
+      {
+        "chunk": "細胞功能，同全身系統一直互相影響。",
+        "take": 1,
+        "cer": 0.067,
+        "asr": "细胞功能和全身系统一直互相影响"
+      }
+    ],
+    "render_s": 529.9
+  },
+  "n18": {
+    "text_tc": "先建立飲食、活動同睡眠嘅基礎，再按需要同證據，考慮營養支持。用乜、點用、幾時用，要逐項睇，唔係每樽都硬分早午晚。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "先建立饮食、活动同睡眠嘅基础，再按需要同证据，考虑营养支持。",
+      "用乜、点用、几时用，要逐项睇，唔系每樽都硬分早午晚。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 18 (after the on-camera sentence)",
+    "duration_s": 14.99,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 6,
+    "model_text_override": null,
+    "chunk_scores": [
+      {
+        "chunk": "先建立飲食、活動同睡眠嘅基礎，再按需要同證據，考慮營養支持。",
+        "take": 1,
+        "cer": 0.038,
+        "asr": "先建立飲食互动,同睡眠的基础,再按需要同证据,考虑营养支持。"
+      },
+      {
+        "chunk": "用乜、點用、幾時用，要逐項睇，唔係每樽都硬分早午晚。",
+        "take": 5,
+        "cer": 0.318,
+        "asr": "用什么? 点用? 几时用? 要终行看,不是每瓶都昂分,早无晚。"
+      }
+    ],
+    "render_s": 498.5
+  },
+  "n19": {
+    "text_tc": "跟住阿斯康，我哋會帶你由細胞嘅能量、清理同修復出發，一齊探索身體機能同生命節律，點樣變成每日做得到嘅選擇。呢段抗衰老旅程，由認識自己開始。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "跟住阿斯康，我哋会带你由细胞嘅能量、清理同修复出发，一齐探索身体机能同生命节律，点样变成每日做得到嘅选择。",
+      "呢段抗衰老旅程，由认识自己开始。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 19",
+    "duration_s": 16.68,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "跟住阿斯康，我哋會帶你由細胞嘅能量、清理同修復出發，一齊探索身體機能同生命節律，點樣變成每日做得到嘅選擇。",
+        "take": 2,
+        "cer": 0.125,
+        "asr": "跟住阿斯康,我们会带你由細胞的能量清理和修复出发,一起探索身体机能和生命之路,怎样变成每日做得到的选择。"
+      },
+      {
+        "chunk": "呢段抗衰老旅程，由認識自己開始。",
+        "take": 1,
+        "cer": 0.0,
+        "asr": "这段抗衰老旅程,由认识自己开始,"
+      }
+    ],
+    "render_s": 247.9
+  },
+  "n20": {
+    "text_tc": "阿斯康。從細胞出發，配合生命嘅節律。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "阿斯康。",
+      "从细胞出发，配合生命嘅节律。"
+    ],
+    "source": "A02_Narration_By_Shot.txt shot 20",
+    "duration_s": 4.03,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 6,
+    "model_text_override": "阿斯康，從細胞出發，配合生命嘅節律。",
+    "chunk_scores": [
+      {
+        "chunk": "阿斯康，從細胞出發，配合生命嘅節律。",
+        "take": 1,
+        "cer": 0.067,
+        "asr": "阿斯康从細胞出发配合生命的节落"
+      }
+    ],
+    "render_s": 181.1
   }
 }
