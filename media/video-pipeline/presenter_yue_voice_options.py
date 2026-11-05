@@ -58,8 +58,9 @@ def cosy(engine, out):
     prompt = os.environ["YUE_PROMPT_WAV"]
     if engine == "cosyvoice2":
         m = CosyVoice2(os.environ["COSYVOICE2_MODEL"], load_jit=False, load_trt=False, fp16=False)
-        instruct = "用粵語自然地講呢句說話<|endofprompt|>"
-        conv = lambda s: s                      # Traditional text straight in (V3 used Simplified)
+        instruct = "用粤语说这句话<|endofprompt|>"
+        t2s = OpenCC("t2s")
+        conv = lambda s: t2s.convert(s).replace("係", "系")   # Traditional input ran away (34 s); V3 form
         limit = 18
     else:
         m = CosyVoice3(os.environ["COSYVOICE3_MODEL"], load_trt=False, fp16=False)
@@ -69,14 +70,21 @@ def cosy(engine, out):
         limit = 30
     sr = m.sample_rate
     parts, chunks = [], clauses(PASSAGE, limit)
+    retries = []
     for i, c in enumerate(chunks):
-        torch.manual_seed(2026 + i)
-        w = torch.cat([j["tts_speech"] for j in m.inference_instruct2(conv(c), instruct, prompt, stream=False)], dim=1)
+        n = len(re.sub(r"[，。、：；？！\s]", "", c))
+        for k in range(5):   # runaway / truncation guard: 0.13-0.42 s per Cantonese syllable
+            torch.manual_seed(2026 + i + 100 * k)
+            w = torch.cat([j["tts_speech"] for j in m.inference_instruct2(conv(c), instruct, prompt, stream=False)],
+                          dim=1)
+            if 0.13 * n <= w.shape[1] / sr <= 0.42 * n:
+                break
+        retries.append({"chunk": c, "take": k, "seconds": round(w.shape[1] / sr, 2), "syllables": n})
         parts += [w, torch.zeros(1, int(sr * gap_after(c)))]
     wav = torch.cat(parts[:-1], dim=1)
     torchaudio.save(out, wav, sr)
     return {"sample_rate": sr, "instruct": instruct, "chunks": chunks, "chunk_limit": limit,
-            "text_form": "Traditional" if engine == "cosyvoice2" else "Simplified (opencc t2s, 係->系)",
+            "text_form": "Simplified (opencc t2s, 係->系)", "takes": retries,
             "seed_base": 2026, "prompt": Path(prompt).name}
 
 
