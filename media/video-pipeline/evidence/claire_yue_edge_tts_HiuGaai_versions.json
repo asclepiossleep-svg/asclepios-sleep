@@ -1,0 +1,39 @@
+{
+  "engine": "edge-tts 7.3.1",
+  "service": "Microsoft Edge online speech (speech.platform.bing.com), no account/key",
+  "voice": "zh-HK-HiuGaaiNeural",
+  "passage": "大家好，歡迎嚟到阿斯康。講抗衰老，我哋會由細胞出發：線粒體好似發電站，幫細胞提供能量。阿斯康嘅理念係系統性、節律性、實際應用，配合生命嘅節律。之後我哋會繼續同大家分享。",
+  "loudness": "each file loudnorm I=-18 LUFS, TP=-1.5 dBTP, 48 kHz mono",
+  "versions": [
+    {
+      "version": "A",
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "volume": "+0%",
+      "file": "Cantonese_voice_edge_HiuGaai_A_rate+0%_pitch+0Hz.wav",
+      "raw_mp3": "edge_zh-HK-HiuGaaiNeural_A.mp3",
+      "raw_duration_s": 26.3,
+      "duration_s": 26.3
+    },
+    {
+      "version": "B",
+      "rate": "-5%",
+      "pitch": "+0Hz",
+      "volume": "+0%",
+      "file": "Cantonese_voice_edge_HiuGaai_B_rate-5%_pitch+0Hz.wav",
+      "raw_mp3": "edge_zh-HK-HiuGaaiNeural_B.mp3",
+      "raw_duration_s": 27.67,
+      "duration_s": 27.67
+    },
+    {
+      "version": "C",
+      "rate": "+5%",
+      "pitch": "+0Hz",
+      "volume": "+0%",
+      "file": "Cantonese_voice_edge_HiuGaai_C_rate+5%_pitch+0Hz.wav",
+      "raw_mp3": "edge_zh-HK-HiuGaaiNeural_C.mp3",
+      "raw_duration_s": 25.06,
+      "duration_s": 25.06
+    }
+  ]
+}
