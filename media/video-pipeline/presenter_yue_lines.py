@@ -76,6 +76,10 @@ for _k, _v in A02.items():
     LINES[f"n{_k}"] = _v
     SOURCE[f"n{_k}"] = ("A02_Narration_By_Shot.txt shot " + _k +
                          (" (after the on-camera sentence)" if _k in ("06", "12", "18") else ""))
+# Model-input overrides (same spoken words; the subtitle/script text stays as in LINES).
+# n20: a three-character sentence on its own (「阿斯康。」) was unstable (ASR "Sihong"), so the model
+# reads it joined to the slogan with a comma.
+MODEL_TEXT = {"n20": "阿斯康，從細胞出發，配合生命嘅節律。"}
 INSTRUCT = "用粤语说这句话<|endofprompt|>"
 TAKES = int(os.environ.get("YUE_TAKES", "3"))
 BRAND = "ASCLEPIOS HEALTH"
@@ -164,7 +168,7 @@ def main():
     for tag in tags:
         t0 = time.time()
         parts, scores = [], []
-        for i, s in enumerate(split_sentences(LINES[tag])):
+        for i, s in enumerate(split_sentences(MODEL_TEXT.get(tag, LINES[tag]))):
             pieces = []
             for j, chunk in enumerate(re.split(f"({BRAND})", s)):
                 if not re.sub(r"[\s，。？！：、]", "", chunk):   # punctuation-only remainder
@@ -203,7 +207,7 @@ def main():
                      "model_input_sc": [t2s.convert(s).replace("係", "系") for s in split_sentences(LINES[tag])],
                      "source": SOURCE[tag], "duration_s": round(wav.shape[1] / 24000, 2),
                      "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)", "instruct": INSTRUCT,
-                     "prompt": Path(prompt).name, "seed_base": 1986, "takes": TAKES, "chunk_scores": scores, "render_s": round(time.time() - t0, 1)}
+                     "prompt": Path(prompt).name, "seed_base": 1986, "takes": TAKES, "model_text_override": MODEL_TEXT.get(tag), "chunk_scores": scores, "render_s": round(time.time() - t0, 1)}
         print(tag, meta[tag]["duration_s"], "s", meta[tag]["render_s"], "s render")
         meta_p.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
 
