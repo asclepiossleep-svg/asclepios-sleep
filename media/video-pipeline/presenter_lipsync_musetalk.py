@@ -44,10 +44,15 @@ FPS = 25
 def lower_face_mask(h, w):
     """Feathered ellipse over mouth + jaw inside the crop (crop-local coords)."""
     m = np.zeros((h, w), np.float32)
-    cv2.ellipse(m, (w // 2, int(h * 0.74)), (int(w * 0.40), int(h * 0.30)), 0, 0, 360, 1.0, -1)
+    # the ellipse ends at 0.90 h and is feathered, so the mask is ~0 at the crop's bottom edge
+    # (the old 0.74 h + 0.30 h ellipse ran past the edge and left a horizontal seam at the chin)
+    cv2.ellipse(m, (w // 2, int(h * 0.68)), (int(w * 0.38), int(h * 0.22)), 0, 0, 360, 1.0, -1)
     m[: int(h * 0.50)] = 0  # never touch the eyes / nose bridge
-    k = max(3, (min(h, w) // 8) | 1)
-    return cv2.GaussianBlur(m, (k, k), 0)[..., None]
+    k = max(3, (min(h, w) // 6) | 1)
+    m = cv2.GaussianBlur(m, (k, k), 0)
+    m *= np.clip((h - 1 - np.arange(h)[:, None]) / (h * 0.06), 0, 1)   # guaranteed zero at the bottom/side edges
+    m *= np.clip(np.minimum(np.arange(w), w - 1 - np.arange(w))[None, :] / (w * 0.06), 0, 1)
+    return m[..., None]
 
 
 def main():
