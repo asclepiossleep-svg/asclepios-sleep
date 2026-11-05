@@ -49,6 +49,7 @@ SOURCE = {
     "end_cam": "#142 6633840244 (P05 farewell)",
 }
 INSTRUCT = "用粤语说这句话<|endofprompt|>"
+TAKES = int(os.environ.get("YUE_TAKES", "3"))
 BRAND = "ASCLEPIOS HEALTH"
 
 
@@ -83,6 +84,30 @@ def squeeze(w, sr, win=0.02, thr=0.015, keep=0.07):
     return torch.cat(out, dim=1)
 
 
+# Whisper writes Cantonese in standard written Chinese; map both sides to the same forms
+# before scoring, so only real misreadings count (simplified characters on both sides).
+COLLOQ = [("乜嘢", "什么"), ("乜", "什么"), ("点解", "为何"), ("咁样", "这样"), ("嘅", "的"), ("系", "是"),
+          ("嚟", "来"), ("咗", "了"), ("啲", "些"), ("哋", "们"), ("仲", "还"), ("呢", "这"), ("咁", "这么"),
+          ("食", "吃"), ("喫", "吃"), ("同", "跟"), ("冇", "没有"), ("今日", "今天"), ("为什么", "为何")]
+
+
+def norm_sc(t, t2s):
+    t = t2s.convert(t).lower()
+    for a, b in COLLOQ:
+        t = t.replace(a, b)
+    return re.sub(r"[\sa-z'，。,.!！?？、：:《》]", "", t)
+
+
+def cer(ref, hyp, t2s):
+    r, h = norm_sc(ref, t2s), norm_sc(hyp, t2s)
+    d = list(range(len(h) + 1))
+    for i, rc in enumerate(r, 1):
+        prev, d[0] = d[0], i
+        for j, hc in enumerate(h, 1):
+            prev, d[j] = d[j], min(d[j] + 1, d[j - 1] + 1, prev + (rc != hc))
+    return round(d[-1] / max(1, len(r)), 3)
+
+
 GAP_S = {"，": 0.0, "。": 0.32, "？": 0.32, "！": 0.30, "：": 0.12}
 
 
@@ -100,6 +125,9 @@ def main():
     m = CosyVoice2(str(Path(os.environ["COSYVOICE_MODELS"]) / "CosyVoice2-0.5B"), load_jit=False, load_trt=False,
                    fp16=False)
     sr = m.sample_rate
+    from transformers import pipeline
+    asr = pipeline("automatic-speech-recognition", model=str(Path(os.environ["COSYVOICE_MODELS"]) / "whisper-large-v3-turbo"),
+                   device="cpu")
     brand_wav, bsr = torchaudio.load(os.environ["YUE_BRAND_WAV"])
     if bsr != sr:
         brand_wav = torchaudio.functional.resample(brand_wav, bsr, sr)
@@ -107,7 +135,7 @@ def main():
     meta = json.loads(meta_p.read_text()) if meta_p.exists() else {}
     for tag in tags:
         t0 = time.time()
-        parts = []
+        parts, scores = [], []
         for i, s in enumerate(split_sentences(LINES[tag])):
             pieces = []
             for j, chunk in enumerate(re.split(f"({BRAND})", s)):
@@ -119,8 +147,22 @@ def main():
                     # (in-sentence spellings were misread; chosen take scored best on English ASR)
                     w = squeeze(trim(brand_wav, sr, thr=0.02, pad=0.02), sr)
                 else:
-                    gen = m.inference_instruct2(t2s.convert(chunk).replace("係", "系"), INSTRUCT, prompt, stream=False)
-                    w = trim(torch.cat([c["tts_speech"] for c in gen], dim=1), sr, thr=0.02, pad=0.02)
+                    # best of N takes by Cantonese ASR character error rate against the script
+                    best = None
+                    for k in range(TAKES):
+                        torch.manual_seed(1986 + 10 * i + j + 1000 * k)
+                        gen = m.inference_instruct2(t2s.convert(chunk).replace("係", "系"), INSTRUCT, prompt,
+                                                    stream=False)
+                        w = trim(torch.cat([c["tts_speech"] for c in gen], dim=1), sr, thr=0.02, pad=0.02)
+                        hyp = asr({"raw": w.squeeze(0).numpy(), "sampling_rate": sr},
+                                  generate_kwargs={"language": "yue", "task": "transcribe"})["text"]
+                        e = cer(chunk, hyp, t2s)
+                        if best is None or e < best[0]:
+                            best = (e, w, hyp, k)
+                        if e == 0:
+                            break
+                    e, w, hyp, k = best
+                    scores.append({"chunk": chunk, "take": k, "cer": e, "asr": hyp})
                 pieces += [w, torch.zeros(1, int(sr * 0.05))]
             parts.append(torch.cat(pieces[:-1], dim=1))
             parts.append(torch.zeros(1, int(sr * GAP_S.get(s[-1], 0.3))))
@@ -133,7 +175,7 @@ def main():
                      "model_input_sc": [t2s.convert(s).replace("係", "系") for s in split_sentences(LINES[tag])],
                      "source": SOURCE[tag], "duration_s": round(wav.shape[1] / 24000, 2),
                      "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)", "instruct": INSTRUCT,
-                     "prompt": Path(prompt).name, "seed_base": 1986, "render_s": round(time.time() - t0, 1)}
+                     "prompt": Path(prompt).name, "seed_base": 1986, "takes": TAKES, "chunk_scores": scores, "render_s": round(time.time() - t0, 1)}
         print(tag, meta[tag]["duration_s"], "s", meta[tag]["render_s"], "s render")
         meta_p.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
 
