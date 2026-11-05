@@ -1,0 +1,42 @@
+{
+  "0_still": {
+    "native": "1672x941",
+    "eyes": 3.971,
+    "mouth": 2.61,
+    "hair": 4.711,
+    "chest_logo": 17.478,
+    "notebook": 8.58
+  },
+  "A_EN_1080_master": {
+    "native": "1920x1080",
+    "eyes": 2.854,
+    "mouth": 1.42,
+    "hair": 3.139,
+    "chest_logo": 15.743,
+    "notebook": 8.425
+  },
+  "B_YUE_540_preview": {
+    "native": "960x540",
+    "eyes": 1.895,
+    "mouth": 1.614,
+    "hair": 2.145,
+    "chest_logo": 11.288,
+    "notebook": 7.232
+  },
+  "C_YUE_segment_old": {
+    "native": "1672x940",
+    "eyes": 2.83,
+    "mouth": 1.822,
+    "hair": 3.257,
+    "chest_logo": 16.913,
+    "notebook": 8.608
+  },
+  "D_YUE_segment_new": {
+    "native": "1672x940",
+    "eyes": 3.481,
+    "mouth": 1.885,
+    "hair": 4.296,
+    "chest_logo": 16.89,
+    "notebook": 8.604
+  }
+}

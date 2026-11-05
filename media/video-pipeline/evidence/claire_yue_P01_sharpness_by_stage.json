@@ -1,0 +1,58 @@
+{
+  "0_still_v05r1": {
+    "native": "1672x941",
+    "eyes": 3.971,
+    "mouth": 2.61,
+    "hair": 4.711,
+    "chest_logo": 17.478,
+    "notebook": 8.58
+  },
+  "1_headmotion": {
+    "native": "1672x941",
+    "eyes": 2.751,
+    "mouth": 2.024,
+    "hair": 3.267,
+    "chest_logo": 17.478,
+    "notebook": 8.58
+  },
+  "2_lipsync": {
+    "native": "1672x940",
+    "eyes": 2.801,
+    "mouth": 1.752,
+    "hair": 3.273,
+    "chest_logo": 17.652,
+    "notebook": 8.573
+  },
+  "3_finished": {
+    "native": "1672x940",
+    "eyes": 2.81,
+    "mouth": 1.805,
+    "hair": 3.265,
+    "chest_logo": 17.674,
+    "notebook": 8.593
+  },
+  "4_segment": {
+    "native": "1672x940",
+    "eyes": 2.83,
+    "mouth": 1.822,
+    "hair": 3.257,
+    "chest_logo": 16.913,
+    "notebook": 8.608
+  },
+  "5_EN_1080": {
+    "native": "1920x1080",
+    "eyes": 2.854,
+    "mouth": 1.42,
+    "hair": 3.139,
+    "chest_logo": 15.743,
+    "notebook": 8.425
+  },
+  "6_YUE_540": {
+    "native": "960x540",
+    "eyes": 1.895,
+    "mouth": 1.614,
+    "hair": 2.145,
+    "chest_logo": 11.288,
+    "notebook": 7.232
+  }
+}

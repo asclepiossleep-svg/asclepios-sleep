@@ -37,8 +37,13 @@ for TAG in "$@"; do
   echo "== $TAG: finish + body"
   python "$HERE/presenter_finish_motion.py" "$W/lipsync/${PFX}${TAG}_full_raw.mp4" "$W/motion/${PFX}$TAG" \
     "$LINES/$TAG.wav" "$W/lipsync/${PFX}${TAG}_finished.mp4" --bbox "$BBOX" --breath-px 0
-  python "$HERE/presenter_body_motion.py" "$W/lipsync/${PFX}${TAG}_finished.mp4" "$STILL" "$LINES/$TAG.wav" \
-    "$SEG/$TAG.mp4"
+  BODY_IN="$W/lipsync/${PFX}${TAG}_finished.mp4"
+  if [ -n "${PRESENTER_RESTORE:-}" ]; then   # put the still's real fine detail back into the animated face
+    echo "== $TAG: detail restore"
+    python "$HERE/presenter_detail_restore.py" "$BODY_IN" "$STILL" "$W/lipsync/${PFX}${TAG}_restored.mp4"
+    BODY_IN="$W/lipsync/${PFX}${TAG}_restored.mp4"
+  fi
+  python "$HERE/presenter_body_motion.py" "$BODY_IN" "$STILL" "$LINES/$TAG.wav" "$SEG/$TAG.mp4"
   [ -n "${PRESENTER_KEEP_MOTION:-}" ] || rm -rf "$W/motion/${PFX}$TAG"   # frames are large; segment is final
   echo "== $TAG: done $(date -u +%H:%M:%S)"
 done
