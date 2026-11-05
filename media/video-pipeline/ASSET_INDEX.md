@@ -90,7 +90,7 @@ evidence files; Google Drive holds the media (see `STORAGE_PLAN.md`).
 
 | Asset | Location | Status |
 |---|---|---|
-| `ASCLEPIOS_HEALTH_A02_EN_presenter_1080p.mp4` · 1920×1080 · 212.0 s · 48,207,039 bytes · sha256 `f78229279e164d91b183eaa7e94af8c360a919b0c5c7714ba394bf466744534e` (logo on opening and closing pages) | `session:out-presenter-1080/`; sent to the owner in the session; plays at `https://claude.ai/artifact/PRxC7Jz3iDmEPYNChWjrzo` (lossless stream copy) | **LATEST**: the master release, owner-authorised export 2026-11-04. QA: `git:evidence/a02_en_presenter_qa_1080p.json` |
+| `ASCLEPIOS_HEALTH_A02_EN_presenter_1080p.mp4` · 1920×1080 · 212.0 s · 48,172,633 bytes · sha256 `7974d69ae4f00d3aa9c8fa727a842f00e889f1d6b38cd9c65ce522c5f171bdf4` (logo on opening and closing pages; Claire from v05r1) | `session:out-presenter-1080/`; sent to the owner in the session; plays at `https://claude.ai/artifact/PRxC7Jz3iDmEPYNChWjrzo` (lossless stream copy) | **LATEST**: the master release, owner-authorised export 2026-11-04. QA: `git:evidence/a02_en_presenter_qa_1080p.json` |
 | `…_presenter_preview_full_540p.mp4` (sha256 `305594da…`) | `session:out-presenter/` | **SUPERSEDED** by the master (it was the approved review preview with the old opening page) |
 | `ASCLEPIOS_HEALTH_A02_EN_preview_full_360p.mp4` (no presenter) | `session:out-a02-full/` | **SUPERSEDED** |
 
