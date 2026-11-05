@@ -21,6 +21,11 @@ mkdir -p "$SEG" "$W/motion" "$W/lipsync"
 # shellcheck disable=SC1091
 . "$W/cosy/venv/bin/activate"
 for TAG in "$@"; do
+  # a 15 s segment writes ~1 GB of PNG frames per stage; a full disk silently corrupts the lip-sync frames
+  AVAIL_MB=$(df -Pm "$W" | awk 'NR==2{print $4}')
+  if [ "${AVAIL_MB:-0}" -lt "${PRESENTER_MIN_FREE_MB:-2500}" ]; then
+    echo "STOP: only ${AVAIL_MB} MB free in $W (need ${PRESENTER_MIN_FREE_MB:-2500}); free space and re-run $TAG" >&2; exit 3
+  fi
   TAIL=0.45; [ "$TAG" = "end_cam" ] && TAIL=1.0     # farewell holds a brief natural smile before shot 20
   echo "== $TAG: motion"
   rm -rf "$W/motion/${PFX}$TAG"
