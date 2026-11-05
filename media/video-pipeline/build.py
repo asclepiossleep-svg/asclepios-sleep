@@ -119,11 +119,13 @@ def tts_kokoro(project: dict, segments: list[dict], work: Path) -> tuple[Path, l
     voice = project.get("voice", {})
     import os
     model_dir = Path(os.environ.get("KOKORO_MODEL_DIR") or voice.get("model_dir") or HERE / "models").expanduser()
-    kok = Kokoro(str(model_dir / "kokoro-v1.0.onnx"), str(model_dir / "voices-v1.0.bin"))
+    # loaded only if a segment actually needs TTS (other-language editions bring their own WAVs)
+    kok = None if all(s.get("audio") or not s.get("_text", "").strip() for s in segments) else \
+        Kokoro(str(model_dir / "kokoro-v1.0.onnx"), str(model_dir / "voices-v1.0.bin"))
     sr = 24000
     pieces, spans, t = [np.zeros(int(LEAD_IN * sr), dtype="float32")], [], LEAD_IN
     for i, seg in enumerate(segments):
-        cache = work / f"tts_{seg['id']}_{hashlib.md5((seg['en'] + json.dumps(voice)).encode()).hexdigest()[:8]}.wav"
+        cache = work / f"tts_{seg['id']}_{hashlib.md5((seg['_text'] + json.dumps(voice)).encode()).hexdigest()[:8]}.wav"
         if seg.get("audio"):  # presenter on-camera line: its own pre-rendered voice (same Kokoro voice)
             import os
             root = Path(os.environ.get("ASCLEPIOS_PRESENTER_DIR") or project.get("_dir", "."))
@@ -367,10 +369,11 @@ def wrap_cjk(text: str, width: int) -> str:
         return not (a.isascii() and a.isalnum() and b.isascii() and b.isalnum())
 
     punct = [i + 1 for i, c in enumerate(text[:-1]) if c in "，、：；？！"]
-    cut = min(punct, key=lambda i: abs(pos[i] - half)) if punct else None
+    longest = lambda i: max(cjk_width(text[:i].rstrip("，、 ")), cjk_width(text[i:].strip()))  # longer shown line
+    cut = min(punct, key=lambda i: (longest(i), abs(pos[i] - half))) if punct else None
     if cut is None or abs(pos[cut] - half) > cjk_width(text) * 0.3:
         cands = [i for i in range(1, len(text)) if ok(i)]
-        cut = min(cands, key=lambda i: (abs(pos[i] - half) + (0 if text[i - 1] == " " or text[i] == " " else 0.4)))
+        cut = min(cands, key=lambda i: (longest(i) + (0 if text[i - 1] == " " or text[i] == " " else 0.4)))
     return text[:cut].rstrip("，、 ") + "\n" + text[cut:].strip()
 
 
