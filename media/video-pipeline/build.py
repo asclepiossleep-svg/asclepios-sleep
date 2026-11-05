@@ -347,18 +347,31 @@ def caption_style_for(img: Path | None, focus=None) -> str:
     return "Diagram" if lum >= 225 else ("Dark" if lum < 90 else "Photo")
 
 
+def cjk_width(text: str) -> float:
+    """Visual width in Chinese-character units (Latin letters/digits/spaces ~0.55)."""
+    return sum(0.55 if ord(c) < 0x2E80 else 1.0 for c in text)
+
+
 def wrap_cjk(text: str, width: int) -> str:
     """Two balanced lines for Chinese: break at the punctuation nearest the middle,
-    else in the middle; subtitle-style trailing ，。 removed."""
+    else at a space or between two Chinese characters near the middle; never inside
+    a Latin word. Subtitle-style trailing ，。 removed."""
     text = text.strip().rstrip("，。、；")
-    if len(text) <= width:
+    if cjk_width(text) <= width:
         return text
-    mid = len(text) / 2
-    cands = [i + 1 for i, c in enumerate(text[:-1]) if c in "，、：；？！"]
-    cut = min(cands, key=lambda i: abs(i - mid)) if cands else 0
-    if not cands or abs(cut - mid) > len(text) * 0.3:
-        cut = int(round(mid))
-    return text[:cut].rstrip("，、") + "\n" + text[cut:].strip()
+    half = cjk_width(text) / 2
+    pos = [cjk_width(text[:i]) for i in range(len(text) + 1)]
+
+    def ok(i):  # a break before text[i] that does not split a Latin word
+        a, b = text[i - 1], text[i]
+        return not (a.isascii() and a.isalnum() and b.isascii() and b.isalnum())
+
+    punct = [i + 1 for i, c in enumerate(text[:-1]) if c in "，、：；？！"]
+    cut = min(punct, key=lambda i: abs(pos[i] - half)) if punct else None
+    if cut is None or abs(pos[cut] - half) > cjk_width(text) * 0.3:
+        cands = [i for i in range(1, len(text)) if ok(i)]
+        cut = min(cands, key=lambda i: (abs(pos[i] - half) + (0 if text[i - 1] == " " or text[i] == " " else 0.4)))
+    return text[:cut].rstrip("，、 ") + "\n" + text[cut:].strip()
 
 
 def write_captions(cues, stem: Path, font_name: str, wrap: int | None, size: int = 48, styles=None,

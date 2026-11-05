@@ -1,0 +1,21 @@
+{
+  "open_cam": {
+    "frames": 94,
+    "red_mark_peak_before": [
+      4.49,
+      4.78
+    ],
+    "red_mark_peak_after": [
+      3.67,
+      4.98
+    ],
+    "red_mark_mean_after": [
+      3.07,
+      3.73
+    ],
+    "red_flicker_after_max_step": 2.48,
+    "texture_before_mean": 1.741,
+    "texture_after_mean": 1.864,
+    "texture_flicker_after_cv": 0.171
+  }
+}

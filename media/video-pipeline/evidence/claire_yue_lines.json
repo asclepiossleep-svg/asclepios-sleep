@@ -1,0 +1,161 @@
+{
+  "open_cam": {
+    "text_tc": "大家好，我係 Claire Lee，歡迎嚟到 ASCLEPIOS HEALTH。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "大家好，我系 Claire Lee，欢迎嚟到 ASCLEPIOS HEALTH。"
+    ],
+    "source": "#142 6633840244 (P01, title removed per 6640077234)",
+    "duration_s": 5.63,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "大家好，我係 Claire Lee，歡迎嚟到 ",
+        "take": 0,
+        "cer": 0.0,
+        "asr": "大家好,我是Claire Lee,欢迎来到!"
+      }
+    ],
+    "render_s": 26.9
+  },
+  "open_vo": {
+    "text_tc": "今日同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "今日同大家分享，点解讲抗衰老，除咗食啲乜，几时食都咁值得留意。"
+    ],
+    "source": "#142 6633840244 (P01 second sentence, voice-over on shot 02)",
+    "duration_s": 5.61,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "今日同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。",
+        "take": 0,
+        "cer": 0.103,
+        "asr": "今日同大家分享《为何港矿衰老,除了吃些什么,何时吃都这么值得留意》"
+      }
+    ],
+    "render_s": 123.2
+  },
+  "p02_cam": {
+    "text_tc": "咁樣，補充咗就夠未？",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "咁样，补充咗就够未？"
+    ],
+    "source": "Drive Claire_Lee_Director_Handoff_v1 §2 P02",
+    "duration_s": 2.17,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "咁樣，補充咗就夠未？",
+        "take": 0,
+        "cer": 0.125,
+        "asr": "这样, 补充了就够尾,"
+      }
+    ],
+    "render_s": 70.0
+  },
+  "p03_cam": {
+    "text_tc": "但細胞嘅工作，原來仲有時間表。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "但细胞嘅工作，原来仲有时间表。"
+    ],
+    "source": "Drive Claire_Lee_Director_Handoff_v1 §2 P03",
+    "duration_s": 3.21,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "但細胞嘅工作，原來仲有時間表。",
+        "take": 1,
+        "cer": 0.0,
+        "asr": "但細胞的工作原来还有时间表"
+      }
+    ],
+    "render_s": 52.6
+  },
+  "p04_cam": {
+    "text_tc": "呢個就係阿斯康嘅理念：系統性、節律性、實際應用。",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "呢个就系阿斯康嘅理念：系统性、节律性、实际应用。"
+    ],
+    "source": "Drive Claire_Lee_Director_Handoff_v1 §2 P04 (brand wording to confirm vs Cantonese A02)",
+    "duration_s": 5.16,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "呢個就係阿斯康嘅理念：系統性、節律性、實際應用。",
+        "take": 0,
+        "cer": 0.1,
+        "asr": "这个就是阿斯康的理念、系统性、哲禄性、实际应用。"
+      }
+    ],
+    "render_s": 102.3
+  },
+  "end_cam": {
+    "text_tc": "今日先同大家分享到呢度。之後我哋會繼續推出更多短片，由細胞、身體機能到日常生活，一步步同大家了解，乜嘢先係真正嘅抗衰老。我係 Claire Lee，下次再同大家分享。拜拜！",
+    "brand": "ASCLEPIOS HEALTH = fixed English take brand_ASCLEPIOS_HEALTH_s1987.wav (inference_cross_lingual, same prompt)",
+    "model_input_sc": [
+      "今日先同大家分享到呢度。",
+      "之后我哋会继续推出更多短片，由细胞、身体机能到日常生活，一步步同大家了解，乜嘢先系真正嘅抗衰老。",
+      "我系 Claire Lee，下次再同大家分享。",
+      "拜拜！"
+    ],
+    "source": "#142 6633840244 (P05 farewell)",
+    "duration_s": 17.28,
+    "model": "CosyVoice2-0.5B rev eec1ae6c (instruct2)",
+    "instruct": "用粤语说这句话<|endofprompt|>",
+    "prompt": "V1_sft_tc.wav",
+    "seed_base": 1986,
+    "takes": 3,
+    "chunk_scores": [
+      {
+        "chunk": "今日先同大家分享到呢度。",
+        "take": 0,
+        "cer": 0.091,
+        "asr": "今日先跟大家分享到这里"
+      },
+      {
+        "chunk": "之後我哋會繼續推出更多短片，由細胞、身體機能到日常生活，一步步同大家了解，乜嘢先係真正嘅抗衰老。",
+        "take": 0,
+        "cer": 0.023,
+        "asr": "之后我们会继继推出更多短片,由细胞、身体机能到日常生活,一步步同大家了解,什么先是真正的抗衰老。"
+      },
+      {
+        "chunk": "我係 Claire Lee，下次再同大家分享。",
+        "take": 0,
+        "cer": 0.0,
+        "asr": "我是Claire Lee,下次再同大家分享!"
+      },
+      {
+        "chunk": "拜拜！",
+        "take": 1,
+        "cer": 0.0,
+        "asr": "拜拜"
+      }
+    ],
+    "render_s": 1619.7
+  }
+}
