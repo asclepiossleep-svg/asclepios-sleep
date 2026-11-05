@@ -51,11 +51,13 @@ evidence files; Google Drive holds the media (see `STORAGE_PLAN.md`).
 
 | Asset | Location | Version | Status | Reuse limits |
 |---|---|---|---|---|
-| Studio still, v05, coffee closer | `drive:1Ku_uDuzyH2Ze2RuQjXOzvoG6Q_Wjfhhx` · `Claire_Lee_Studio_v05_Coffee_Closer_20261104.png` · sha256 `df02698eb4538a72…` | v05 | **APPROVED** (owner chose it; 5 s test accepted) | White **business** blazer, blue top, chest logo, coffee and notebook. No clinical props, no credentials, no "doctor/expert" title, and no product endorsement (AGENTS.md §4). Use this same still for every language. |
+| Studio still, v05, coffee closer | `drive:1Ku_uDuzyH2Ze2RuQjXOzvoG6Q_Wjfhhx` · `Claire_Lee_Studio_v05_Coffee_Closer_20261104.png` · sha256 `df02698eb4538a72…` | v05 | **APPROVED** original, kept unchanged. Render from v05r1 below | White **business** blazer, blue top, chest logo, coffee and notebook. No clinical props, no credentials, no "doctor/expert" title, and no product endorsement (AGENTS.md §4). |
+| Studio still, v05r1, face retouch | `session:studio/Claire_Lee_Studio_v05r1_Retouch_20261104.png` · sha256 `ab38b2f1f528baee…` · built by `git:presenter_retouch.py` from v05 | v05r1 | **LATEST**: source for every presenter render (owner request 6644776676) | Two red marks below the inner eye corners removed; under-eye redness reduced; tone evened; lines softened; pores kept. Face only, no pixel moved. Use this still for every language. Evidence: `git:evidence/claire_v05r1_*` |
 | Lip-sync anchor points for v05 | `git:presenter_render_segments.sh` (`PTS`, `BBOX`) | — | **APPROVED** | valid only for the v05 still at 1672×940 |
 | v0.6 board portrait and teal/navy/white wardrobe tests | `session:claire/`, `git:checkpoints/yue-v3/image/` | v0.6 | **SUPERSEDED** for English (v05 replaces them). Teal is the Cantonese test still | test only |
-| English on-camera segments P01–P05 | `session:segments/{open_cam,p02_cam,p03_cam,p04_cam,end_cam}.mp4` · 1672×940 · voice audio, no captions | 2026-11-04 | **APPROVED** (full preview accepted; in the 1080p master) | Lines are fixed to the A02 presenter text below. Re-render only through `presenter_render_segments.sh`. |
-| P01–P05 sha256 | open `39edecb9…` · p02 `ca080fd6…` · p03 `7e159213…` · p04 `fa9ef7dc…` · end `d5e17722…` | | | |
+| English on-camera segments P01–P05 (from v05r1) | `session:segments/{open_cam,p02_cam,p03_cam,p04_cam,end_cam}.mp4` · 1672×940 · voice audio, no captions | 2026-11-05 | **LATEST**: in the 1080p master; same motion, lip-sync and timing as the accepted segments | Lines are fixed to the A02 presenter text below. Re-render only through `presenter_render_segments.sh` with `PRESENTER_STILL=<v05r1>`. Face QA: `git:evidence/claire_v05r1_face_qa.json` |
+| P01–P05 sha256 (v05r1) | open `46b630ed…` · p02 `1aa3e94f…` · p03 `45ec7872…` · p04 `fb24bd5c…` · end `939628bf…` | | | |
+| P01–P05 from the original v05 | `session:segments_v05_original/` · open `39edecb9…` · p02 `ca080fd6…` · p03 `7e159213…` · p04 `fa9ef7dc…` · end `d5e17722…` | 2026-11-04 | **SUPERSEDED** (carry the two red marks) | history only |
 | Earlier 5 s tests (navy v3, motion, studio) | `session:lipsync/claire_en_*` · `git:evidence/claire_en_*` | | **SUPERSEDED / TEST** | history only |
 
 ## 4. Voice and narration

@@ -25,6 +25,7 @@ Each decision gives its source on #142 or in the owner's session; the issue hold
 | D10 | The extra official logo goes only on the opening/company introduction and the closing page | owner |
 | D11 | The **opening page was rebuilt with the official logo**, English only. The corner card is removed from 01 so the logo isn't doubled; the card stays on P01 and 20 | owner, 2026-11-04 |
 | D11b | The **closing page (20) also carries the official logo**, built the same way as the opening; the corner card is now only on P01 | owner, 2026-11-04 |
+| D11c | **Face cleanup.** The two red marks below the inner eye corners were in the v05 source (same place and strength in the still and in every P01–P05 frame), so the source was retouched once (`presenter_retouch.py` gives v05r1: marks removed, under-eye redness reduced, tone evened, lines softened, pores kept, no pixel moved) and P01–P05 were re-rendered from it with identical settings | owner, #142 6644776676 |
 | D12 | Cut (one frame), not crossfade, into and out of presenter shots, so the mouth never moves during a fade | Rex, disclosed in the preview |
 | D13 | The 1920×1080 master was owner-authorised without a second preview round | owner, 2026-11-04 |
 | D14 | No InsightFace (non-commercial). Each tool's licence is verified before use; installs that hit "Code from External" ran only after owner approval, and that check was never bypassed | owner approvals in session |
@@ -101,8 +102,9 @@ The full Python lock is in `checkpoints/yue-v3/venv-requirements.lock.txt`. Lice
 export S=<work dir>   # holds a02-images/ studio/ brand/ en-lines/ segments/ kokoro/ lp/ muse/ cosy/venv
 # 1. Claire's voice lines (if missing)
 KOKORO_MODEL_DIR=$S/kokoro python3 presenter_en_lines.py $S/en-lines
-# 2. Claire segments (skip any already in $S/segments)
-PRESENTER_WORK=$S bash presenter_render_segments.sh open_cam p02_cam p03_cam p04_cam end_cam
+# 2. Claire segments from the retouched still (skip any already in $S/segments)
+python3 presenter_retouch.py $S/studio/Claire_Lee_Studio_v05_Coffee_Closer_20261104.png $S/studio/Claire_Lee_Studio_v05r1_Retouch_20261104.png
+PRESENTER_WORK=$S PRESENTER_STILL=$S/studio/Claire_Lee_Studio_v05r1_Retouch_20261104.png bash presenter_render_segments.sh open_cam p02_cam p03_cam p04_cam end_cam
 # 3. opening and closing pages (01 and 20 are the same original still)
 python3 make_opening_page.py $S/a02-images/01_Brand_Opening_en.jpg \
   $S/brand/ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg $S/a02-images/01_Brand_Opening_en_logo_v1.jpg
@@ -152,6 +154,8 @@ QA must report `all_pass: true`. After that, check by eye:
 | Rectangle seam around the head | LivePortrait paste-back on a flat background | `--rebg` (not needed for the studio still) |
 | Disk full during P05 | leaked temp frame folders | scripts clean up on exit (`81f2c4f`) |
 | Picture stopped at 83.8 s | a presenter clip one frame short of its xfade | 3 spare frames per clip; QA checks the video length (`c25adb5`) |
+| Red marks under Claire's inner eye corners | in the v05 source still, carried by the animation | `presenter_retouch.py` gives v05r1, then re-render; verify with `presenter_face_qa.py` |
+| Container restart stopped a long render | session container was recycled | re-run only the unfinished segments; finished files survive in the scratch folder |
 | Opening logo clipped by the zoom | the 1.5× focus was set for small text | focus `[0.5, 0.42, 1.2]` |
 
 ## 7. Known limits (disclosed to the owner)

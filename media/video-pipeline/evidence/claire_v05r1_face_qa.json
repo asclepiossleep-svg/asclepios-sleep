@@ -1,0 +1,97 @@
+{
+  "open_cam": {
+    "frames": 94,
+    "red_mark_peak_before": [
+      8.22,
+      8.25
+    ],
+    "red_mark_peak_after": [
+      4.49,
+      4.78
+    ],
+    "red_mark_mean_after": [
+      3.46,
+      3.47
+    ],
+    "red_flicker_after_max_step": 1.34,
+    "texture_before_mean": 1.918,
+    "texture_after_mean": 1.741,
+    "texture_flicker_after_cv": 0.182
+  },
+  "p02_cam": {
+    "frames": 64,
+    "red_mark_peak_before": [
+      7.3,
+      7.99
+    ],
+    "red_mark_peak_after": [
+      4.04,
+      3.67
+    ],
+    "red_mark_mean_after": [
+      2.79,
+      2.83
+    ],
+    "red_flicker_after_max_step": 0.91,
+    "texture_before_mean": 1.966,
+    "texture_after_mean": 1.811,
+    "texture_flicker_after_cv": 0.132
+  },
+  "p03_cam": {
+    "frames": 85,
+    "red_mark_peak_before": [
+      7.16,
+      9.47
+    ],
+    "red_mark_peak_after": [
+      4.2,
+      4.01
+    ],
+    "red_mark_mean_after": [
+      3.12,
+      2.99
+    ],
+    "red_flicker_after_max_step": 1.3,
+    "texture_before_mean": 1.884,
+    "texture_after_mean": 1.712,
+    "texture_flicker_after_cv": 0.184
+  },
+  "p04_cam": {
+    "frames": 200,
+    "red_mark_peak_before": [
+      7.73,
+      9.16
+    ],
+    "red_mark_peak_after": [
+      4.96,
+      4.16
+    ],
+    "red_mark_mean_after": [
+      3.37,
+      3.06
+    ],
+    "red_flicker_after_max_step": 2.02,
+    "texture_before_mean": 1.791,
+    "texture_after_mean": 1.634,
+    "texture_flicker_after_cv": 0.191
+  },
+  "end_cam": {
+    "frames": 297,
+    "red_mark_peak_before": [
+      8.25,
+      9.63
+    ],
+    "red_mark_peak_after": [
+      4.86,
+      3.92
+    ],
+    "red_mark_mean_after": [
+      3.22,
+      2.94
+    ],
+    "red_flicker_after_max_step": 1.45,
+    "texture_before_mean": 1.801,
+    "texture_after_mean": 1.625,
+    "texture_flicker_after_cv": 0.182
+  }
+}
