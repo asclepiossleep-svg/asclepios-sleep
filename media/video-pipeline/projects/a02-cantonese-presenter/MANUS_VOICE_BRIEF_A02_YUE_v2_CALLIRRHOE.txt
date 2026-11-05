@@ -1,0 +1,29 @@
+【給 Manus：阿斯康｜ASCLEPIOS HEALTH A02 廣東話版 正式旁白 — v2，取代 v1（edge-tts）版本】
+日期：2026-11-05b · 由 Rex（Claude Code）整理 · Edmund 授權 · 依 #142 issuecomment-6662821496 監督更正
+
+重要：本文件取代同資料夾內嘅 MANUS_VOICE_BRIEF_A02_YUE.txt（v1）。v1 指示用 edge-tts／zh-HK-HiuGaaiNeural、分 24 段獨立錄音，呢個做法已經被業主叫停，唔好再用，亦唔好用 v1 已經生成咗嘅任何音檔做最終片段。
+
+請喺現有嘅阿斯康 A02 廣東話任務內完成（唔好開新任務），用最少 credits。
+
+一、只需要做
+1. 使用你內置嘅 manus-tools.generate_speech：
+   - language：yue-HK
+   - voice：Callirrhoe
+   - 一次過生成全部旁白（one complete pass），唔好逐句／逐段分開生成，唔好用其他聲線代替。
+2. 朗讀附件《MANUS_CALLIRRHOE_FULL_NARRATION.txt》全文（24 段，段與段之間以空行分隔），依原本段落次序，一字不改、不加唔刪。
+   - 呢份文稿已經係清理過嘅純旁白文字，冇方括號、冇段號、冇製作備註，可以直接整份交畀 generate_speech。
+   - 全部香港粵語；「阿斯康」用中文讀。
+   - 全文完全冇英文（包括唔讀 Claire Lee 或 ASCLEPIOS HEALTH），唔好自行加返。
+3. 交付一條完整乾聲 WAV（單一檔案，唔好再分開 24 個檔），格式單聲道、24 kHz 或 48 kHz、16-bit。唔好加音樂、音效或混響，唔好剪片或配畫面。
+4. 連同 WAV，交一份 voice_settings.txt：寫明工具／接口（manus-tools.generate_speech）、language（yue-HK）、voice（Callirrhoe）、生成方式（one pass）、生成時間、字數。
+
+二、上載位置（任選其一，能寫入哪個就用哪個）
+A. RPV Google Drive 腳本資料夾：https://drive.google.com/drive/folders/1YdkrpBHeIXoGzT6r8pn2lVzo3pA5lOYI
+B. RPV Google Drive 成品資料夾：https://drive.google.com/drive/folders/1dZYmytjEHlpS9B95OiIqahOICdJO3DE9
+C. 如 A／B 都未能寫入：沿用你原有嘅「Asclepios Manus Package」資料夾，新建子資料夾「A02_YUE_VOICE_CALLIRRHOE_FROM_MANUS」上載。
+
+三、不需要做（Rex 會完成）
+對嘴、Claire 畫面、剪接、雙語畫面、音樂、混音、字幕燒入、1080p 輸出、QA、分段對時（Rex 會用 MANUS_CALLIRRHOE_SHOT_MAP.md 自行對齊段落）。唔好生成影片、唔好生圖、唔好買 credits。
+
+四、完成後
+回覆一句「A02 廣東話 Callirrhoe 配音已上載」，連埋 WAV 嘅檔案連結、大小同時長即可。

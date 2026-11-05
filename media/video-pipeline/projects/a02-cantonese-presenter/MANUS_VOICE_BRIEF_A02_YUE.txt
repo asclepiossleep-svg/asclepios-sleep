@@ -1,0 +1,34 @@
+【⚠ 本文件 (v1) 已被取代，請改用同資料夾內嘅 MANUS_VOICE_BRIEF_A02_YUE_v2_CALLIRRHOE.txt ⚠】
+取代原因：v1 指示用 edge-tts／zh-HK-HiuGaaiNeural、分 24 段獨立錄音，呢個做法已經被業主叫停（#142 issuecomment-6662821496）。核准做法改為 Manus 內置 manus-tools.generate_speech，language yue-HK，voice Callirrhoe，一次過生成全片旁白。
+以下為原文（只作紀錄，唔好再用嚟指示 Manus）：
+
+【給 Manus：阿斯康｜ASCLEPIOS HEALTH A02 廣東話版 正式旁白 — 只做配音，其他由 Rex 完成】
+日期：2026-11-05 · 由 Rex（Claude Code）整理 · Edmund 授權
+
+請在現有的阿斯康 A02 廣東話任務內完成（不要開新任務），用最少 credits。
+
+一、只需要做
+1. 用你之前已批准的廣東話聲線（Edmund 確認：edge-tts，zh-HK-HiuGaaiNeural），全片同一把聲、同一套語速／音高／音量設定，不要每段重設語氣。
+2. 按附件《A02_YUE_Final_Narration_Script.txt》逐段錄製，共 24 段有聲（第 01 段為音樂，無旁白）。
+   - 只讀每段正文；【　】內是說明，不要讀出。
+   - 全部香港粵語；「阿斯康」用中文讀；不讀 Claire Lee 或 ASCLEPIOS HEALTH 英文。
+   - 不要改字、刪字或加字。
+3. 每段輸出一個獨立音檔（不要合併成一條），檔名用文稿的段號及鏡頭號：
+   02_P01.wav、03_02.wav、04_03.wav、05_04.wav、06_05.wav、07_P02.wav、08_06.wav、09_07.wav、10_08.wav、
+   11_09.wav、12_10.wav、13_11.wav、14_P03.wav、15_12.wav、16_13.wav、17_14.wav、18_15.wav、19_16.wav、
+   20_17.wav、21_P04.wav、22_18.wav、23_19.wav、24_P05.wav、25_20.wav
+   - 格式：WAV，單聲道，24 kHz 或 48 kHz，16-bit；每段頭尾留不多於 0.2 秒靜音。
+   - 乾聲：不要加音樂、音效或混響。
+4. 另交一份 SRT（繁體中文，按實際發聲時間），檔名 A02_YUE_Manus.srt；字幕字句須與文稿正文一致。
+5. 一個 voice_settings.txt：寫明工具、聲線 ID、rate、pitch、volume。
+
+二、上載位置（任選其一，能寫入哪個就用哪個）
+A. RPV Google Drive：Asclepios Health / Asclepios Video Production / Video Assets & Exports / A02_Cantonese_Final
+   https://drive.google.com/drive/folders/1dZYmytjEHlpS9B95OiIqahOICdJO3DE9
+B. 如未能寫入 A：在你原有的「Asclepios Manus Package」資料夾內新建子資料夾「A02_YUE_VOICE_FROM_MANUS」上載。
+
+三、不需要做（Rex 會完成）
+對嘴、Claire 畫面、剪接、雙語畫面、音樂、混音、字幕燒入、1080p 輸出、QA。不要生成影片、不要生圖、不要買 credits。
+
+四、完成後
+回覆一句「A02 廣東話配音已上載」及資料夾連結即可。
