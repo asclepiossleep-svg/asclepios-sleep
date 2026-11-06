@@ -1,6 +1,6 @@
 阿斯康｜ASCLEPIOS HEALTH — A02 廣東話版 分鏡表 STORYBOARD (final)
 2026-11-05 · structure = accepted English 1080p master 7974d69a · 25 shots
-Times are provisional (from the last Cantonese preview) and will be re-timed to the final narration audio. P = Claire Lee on camera (v05r1 studio, approved 1080p clarity treatment).
+Times are provisional (from the last Cantonese preview); the 2026-11-06 review preview is re-timed to the corrected Manus narration (sha256 c13d1d9a…), see evidence/a02_yue_presenter_manus_shot_times.json. P = Claire Lee on camera (v05r1 studio, approved 1080p clarity treatment).
 
 | # | Shot | Time (prov.) | Picture | On-screen text (Chinese / English) | Speaker | Narration (spoken, final) | Pause after |
 |---|---|---|---|---|---|---|---|
@@ -15,7 +15,7 @@ Times are provisional (from the last Cantonese preview) and will be re-timed to 
 | 09 | 07 | 42.5–49.1 s | 07_Mitochondria_Energy.jpg | 線粒體 · 供應細胞運作所需的能量 / Mitochondria | 主持人（旁白） | 線粒體，好似發電站，幫細胞提供運作需要嘅能量。 | 1.2 |
 | 10 | 08 | 49.1–54.0 s | 08_Daily_Movement_bilingual_v1.jpg | 每一步，都有細胞供能 / Every step / powered by your cells | 主持人（旁白） | 你每日行路、活動，背後都有細胞嘅能量供應。 | 0.55 (default) |
 | 11 | 09 | 54.0–63.7 s | 09_Lysosome_Recycling.jpg | 溶酶體 · 分解與回收受損物質 / Lysosome | 主持人（旁白） | 呢座城市亦有回收站。溶酶體，會分解同回收部分受損嘅蛋白質同部件。 | 1.2 |
-| 12 | 10 | 63.7–72.3 s | 10_DNA_Repair.jpg | DNA修復 · 維護遺傳物質的完整性 / DNA repair | 主持人（旁白） | 仲有維修工作。例如DNA修復，就係幫細胞維護遺傳物質嘅完整性。 | 1.2 |
+| 12 | 10 | 63.7–72.3 s | 10_DNA_Repair.jpg | DNA修復 · 維護遺傳物質的完整性 / DNA repair | 主持人（旁白） | 仲有維修工作。例如遺傳物質嘅修復，就係幫細胞維護遺傳物質嘅完整性。（2026-11-06 Manus 修正版錄音採用已批准替代讀法，字幕跟讀音） | 1.2 |
 | 13 | 11 | 72.3–86.6 s | 11_Cellular_Ageing.jpg | 衰老，點樣累積？ · 能量與維護能力可能減弱・損傷逐步累積 / Cellular ageing | 主持人（旁白） | 隨住年齡增長，部分能量、清理同維護功能可能減弱。損傷日積月累，就可能影響細胞，以至組織同器官嘅表現。 | 1.2 |
 | 14 | P03 | 86.6–90.2 s | Claire Lee on camera (P0x) | — / — | 主持人（出鏡） | 但細胞嘅工作，原來仲有時間表。 | 0.4 |
 | 15 | 12 | 90.2–94.3 s | 12_Morning_Light.jpg | — / — | 主持人（旁白） | 而朝早嘅光線，就係重要嘅時間訊號。 | 0.55 (default) |
