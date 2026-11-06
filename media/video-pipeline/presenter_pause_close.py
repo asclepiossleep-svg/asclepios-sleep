@@ -30,7 +30,45 @@ def silences(wav: Path):
                           "-f", "null", "-"], capture_output=True, text=True).stderr
     s = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", log)]
     e = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", log)]
-    return list(zip(s, e + [1e9] * (len(s) - len(e))))
+    gaps = list(zip(s, e + [1e9] * (len(s) - len(e))))
+    # Peak-based detection misses two cases in recorded narration: a quiet in-breath before a line
+    # (peaks above -35 dB, RMS below -40) and short pauses under 0.2 s between phrases. MuseTalk opens
+    # the mouth on both (#142, Manus Cantonese P02/P03), so add RMS-quiet runs of 0.15 s or more.
+    return merge_gaps(gaps + rms_quiet(wav))
+
+
+def rms_quiet(wav: Path, db: float = -40.0, min_s: float = 0.15):
+    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(wav), "-ac", "1", "-ar", "16000", "-f", "s16le", "-"],
+                         capture_output=True, check=True).stdout
+    x = np.frombuffer(raw, np.int16).astype(np.float32) / 32768
+    n = len(x) // 160
+    lev = 20 * np.log10(np.sqrt((x[:n * 160].reshape(n, 160) ** 2).mean(axis=1) + 1e-12))
+    q = lev < db
+    out, i = [], 0
+    loud = np.nonzero(lev > -30)[0]                    # lead-in: an in-breath (about -42 dB) is not speech
+    if len(loud) and loud[0] / 100 - 0.05 >= min_s:
+        out.append((0.0, loud[0] / 100 - 0.05))
+    while i < n:
+        if q[i]:
+            j = i
+            while j < n and q[j]:
+                j += 1
+            if (j - i) / 100 >= min_s:
+                out.append((i / 100, j / 100 if j < n else 1e9))
+            i = j
+        else:
+            i += 1
+    return out
+
+
+def merge_gaps(gaps):
+    out = []
+    for s, e in sorted(gaps):
+        if out and s <= out[-1][1]:
+            out[-1] = (out[-1][0], max(out[-1][1], e))
+        else:
+            out.append((s, e))
+    return out
 
 
 def sway(i, w, h):

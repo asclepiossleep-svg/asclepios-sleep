@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Subtitle-to-voice timing QA (#142): does each SRT cue sit on the real narration?
 
-For every cue: onset_ms = first voiced 10 ms frame inside [start-0.5 s, end] minus the cue start
-(+ = voice after the cue appears); voiced_share = share of the cue that has voice (pauses inside
+For every cue: onset_ms = where speech resumes after the pause (>= 60 ms unvoiced) nearest the cue
+start, within 0.6 s, minus the cue start (+ = voice after the cue appears; none found = the cue
+starts mid-speech); voiced_share = share of the cue that has voice (pauses inside
 a cue are normal); and whether any voice falls after the cue ends but before the next cue (a
 "late tail"). Voice = narration RMS above -40 dBFS. Pass for a cue: |onset_ms| <= 250,
 voiced_share >= 0.5, late tail <= 0.30 s.
@@ -40,9 +41,19 @@ def main():
     rows = []
     for i, (a, b, text) in enumerate(cues):
         nxt = cues[i + 1][0] if i + 1 < len(cues) else b + 1.0
-        win = voiced[fr(a - 0.5):fr(b)]
-        on = np.nonzero(win)[0]
-        onset = (fr(a - 0.5) + on[0]) / 100 - a if len(on) else None
+        lo, hi = fr(a - 0.6), fr(min(b, a + 0.6))
+        runs, j = [], lo                                # ends of unvoiced runs >= 60 ms (= where speech resumes)
+        while j < hi:
+            if not voiced[j]:
+                k = j
+                while k < len(voiced) and not voiced[k]:
+                    k += 1
+                if k - j >= 6 or j == 0:
+                    runs.append(k / 100)
+                j = k
+            else:
+                j += 1
+        onset = min((r - a for r in runs), key=abs) if runs else None
         share = float(voiced[fr(a):fr(b)].mean()) if fr(b) > fr(a) else 0.0
         tail_v = np.nonzero(voiced[fr(b):fr(nxt)])[0]
         tail = (tail_v[-1] + 1) / 100 if len(tail_v) else 0.0

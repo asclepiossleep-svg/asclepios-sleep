@@ -309,6 +309,61 @@ def split_cues(text: str, start: float, end: float, max_chars: int, cjk: bool = 
     return cues
 
 
+def voice_frames(wav: Path, db: float = -40.0):
+    """10 ms RMS voiced mask of the narration (True = voice), used to time captions to real speech."""
+    import numpy as np
+    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(wav), "-ac", "1", "-ar", "16000", "-f", "s16le", "-"],
+                         capture_output=True, check=True).stdout
+    x = np.frombuffer(raw, np.int16).astype(np.float32) / 32768
+    n = len(x) // 160
+    rms = np.sqrt((x[:n * 160].reshape(n, 160) ** 2).mean(axis=1) + 1e-12)
+    return 20 * np.log10(rms) > db
+
+
+def retime_cues(cues: list[tuple[float, float, str]], a: float, b: float, voiced, lead: float = 0.08,
+                hold: float = 0.25) -> list[tuple[float, float, str]]:
+    """Move one segment's cues onto its real speech. The first cue starts at the first voiced syllable
+    (a quiet in-breath before it is skipped). Each split between cues moves to the pause (>= 60 ms) nearest
+    its character-share position, within 1.2 s. The last cue ends 0.25 s after the last voiced frame."""
+    import numpy as np
+    if not cues:
+        return cues
+    fa, fb = int(a * 100), min(len(voiced), int(b * 100))
+    seg = voiced[fa:fb]
+    on = np.nonzero(seg)[0]
+    if not len(on):
+        return cues
+    v0, v1 = (fa + on[0]) / 100, (fa + on[-1] + 1) / 100
+    pauses, i = [], 0                                   # (start, end) of unvoiced runs inside the speech
+    while i < len(seg):
+        if not seg[i]:
+            j = i
+            while j < len(seg) and not seg[j]:
+                j += 1
+            if j - i >= 6 and i > on[0] and j <= on[-1]:
+                pauses.append(((fa + i) / 100, (fa + j) / 100))
+            i = j
+        else:
+            i += 1
+    bounds = []                                         # (prev cue end, next cue start) per split
+    for k in range(1, len(cues)):
+        want = v0 + (cues[k][0] - a) / max(0.01, b - a) * (v1 - v0)
+        near = [p for p in pauses if abs((p[0] + p[1]) / 2 - want) <= 1.2 and
+                (not bounds or p[0] > bounds[-1][1])]
+        if near:
+            p = min(near, key=lambda p: abs((p[0] + p[1]) / 2 - want))
+            bounds.append((min(p[1] - lead, p[0] + hold), p[1] - lead))
+        else:
+            bounds.append((want, want))
+    out, start = [], max(a, v0 - lead)
+    for k, (_, _, text) in enumerate(cues):
+        end = bounds[k][0] if k < len(bounds) else min(b, v1 + hold)
+        out.append((round(start, 3), round(max(end, start + 0.6), 3), text))
+        if k < len(bounds):
+            start = bounds[k][1]
+    return out
+
+
 def wrap2(text: str, width: int) -> str:
     if len(text) <= width:
         return text
@@ -590,10 +645,15 @@ def build(project_dir: Path, out_dir: Path, preview: float | None, preview_res: 
     if project.get("images_dir"):
         import os
         img_dir = Path(os.environ.get("ASCLEPIOS_IMAGES_DIR") or (project_dir / project["images_dir"]))
+    # captions follow the real speech when every narrated segment brings its own recorded WAV
+    # (other-language editions): first syllable, real pauses for the splits, voice end
+    voiced = voice_frames(narr) if project.get("caption_retime", cjk) else None
     for seg, (a, b) in zip(segments, spans):
         if not seg["_text"].strip():  # music-only hold: no empty cue
             continue
         new = split_cues(seg["_text"], a, b, zh_line * 2 if cjk else line_chars * 2, cjk=cjk)
+        if voiced is not None:
+            new = retime_cues(new, a, b, voiced)
         cues_en += new
         if seg.get("video"):
             st = "Photo"
