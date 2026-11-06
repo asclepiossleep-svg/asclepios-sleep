@@ -9,8 +9,10 @@ signal is the RMS envelope per video frame. Reported per clip:
   corr_0     Pearson r at zero offset
   agree      share of frames where "voice on" (envelope above 15 % of its 95th percentile)
              matches "mouth moving" (activity above its median)
-Pass: |lag_ms| <= 80, corr >= 0.45 and agree >= 0.65. A take whose mouth was animated
-to different audio typically falls below one of these.
+Pass: |lag_ms| <= 80 and corr >= 0.45. agree is reported but not used to pass or fail:
+on matched, approved takes it measured 0.62-0.68 (calibration 2026-11-06, evidence/a02_yue_sync_calibration.json),
+so it does not separate good takes from bad ones. A take whose mouth was animated to different audio measured
+corr 0.29 (P05, 15 s), against 0.53-0.65 for matched takes. Short clips (< 3 s) separate less clearly.
 
     python3 presenter_sync_qa.py <out.json> <still.png> <bbox> <video.mp4>=<voice.wav> ...
 """
@@ -84,7 +86,7 @@ def check(video, wav, still, bbox):
     agree = float(np.mean(von == mon))
     r = {"video": Path(video).name, "voice": Path(wav).name, "frames": int(n), "lag_ms": best * 1000 // FPS,
          "corr": round(lags[best], 3), "corr_0": round(lags[0], 3), "agree": round(agree, 3)}
-    r["pass"] = abs(r["lag_ms"]) <= 80 and r["corr"] >= 0.45 and r["agree"] >= 0.65
+    r["pass"] = abs(r["lag_ms"]) <= 80 and r["corr"] >= 0.45
     return r
 
 
