@@ -1,5 +1,5 @@
 {
-  "script_status": "Cantonese edition of the accepted English master 7974d69a (structure, cuts, music). Narration verbatim from Manus A02_Narration_By_Shot.txt (Drive 1lBfxce05mXLh_J_KD0k1Qaf9uRmWxC3s); Claire lines from #142 6633840244 and Director Handoff v1; bilingual page text from the Manus stills (folder 1XVSwo65ZThru7nxVCb4QSkPdyOr69ex8) + English master wording.",
+  "script_status": "Cantonese edition of the accepted English master 7974d69a (structure, cuts, music, logo rules). Narration: corrected Manus A02 Cantonese WAV (sha256 c13d1d9a..., owner 2026-11-06), cut per segment (evidence/a02_yue_manus_split.json). Wording = A02_YUE_Final_Narration_Script.txt as spoken (shot 10 遺傳物質嘅修復). P01-P05 re-lip-synced to that narration from the v05r1 still with the approved detail restore; bilingual page text from the Manus stills.",
   "output_name": "ASCLEPIOS_HEALTH_A02_YUE_presenter",
   "brand": {
     "wordmark": "阿斯康｜ASCLEPIOS HEALTH",
@@ -70,7 +70,7 @@
     },
     {
       "id": "P02",
-      "video": "segments_yue/p02_cam.mp4",
+      "video": "segments_yue_manus/p02_cam.mp4",
       "audio": "yue-manus/p02_cam.wav",
       "pause_after": 0.4,
       "presenter": true,
@@ -148,7 +148,7 @@
     },
     {
       "id": "P03",
-      "video": "segments_yue/p03_cam.mp4",
+      "video": "segments_yue_manus/p03_cam.mp4",
       "audio": "yue-manus/p03_cam.wav",
       "pause_after": 0.4,
       "presenter": true,
@@ -220,7 +220,7 @@
     },
     {
       "id": "P05",
-      "video": "segments_yue/end_cam.mp4",
+      "video": "segments_yue_manus/end_cam.mp4",
       "audio": "yue-manus/end_cam.wav",
       "pause_after": 0.9,
       "presenter": true,
@@ -279,7 +279,7 @@
   "caption_font": "Noto Sans CJK HK",
   "focus_note": "Proposal A approved by owner 2026-11-04: temporary ease-in toward text; originals unaltered; applied only to shots with a 'focus' entry",
   "presenter": {
-    "still": "studio/Claire_Lee_Studio_v05_Coffee_Closer_20261104.png (Drive 1Ku_uDuzyH2Ze2RuQjXOzvoG6Q_Wjfhhx)",
+    "still": "studio/Claire_Lee_Studio_v05r1_Retouch_20261104.png (v05 with the red marks removed, presenter_retouch.py)",
     "render": "presenter_render_segments.sh",
     "note": "Set ASCLEPIOS_PRESENTER_DIR to the work dir holding segments/ en-lines/ brand/"
   },
