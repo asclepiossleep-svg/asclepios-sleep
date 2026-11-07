@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cut the owner-supplied Manus A02 Cantonese narration into the project's per-segment WAVs (#142, 2026-11-06).
 
-The corrected Manus narration is ONE continuous WAV (191.08 s, 24 kHz mono, sha256 c13d1d9a...).
+The corrected Manus narration (generate_speech, yue-HK, voice Callirrhoe) is ONE continuous WAV (191.08 s, 24 kHz mono, sha256 c13d1d9a...).
 build.py expects one WAV per spoken segment, so this cuts it at the pauses recorded in
 evidence/a02_yue_manus_split.json. That file holds the cut points and each output's sha256. The
 cut points were found by matching silence gaps to the script's character counts, then checked

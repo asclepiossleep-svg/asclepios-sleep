@@ -7,9 +7,9 @@
     "end_line": "阿斯康｜ASCLEPIOS HEALTH"
   },
   "voice": {
-    "engine": "Manus A02 Cantonese narration (edge-tts zh-HK-HiuGaaiNeural), corrected WAV supplied by the owner 2026-11-06",
+    "engine": "Manus generate_speech, language yue-HK, voice Callirrhoe, one continuous narration pass (corrected WAV supplied by the owner 2026-11-06)",
     "source_sha256": "c13d1d9ab25fd416b0b3e37887b7a776bb6ef72de3de3916cb8347f2336355bf",
-    "note": "one continuous 191.08 s WAV, cut per segment at verified pauses (presenter_yue_manus_split.py; evidence/a02_yue_manus_split.json); no re-voicing"
+    "note": "191.08 s, 24 kHz mono 16-bit; cut per segment at verified pauses (presenter_yue_manus_split.py, evidence/a02_yue_manus_split.json); no re-voicing, no level change"
   },
   "narration_wav": null,
   "music": "generate:melodic",

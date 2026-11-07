@@ -177,7 +177,7 @@
   {
    "seg": "12",
    "shot": "10",
-   "text": "仲有維修工作。例如DNA修復，就係幫細胞維護遺傳物質嘅完整性。",
+   "text": "仲有維修工作。例如遺傳物質嘅修復，就係幫細胞維護遺傳物質嘅完整性。",
    "start": 51.48,
    "end": 59.117,
    "dur": 7.637,
@@ -189,7 +189,8 @@
     51.42,
     59.237
    ],
-   "sha256": "663ca68c10e1c08dc19ac50fa9b7fed4d7b87224715607179e0a3aa2c194c005"
+   "sha256": "663ca68c10e1c08dc19ac50fa9b7fed4d7b87224715607179e0a3aa2c194c005",
+   "text_note": "spoken wording (approved alternative to DNA修復)"
   },
   {
    "seg": "13",
@@ -417,7 +418,8 @@
   "url": "files.manuscdn.com …/aaQknIhVTQXiXEIp.wav",
   "sha256": "c13d1d9ab25fd416b0b3e37887b7a776bb6ef72de3de3916cb8347f2336355bf",
   "duration_s": 191.08,
-  "format": "pcm_s16le 24 kHz mono"
+  "format": "pcm_s16le 24 kHz mono",
+  "voice": "Manus generate_speech / yue-HK / Callirrhoe / one continuous narration pass"
  },
  "method": "silencedetect -38 dB / 0.18 s gaps, DP on character share; every segment re-checked with whisper-large-v3-turbo (yue); cuts 17|P04 and P04|18 corrected by hand after that check",
  "verified_asr": true
