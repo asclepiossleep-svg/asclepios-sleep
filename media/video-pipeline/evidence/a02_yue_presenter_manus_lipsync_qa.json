@@ -1,0 +1,56 @@
+{
+  "method": "Whole-clip mouth-sync QA for a presenter segment (#142).",
+  "bbox": "757,120,930,350",
+  "results": [
+    {
+      "video": "open_cam.mp4",
+      "voice": "open_cam.wav",
+      "frames": 56,
+      "lag_ms": -40,
+      "corr": 0.695,
+      "corr_0": 0.664,
+      "agree": 0.636,
+      "pass": true
+    },
+    {
+      "video": "p02_cam.mp4",
+      "voice": "p02_cam.wav",
+      "frames": 62,
+      "lag_ms": 80,
+      "corr": 0.568,
+      "corr_0": 0.539,
+      "agree": 0.787,
+      "pass": true
+    },
+    {
+      "video": "p03_cam.mp4",
+      "voice": "p03_cam.wav",
+      "frames": 81,
+      "lag_ms": -40,
+      "corr": 0.544,
+      "corr_0": 0.494,
+      "agree": 0.75,
+      "pass": true
+    },
+    {
+      "video": "p04_cam.mp4",
+      "voice": "p04_cam.wav",
+      "frames": 134,
+      "lag_ms": -80,
+      "corr": 0.647,
+      "corr_0": 0.555,
+      "agree": 0.677,
+      "pass": true
+    },
+    {
+      "video": "end_cam.mp4",
+      "voice": "end_cam.wav",
+      "frames": 377,
+      "lag_ms": -40,
+      "corr": 0.594,
+      "corr_0": 0.565,
+      "agree": 0.71,
+      "pass": true
+    }
+  ]
+}

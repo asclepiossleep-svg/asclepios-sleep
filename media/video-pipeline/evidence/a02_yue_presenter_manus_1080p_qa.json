@@ -1,0 +1,38 @@
+{
+  "file": "ASCLEPIOS_HEALTH_A02_YUE_presenter_1080p.mp4",
+  "bytes": 48716024,
+  "sha256": "1b78d9ce8afacee93919e9daf25fec1027a1f495ffcc86458c4f7944595d543d",
+  "duration_s": 211.32,
+  "resolution": "1920x1080",
+  "fps": "25/1",
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "loudness_LUFS": -16.0,
+  "true_peak_dBFS": -2.3,
+  "LRA_LU": 3.2,
+  "caption_lang": "zh-HK",
+  "caption_cps_limit": 9.0,
+  "caption_cues_en": 42,
+  "caption_cues_zh_hk": 0,
+  "max_caption_cps": 5.6,
+  "checks": {
+    "resolution": true,
+    "duration_matches_audio_plan": true,
+    "video_stream_full_length": true,
+    "loudness_within_1LU_of_target": true,
+    "true_peak_below_-1dBTP": true,
+    "captions_ordered_non_overlapping": true,
+    "captions_within_duration": true,
+    "caption_reading_speed_ok": true,
+    "audio_48k_stereo": true,
+    "soft_caption_tracks": true
+  },
+  "all_pass": true,
+  "notes": [
+    "APPROVED narration: supplied per-segment WAVs (Manus generate_speech, language yue-HK, voice Callirrhoe, one continuous narration pass (corrected WAV supplied by the owner 2026-11-06); source sha256 c13d1d9ab25fd416b0b3e37887b7a776bb6ef72de3de3916cb8347f2336355bf)",
+    "music: generated: music_gen.py 'melodic' (original procedural composition, no third-party material)",
+    "logo card: ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg on shots ['P01'] only, windows [(5.75, 8.25)]"
+  ],
+  "script_status": "Cantonese edition of the accepted English master 7974d69a (structure, cuts, music, logo rules). Narration: corrected Manus A02 Cantonese WAV (sha256 c13d1d9a..., owner 2026-11-06), cut per segment (evidence/a02_yue_manus_split.json). Wording = A02_YUE_Final_Narration_Script.txt as spoken (shot 10 遺傳物質嘅修復). P01-P05 re-lip-synced to that narration from the v05r1 still with the approved detail restore; bilingual page text from the Manus stills.",
+  "cost": "GBP 0 (local FFmpeg/Pillow/Kokoro on session CPU)"
+}

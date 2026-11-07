@@ -1,0 +1,207 @@
+{
+ "film": "ASCLEPIOS_HEALTH_A02_YUE_presenter_1080p.mp4",
+ "sha256": "1b78d9ce8afacee93919e9daf25fec1027a1f495ffcc86458c4f7944595d543d",
+ "note": "shot 01 picture starts at 0.0 (music lead-in); presenter shots cut in on their first voice frame",
+ "shots": [
+  {
+   "id": "01",
+   "picture": "01_Brand_Opening_bilingual_logo_v1.jpg",
+   "voice_start_s": 1.2,
+   "voice_end_s": 5.2,
+   "pause_after_s": 0.55,
+   "yue": ""
+  },
+  {
+   "id": "P01",
+   "picture": "segments_yue_manus/open_cam.mp4",
+   "voice_start_s": 5.75,
+   "voice_end_s": 7.853,
+   "pause_after_s": 0.4,
+   "yue": "大家好，歡迎嚟到阿斯康。"
+  },
+  {
+   "id": "02",
+   "picture": "02_Why_Timing_Matters_bilingual_v1.jpg",
+   "voice_start_s": 8.253,
+   "voice_end_s": 15.138,
+   "pause_after_s": 0.55,
+   "yue": "今日同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。"
+  },
+  {
+   "id": "03",
+   "picture": "03_Daily_Supplement.jpg",
+   "voice_start_s": 15.688,
+   "voice_end_s": 21.576,
+   "pause_after_s": 0.55,
+   "yue": "試諗吓，你開始留意營養，揀咗補充品，每日都記得食。"
+  },
+  {
+   "id": "04",
+   "picture": "04_Delayed_Lunch_bilingual_v1.jpg",
+   "voice_start_s": 22.126,
+   "voice_end_s": 26.889,
+   "pause_after_s": 0.55,
+   "yue": "但忙起上嚟，食飯時間成日變，午餐又推遲咗。"
+  },
+  {
+   "id": "05",
+   "picture": "05_Late_Night_Phone.jpg",
+   "voice_start_s": 27.439,
+   "voice_end_s": 31.762,
+   "pause_after_s": 0.55,
+   "yue": "夜晚再睇多一陣手機，不知不覺，又夜咗瞓。"
+  },
+  {
+   "id": "P02",
+   "picture": "segments_yue_manus/p02_cam.mp4",
+   "voice_start_s": 32.312,
+   "voice_end_s": 34.656,
+   "pause_after_s": 0.4,
+   "yue": "咁樣，補充咗就夠未？"
+  },
+  {
+   "id": "06",
+   "picture": "06_Inside_the_Cell.jpg",
+   "voice_start_s": 35.056,
+   "voice_end_s": 40.176,
+   "pause_after_s": 0.55,
+   "yue": "要答呢個問題，我哋先睇吓細胞呢座日夜運作嘅城市。"
+  },
+  {
+   "id": "07",
+   "picture": "07_Mitochondria_Energy.jpg",
+   "voice_start_s": 40.726,
+   "voice_end_s": 46.018,
+   "pause_after_s": 1.2,
+   "yue": "線粒體，好似發電站，幫細胞提供運作需要嘅能量。"
+  },
+  {
+   "id": "08",
+   "picture": "08_Daily_Movement_bilingual_v1.jpg",
+   "voice_start_s": 47.218,
+   "voice_end_s": 51.95,
+   "pause_after_s": 0.55,
+   "yue": "你每日行路、活動，背後都有細胞嘅能量供應。"
+  },
+  {
+   "id": "09",
+   "picture": "09_Lysosome_Recycling.jpg",
+   "voice_start_s": 52.5,
+   "voice_end_s": 59.769,
+   "pause_after_s": 1.2,
+   "yue": "呢座城市亦有回收站。溶酶體，會分解同回收部分受損嘅蛋白質同部件。"
+  },
+  {
+   "id": "10",
+   "picture": "10_DNA_Repair.jpg",
+   "voice_start_s": 60.969,
+   "voice_end_s": 68.786,
+   "pause_after_s": 1.2,
+   "yue": "仲有維修工作。例如遺傳物質嘅修復，就係幫細胞維護遺傳物質嘅完整性。"
+  },
+  {
+   "id": "11",
+   "picture": "11_Cellular_Ageing.jpg",
+   "voice_start_s": 69.986,
+   "voice_end_s": 81.741,
+   "pause_after_s": 1.2,
+   "yue": "隨住年齡增長，部分能量、清理同維護功能可能減弱。損傷日積月累，就可能影響細胞，以至組織同器官嘅表現。"
+  },
+  {
+   "id": "P03",
+   "picture": "segments_yue_manus/p03_cam.mp4",
+   "voice_start_s": 82.941,
+   "voice_end_s": 86.054,
+   "pause_after_s": 0.4,
+   "yue": "但細胞嘅工作，原來仲有時間表。"
+  },
+  {
+   "id": "12",
+   "picture": "12_Morning_Light.jpg",
+   "voice_start_s": 86.454,
+   "voice_end_s": 89.831,
+   "pause_after_s": 0.55,
+   "yue": "而朝早嘅光線，就係重要嘅時間訊號。"
+  },
+  {
+   "id": "13",
+   "picture": "13_Circadian_Coordination.jpg",
+   "voice_start_s": 90.381,
+   "voice_end_s": 105.351,
+   "pause_after_s": 2.5,
+   "yue": "光線會影響腦內嘅主時鐘，再協調唔同器官同細胞嘅時鐘。代謝同部分維護工作，都受到日夜節律調節。節律同細胞功能，亦會隨住衰老互相影響。"
+  },
+  {
+   "id": "14",
+   "picture": "14_Winding_Down.jpg",
+   "voice_start_s": 107.851,
+   "voice_end_s": 116.691,
+   "pause_after_s": 0.55,
+   "yue": "所以，睡眠同節律值得一齊照顧。但修復唔係只喺夜晚發生，唔同工作，有各自嘅節奏。"
+  },
+  {
+   "id": "15",
+   "picture": "15_Meal_Timing_Metabolism.jpg",
+   "voice_start_s": 117.241,
+   "voice_end_s": 126.196,
+   "pause_after_s": 2.5,
+   "yue": "進餐時間，亦會影響部分外周時鐘同代謝節律。食乜，同幾時食，係兩個值得一齊理解嘅問題。"
+  },
+  {
+   "id": "16",
+   "picture": "16_Ingredient_Research.jpg",
+   "voice_start_s": 128.696,
+   "voice_end_s": 137.024,
+   "pause_after_s": 0.55,
+   "yue": "研究一種成分，好似研究點樣改善一個發電站。但要照顧成座城市，就要再睇埋整體。"
+  },
+  {
+   "id": "17",
+   "picture": "17_Whole_Body_Systems.jpg",
+   "voice_start_s": 137.574,
+   "voice_end_s": 150.965,
+   "pause_after_s": 1.2,
+   "yue": "營養同代謝提供原料同能量，荷爾蒙傳遞調節訊息，免疫亦參與細胞環境嘅調節。細胞功能，同全身系統一直互相影響。"
+  },
+  {
+   "id": "P04",
+   "picture": "segments_yue_manus/p04_cam.mp4",
+   "voice_start_s": 152.165,
+   "voice_end_s": 157.365,
+   "pause_after_s": 0.4,
+   "yue": "呢個就係阿斯康嘅理念：系統性、節律性、實際應用。"
+  },
+  {
+   "id": "18",
+   "picture": "18_Research_to_Practice.jpg",
+   "voice_start_s": 157.765,
+   "voice_end_s": 171.297,
+   "pause_after_s": 0.55,
+   "yue": "先建立飲食、活動同睡眠嘅基礎，再按需要同證據，考慮營養支持。用乜、點用、幾時用，要逐項睇，唔係每樽都硬分早午晚。"
+  },
+  {
+   "id": "19",
+   "picture": "19_Invitation_to_Explore_bilingual_v1.jpg",
+   "voice_start_s": 171.847,
+   "voice_end_s": 187.396,
+   "pause_after_s": 0.55,
+   "yue": "跟住阿斯康，我哋會帶你由細胞嘅能量、清理同修復出發，一齊探索身體機能同生命節律，點樣變成每日做得到嘅選擇。呢段抗衰老旅程，由認識自己開始。"
+  },
+  {
+   "id": "P05",
+   "picture": "segments_yue_manus/end_cam.mp4",
+   "voice_start_s": 187.946,
+   "voice_end_s": 202.882,
+   "pause_after_s": 0.9,
+   "yue": "今日先同大家分享到呢度。之後我哋會繼續推出更多短片，由細胞、身體機能到日常生活，一步步同大家了解，乜嘢先係真正嘅抗衰老。下次再同大家分享。拜拜！"
+  },
+  {
+   "id": "20",
+   "picture": "20_Brand_Ending_bilingual_logo_v1.jpg",
+   "voice_start_s": 203.782,
+   "voice_end_s": 208.264,
+   "pause_after_s": 0.55,
+   "yue": "阿斯康。從細胞出發，配合生命嘅節律。"
+  }
+ ]
+}

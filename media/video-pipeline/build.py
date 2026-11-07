@@ -625,7 +625,11 @@ def build(project_dir: Path, out_dir: Path, preview: float | None, preview_res: 
     else:
         narr, spans = tts_kokoro(project, segments, work)
         v = project.get("voice", {})
-        voice_status = f"SUBSTITUTE voice: Kokoro TTS {v.get('voice', 'bf_emma')} (approved narration not supplied)"
+        if all(s.get("audio") or not s["_text"].strip() for s in segments):   # no Kokoro line at all
+            voice_status = (f"APPROVED narration: supplied per-segment WAVs ({v.get('engine', 'recorded voice')}; "
+                            f"source sha256 {v.get('source_sha256', 'n/a')})")
+        else:
+            voice_status = f"SUBSTITUTE voice: Kokoro TTS {v.get('voice', 'bf_emma')} (approved narration not supplied)"
     notes.append(voice_status)
     total = duration(narr) + TAIL
     if preview:
