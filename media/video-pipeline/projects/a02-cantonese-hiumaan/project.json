@@ -1,5 +1,5 @@
 {
-  "script_status": "HiuMaan sync proposal of the A02 Cantonese edition: same shots, pictures, music, logo rules and wording as a02-cantonese-presenter; narration re-timed to HiuMaan; P05 ends 再見。. Presenter shots still carry the Manus lip-sync (re-lip-sync pending approval).",
+  "script_status": "HiuMaan sync proposal of the A02 Cantonese edition: same shots, pictures, music, logo rules and wording as a02-cantonese-presenter; narration re-timed to HiuMaan; P05 ends 再見。. P01-P05 re-lip-synced to HiuMaan from the v05r1 still (approved detail restore), each offset-corrected to 0 (presenter_sync_fix.py). Owner approved the full film 2026-11-09.",
   "output_name": "ASCLEPIOS_HEALTH_A02_YUE_HiuMaan",
   "brand": {
     "wordmark": "阿斯康｜ASCLEPIOS HEALTH",
@@ -27,7 +27,7 @@
     },
     {
       "id": "P01",
-      "video": "segments_yue_manus/open_cam.mp4",
+      "video": "segments_yue_hiumaan/open_cam.mp4",
       "audio": "yue-hiumaan/open_cam.wav",
       "pause_after": 0.4,
       "presenter": true,
@@ -69,7 +69,7 @@
     },
     {
       "id": "P02",
-      "video": "segments_yue_manus/p02_cam.mp4",
+      "video": "segments_yue_hiumaan/p02_cam.mp4",
       "audio": "yue-hiumaan/p02_cam.wav",
       "pause_after": 0.4,
       "presenter": true,
@@ -147,7 +147,7 @@
     },
     {
       "id": "P03",
-      "video": "segments_yue_manus/p03_cam.mp4",
+      "video": "segments_yue_hiumaan/p03_cam.mp4",
       "audio": "yue-hiumaan/p03_cam.wav",
       "pause_after": 0.4,
       "presenter": true,
@@ -194,7 +194,7 @@
     },
     {
       "id": "P04",
-      "video": "segments_yue_manus/p04_cam.mp4",
+      "video": "segments_yue_hiumaan/p04_cam.mp4",
       "audio": "yue-hiumaan/p04_cam.wav",
       "pause_after": 0.4,
       "presenter": true,
@@ -219,7 +219,7 @@
     },
     {
       "id": "P05",
-      "video": "segments_yue_manus/end_cam.mp4",
+      "video": "segments_yue_hiumaan/end_cam.mp4",
       "audio": "yue-hiumaan/end_cam.wav",
       "pause_after": 0.9,
       "presenter": true,
