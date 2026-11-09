@@ -55,14 +55,14 @@ def main():
                 j += 1
         onset = min((r - a for r in runs), key=abs) if runs else None
         share = float(voiced[fr(a):fr(b)].mean()) if fr(b) > fr(a) else 0.0
-        tail_v = np.nonzero(voiced[fr(b):fr(nxt)])[0]
+        tail_v = np.nonzero(voiced[fr(b):fr(nxt - 0.05)])[0]   # the next cue's own first syllable is not a late tail
         tail = (tail_v[-1] + 1) / 100 if len(tail_v) else 0.0
         ok = onset is not None and abs(onset) <= 0.25 and share >= 0.5 and tail <= 0.30
         rows.append({"cue": i + 1, "start": round(a, 2), "end": round(b, 2), "text": text,
                      "onset_ms": None if onset is None else int(round(onset * 1000)),
                      "voiced_share": round(share, 2), "late_tail_s": round(tail, 2), "pass": bool(ok)})
     res = {"cues": len(rows), "pass": sum(r["pass"] for r in rows),
-           "max_abs_onset_ms": max(abs(r["onset_ms"] or 9999) for r in rows),
+           "max_abs_onset_ms": max(9999 if r["onset_ms"] is None else abs(r["onset_ms"]) for r in rows),
            "min_voiced_share": min(r["voiced_share"] for r in rows), "max_late_tail_s": max(r["late_tail_s"] for r in rows),
            "all_pass": all(r["pass"] for r in rows), "rows": rows}
     open(sys.argv[3], "w", encoding="utf-8").write(json.dumps(res, indent=1, ensure_ascii=False))

@@ -1,0 +1,295 @@
+{
+  "script_status": "HiuMaan sync proposal of the A02 Cantonese edition: same shots, pictures, music, logo rules and wording as a02-cantonese-presenter; narration re-timed to HiuMaan; P05 ends 再見。. Presenter shots still carry the Manus lip-sync (re-lip-sync pending approval).",
+  "output_name": "ASCLEPIOS_HEALTH_A02_YUE_HiuMaan",
+  "brand": {
+    "wordmark": "阿斯康｜ASCLEPIOS HEALTH",
+    "sub": "CANTONESE EDITION",
+    "end_line": "阿斯康｜ASCLEPIOS HEALTH"
+  },
+  "voice": {
+    "engine": "Edge TTS zh-HK-HiuMaanNeural, owner-approved tone-B clause method + 再見 ending (2026-11-09); P04 and shot 20 whole-segment takes",
+    "note": "per-segment WAVs from tts_compare/HiuMaan_v2 (scratch); commercial licence NOT yet verified - not for publication"
+  },
+  "narration_wav": null,
+  "music": "generate:melodic",
+  "music_db": -17,
+  "segments": [
+    {
+      "id": "01",
+      "hold": 4.0,
+      "image": "01_Brand_Opening_bilingual_logo_v1.jpg",
+      "focus": [
+        0.5,
+        0.42,
+        1.2
+      ],
+      "yue": ""
+    },
+    {
+      "id": "P01",
+      "video": "segments_yue_manus/open_cam.mp4",
+      "audio": "yue-hiumaan/open_cam.wav",
+      "pause_after": 0.4,
+      "presenter": true,
+      "yue": "大家好，歡迎嚟到阿斯康。"
+    },
+    {
+      "id": "02",
+      "image": "02_Why_Timing_Matters_bilingual_v1.jpg",
+      "focus": [
+        0.7,
+        0.34,
+        1.35
+      ],
+      "audio": "yue-hiumaan/open_vo.wav",
+      "yue": "今日同大家分享，點解講抗衰老，除咗食啲乜，幾時食都咁值得留意。"
+    },
+    {
+      "id": "03",
+      "image": "03_Daily_Supplement.jpg",
+      "yue": "試諗吓，你開始留意營養，揀咗補充品，每日都記得食。",
+      "audio": "yue-hiumaan/n03.wav"
+    },
+    {
+      "id": "04",
+      "image": "04_Delayed_Lunch_bilingual_v1.jpg",
+      "focus": [
+        0.7,
+        0.3,
+        1.35
+      ],
+      "yue": "但忙起上嚟，食飯時間成日變，午餐又推遲咗。",
+      "audio": "yue-hiumaan/n04.wav"
+    },
+    {
+      "id": "05",
+      "image": "05_Late_Night_Phone.jpg",
+      "yue": "夜晚再睇多一陣手機，不知不覺，又夜咗瞓。",
+      "audio": "yue-hiumaan/n05.wav"
+    },
+    {
+      "id": "P02",
+      "video": "segments_yue_manus/p02_cam.mp4",
+      "audio": "yue-hiumaan/p02_cam.wav",
+      "pause_after": 0.4,
+      "presenter": true,
+      "yue": "咁樣，補充咗就夠未？"
+    },
+    {
+      "id": "06",
+      "image": "06_Inside_the_Cell.jpg",
+      "focus": [
+        0.32,
+        0.3,
+        1.35
+      ],
+      "yue": "要答呢個問題，我哋先睇吓細胞呢座日夜運作嘅城市。",
+      "audio": "yue-hiumaan/n06.wav"
+    },
+    {
+      "id": "07",
+      "image": "07_Mitochondria_Energy.jpg",
+      "pause_after": 1.2,
+      "focus": [
+        0.38,
+        0.38,
+        1.35
+      ],
+      "yue": "線粒體，好似發電站，幫細胞提供運作需要嘅能量。",
+      "audio": "yue-hiumaan/n07.wav"
+    },
+    {
+      "id": "08",
+      "image": "08_Daily_Movement_bilingual_v1.jpg",
+      "focus": [
+        0.7,
+        0.32,
+        1.35
+      ],
+      "yue": "你每日行路、活動，背後都有細胞嘅能量供應。",
+      "audio": "yue-hiumaan/n08.wav"
+    },
+    {
+      "id": "09",
+      "image": "09_Lysosome_Recycling.jpg",
+      "pause_after": 1.2,
+      "focus": [
+        0.68,
+        0.32,
+        1.35
+      ],
+      "yue": "呢座城市亦有回收站。溶酶體，會分解同回收部分受損嘅蛋白質同部件。",
+      "audio": "yue-hiumaan/n09.wav"
+    },
+    {
+      "id": "10",
+      "image": "10_DNA_Repair.jpg",
+      "pause_after": 1.2,
+      "focus": [
+        0.35,
+        0.35,
+        1.35
+      ],
+      "yue": "仲有維修工作。例如遺傳物質嘅修復，就係幫細胞維護遺傳物質嘅完整性。",
+      "audio": "yue-hiumaan/n10.wav"
+    },
+    {
+      "id": "11",
+      "image": "11_Cellular_Ageing.jpg",
+      "pause_after": 1.2,
+      "focus": [
+        0.68,
+        0.38,
+        1.3
+      ],
+      "yue": "隨住年齡增長，部分能量、清理同維護功能可能減弱。損傷日積月累，就可能影響細胞，以至組織同器官嘅表現。",
+      "audio": "yue-hiumaan/n11.wav"
+    },
+    {
+      "id": "P03",
+      "video": "segments_yue_manus/p03_cam.mp4",
+      "audio": "yue-hiumaan/p03_cam.wav",
+      "pause_after": 0.4,
+      "presenter": true,
+      "yue": "但細胞嘅工作，原來仲有時間表。"
+    },
+    {
+      "id": "12",
+      "image": "12_Morning_Light.jpg",
+      "yue": "而朝早嘅光線，就係重要嘅時間訊號。",
+      "audio": "yue-hiumaan/n12.wav"
+    },
+    {
+      "id": "13",
+      "image": "13_Circadian_Coordination.jpg",
+      "pause_after": 2.5,
+      "yue": "光線會影響腦內嘅主時鐘，再協調唔同器官同細胞嘅時鐘。代謝同部分維護工作，都受到日夜節律調節。節律同細胞功能，亦會隨住衰老互相影響。",
+      "audio": "yue-hiumaan/n13.wav"
+    },
+    {
+      "id": "14",
+      "image": "14_Winding_Down.jpg",
+      "yue": "所以，睡眠同節律值得一齊照顧。但修復唔係只喺夜晚發生，唔同工作，有各自嘅節奏。",
+      "audio": "yue-hiumaan/n14.wav"
+    },
+    {
+      "id": "15",
+      "image": "15_Meal_Timing_Metabolism.jpg",
+      "pause_after": 2.5,
+      "yue": "進餐時間，亦會影響部分外周時鐘同代謝節律。食乜，同幾時食，係兩個值得一齊理解嘅問題。",
+      "audio": "yue-hiumaan/n15.wav"
+    },
+    {
+      "id": "16",
+      "image": "16_Ingredient_Research.jpg",
+      "yue": "研究一種成分，好似研究點樣改善一個發電站。但要照顧成座城市，就要再睇埋整體。",
+      "audio": "yue-hiumaan/n16.wav"
+    },
+    {
+      "id": "17",
+      "image": "17_Whole_Body_Systems.jpg",
+      "pause_after": 1.2,
+      "yue": "營養同代謝提供原料同能量，荷爾蒙傳遞調節訊息，免疫亦參與細胞環境嘅調節。細胞功能，同全身系統一直互相影響。",
+      "audio": "yue-hiumaan/n17.wav"
+    },
+    {
+      "id": "P04",
+      "video": "segments_yue_manus/p04_cam.mp4",
+      "audio": "yue-hiumaan/p04_cam.wav",
+      "pause_after": 0.4,
+      "presenter": true,
+      "yue": "呢個就係阿斯康嘅理念：系統性、節律性、實際應用。"
+    },
+    {
+      "id": "18",
+      "image": "18_Research_to_Practice.jpg",
+      "yue": "先建立飲食、活動同睡眠嘅基礎，再按需要同證據，考慮營養支持。用乜、點用、幾時用，要逐項睇，唔係每樽都硬分早午晚。",
+      "audio": "yue-hiumaan/n18.wav"
+    },
+    {
+      "id": "19",
+      "image": "19_Invitation_to_Explore_bilingual_v1.jpg",
+      "focus": [
+        0.68,
+        0.38,
+        1.35
+      ],
+      "yue": "跟住阿斯康，我哋會帶你由細胞嘅能量、清理同修復出發，一齊探索身體機能同生命節律，點樣變成每日做得到嘅選擇。呢段抗衰老旅程，由認識自己開始。",
+      "audio": "yue-hiumaan/n19.wav"
+    },
+    {
+      "id": "P05",
+      "video": "segments_yue_manus/end_cam.mp4",
+      "audio": "yue-hiumaan/end_cam.wav",
+      "pause_after": 0.9,
+      "presenter": true,
+      "yue": "今日先同大家分享到呢度。之後我哋會繼續推出更多短片，由細胞、身體機能到日常生活，一步步同大家了解，乜嘢先係真正嘅抗衰老。下次再同大家分享。再見。"
+    },
+    {
+      "id": "20",
+      "image": "20_Brand_Ending_bilingual_logo_v1.jpg",
+      "focus": [
+        0.5,
+        0.42,
+        1.2
+      ],
+      "yue": "阿斯康。從細胞出發，配合生命嘅節律。",
+      "audio": "yue-hiumaan/n20.wav"
+    }
+  ],
+  "source": {
+    "file": "A02_Narration_By_Shot.txt",
+    "drive_id": "1lBfxce05mXLh_J_KD0k1Qaf9uRmWxC3s"
+  },
+  "images_dir": "images",
+  "images_note": "Set ASCLEPIOS_IMAGES_DIR to a folder with the Manus stills + make_bilingual_pages.py outputs (not committed).",
+  "cover_thumbnail": "00_Cover_en.jpg",
+  "images": {
+    "00_Cover.jpg": "ee9d139c27bcf483e91c23355f488bd3d3ee13683df9368021602b1a80fc28ad",
+    "01_Brand_Opening.jpg": "fc1c5bd5bb04a14db4355b9f130b6dabc8f08c8f45b9e30d1c07afe266061d8f",
+    "01_Brand_Opening_bilingual_logo_v1.jpg": "7b3369cf067b8e807501f4194d3bf99b097cf03df219d4a8b40189b88eaefadb",
+    "02_Why_Timing_Matters.jpg": "8576695cefb201099861f7c67b1b031df8fbd25191ad633902fb465913471c0e",
+    "02_Why_Timing_Matters_bilingual_v1.jpg": "e502fa3b9f7644e78eeb6020e420618d0adea177b6f3173c7644a6167ff86521",
+    "03_Daily_Supplement.jpg": "7d6fd4a7b505101253a1743894bc2defee4c944d6727b715def54bcdb4431948",
+    "04_Delayed_Lunch.jpg": "43b3617ca1614c258ce848cfd168a03e4e80cc80f89a7a7d6110cad2cd711458",
+    "04_Delayed_Lunch_bilingual_v1.jpg": "d06ba3c9ee976efbf7eb5f2997891b5dcb0a479f48fa476c99ca22f6aae2e871",
+    "05_Late_Night_Phone.jpg": "98b3d5a06ba5f14c3cd78de76d682dabd35587026f86930a332f797f383f45b7",
+    "06_Inside_the_Cell.jpg": "82f7fb1477a9335eecaba5d5e9069789b20f422a2ecc8e57c80330335658b768",
+    "07_Mitochondria_Energy.jpg": "f9f33e72be67ffbd91ed971720ff4f00520927e32c68438474f48d752a461bdd",
+    "08_Daily_Movement.jpg": "7eb6742fb87d7c95e034fff12a17829d58884d8a8526d3f86a1f63a5d8d1ab4e",
+    "08_Daily_Movement_bilingual_v1.jpg": "d563fd736338555da5b24779f6eed7c9696e5c13caf40d950de37b52e6e3ab33",
+    "09_Lysosome_Recycling.jpg": "27e54ef59d1e324f1a16960b7cb30301820b480bf6b41fd13f01fe71712f1c2a",
+    "10_DNA_Repair.jpg": "4859b5b608fe976423ab66d482874165983449fb5819900c26e835b9ccde54dd",
+    "11_Cellular_Ageing.jpg": "b585e11e8893494256d097561c4dd2ed9e073352af62e3b694e303a375f80d44",
+    "12_Morning_Light.jpg": "393dd7259911e72ca40069dd3fcfda6dcbfbf9a54044c7cd113ddab7964d57cd",
+    "13_Circadian_Coordination.jpg": "059c97a633f36958131d13dd56fac383259dfdf6319a3046613794df7a20e6fb",
+    "14_Winding_Down.jpg": "b5253374e528f254c462dddccfe591a01dc3ffff0e933af85d7db35cfc1617ce",
+    "15_Meal_Timing_Metabolism.jpg": "c32a7be3e98b4e5ba176bb95bde0a58f3c2425024e11634eb9ef4c0fd7f87610",
+    "16_Ingredient_Research.jpg": "561a7b0b8f163a98a66edf5c0dc5392aff7f8ae742b6fd9e4d6afb7e9efa4d76",
+    "17_Whole_Body_Systems.jpg": "557accd377b2918abd9b90a3da96f3a8c1e577e9bc9d974d5c951bfdc00a67c1",
+    "18_Research_to_Practice.jpg": "9bc72a14faf373e263dec99b962506c76bee035609fe89e6e9f9bf452fb99689",
+    "19_Invitation_to_Explore.jpg": "cce9e134c110202c7d828faa291c310325f941ed6f77a6e19eeabbf54b431612",
+    "19_Invitation_to_Explore_bilingual_v1.jpg": "cbe99ae22246e076fa8c4abe9b8d7ea1fb73dc74037fcd0f4dbde494b5033cb5",
+    "20_Brand_Ending.jpg": "fc1c5bd5bb04a14db4355b9f130b6dabc8f08c8f45b9e30d1c07afe266061d8f",
+    "20_Brand_Ending_bilingual_logo_v1.jpg": "7b3369cf067b8e807501f4194d3bf99b097cf03df219d4a8b40189b88eaefadb"
+  },
+  "caption_scale": 1.5,
+  "caption_line_chars": 38,
+  "caption_font": "Noto Sans CJK HK",
+  "focus_note": "Proposal A approved by owner 2026-11-04: temporary ease-in toward text; originals unaltered; applied only to shots with a 'focus' entry",
+  "presenter": {
+    "still": "studio/Claire_Lee_Studio_v05r1_Retouch_20261104.png (v05 with the red marks removed, presenter_retouch.py)",
+    "render": "presenter_render_segments.sh",
+    "note": "Set ASCLEPIOS_PRESENTER_DIR to the work dir holding segments/ en-lines/ brand/"
+  },
+  "logo_card": {
+    "path": "brand/ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg",
+    "shots": [
+      "P01"
+    ],
+    "height": 150
+  },
+  "text_field": "yue",
+  "caption_lang": "zh-HK",
+  "caption_line_chars_zh": 16
+}
