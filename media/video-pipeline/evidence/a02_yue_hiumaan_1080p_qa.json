@@ -1,0 +1,38 @@
+{
+  "file": "ASCLEPIOS_HEALTH_A02_YUE_HiuMaan_1080p.mp4",
+  "bytes": 48046968,
+  "sha256": "73ea35d1e0eac11dd5b463e74b9b58346780416510588022de60142ed2e9ffaf",
+  "duration_s": 203.6,
+  "resolution": "1920x1080",
+  "fps": "25/1",
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "loudness_LUFS": -16.0,
+  "true_peak_dBFS": -3.0,
+  "LRA_LU": 3.1,
+  "caption_lang": "zh-HK",
+  "caption_cps_limit": 9.0,
+  "caption_cues_en": 42,
+  "caption_cues_zh_hk": 0,
+  "max_caption_cps": 5.0,
+  "checks": {
+    "resolution": true,
+    "duration_matches_audio_plan": true,
+    "video_stream_full_length": true,
+    "loudness_within_1LU_of_target": true,
+    "true_peak_below_-1dBTP": true,
+    "captions_ordered_non_overlapping": true,
+    "captions_within_duration": true,
+    "caption_reading_speed_ok": true,
+    "audio_48k_stereo": true,
+    "soft_caption_tracks": true
+  },
+  "all_pass": true,
+  "notes": [
+    "APPROVED narration: supplied per-segment WAVs (Edge TTS zh-HK-HiuMaanNeural, owner-approved tone-B clause method + 再見 ending (2026-11-09); P04 and shot 20 whole-segment takes; source sha256 n/a)",
+    "music: generated: music_gen.py 'melodic' (original procedural composition, no third-party material)",
+    "logo card: ASCLEPIOS_HEALTH_Logo_Full_Original_v1_20261104.jpeg on shots ['P01'] only, windows [(5.75, 8.64)]"
+  ],
+  "script_status": "HiuMaan sync proposal of the A02 Cantonese edition: same shots, pictures, music, logo rules and wording as a02-cantonese-presenter; narration re-timed to HiuMaan; P05 ends 再見。. P01-P05 re-lip-synced to HiuMaan from the v05r1 still (approved detail restore), each offset-corrected to 0 (presenter_sync_fix.py). Owner approved the full film 2026-11-09.",
+  "cost": "GBP 0 (local FFmpeg/Pillow/Kokoro on session CPU)"
+}

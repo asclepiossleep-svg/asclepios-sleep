@@ -1,0 +1,128 @@
+{
+ "method": "Measure each presenter clip's mouth-to-voice offset and shift the picture so it is 0 (#142, 2026-11-09).",
+ "results": [
+  {
+   "clip": "open_cam.mp4",
+   "before": {
+    "video": "open_cam_raw.mp4",
+    "voice": "open_cam.wav",
+    "frames": 66,
+    "lag_ms": -80,
+    "corr": 0.727,
+    "corr_0": 0.57,
+    "agree": 0.662,
+    "pass": true
+   },
+   "shift_frames": 2,
+   "after": {
+    "video": "open_cam_try.mp4",
+    "voice": "open_cam.wav",
+    "frames": 66,
+    "lag_ms": 0,
+    "corr": 0.747,
+    "corr_0": 0.747,
+    "agree": 0.662,
+    "pass": true
+   }
+  },
+  {
+   "clip": "p02_cam.mp4",
+   "before": {
+    "video": "p02_cam_raw.mp4",
+    "voice": "p02_cam.wav",
+    "frames": 56,
+    "lag_ms": -40,
+    "corr": 0.577,
+    "corr_0": 0.487,
+    "agree": 0.618,
+    "pass": true
+   },
+   "shift_frames": 0,
+   "after": {
+    "video": "p02_cam_raw.mp4",
+    "voice": "p02_cam.wav",
+    "frames": 56,
+    "lag_ms": -40,
+    "corr": 0.577,
+    "corr_0": 0.487,
+    "agree": 0.618,
+    "pass": true
+   },
+   "note": "shift did not help; kept raw"
+  },
+  {
+   "clip": "p03_cam.mp4",
+   "before": {
+    "video": "p03_cam_raw.mp4",
+    "voice": "p03_cam.wav",
+    "frames": 80,
+    "lag_ms": -40,
+    "corr": 0.714,
+    "corr_0": 0.548,
+    "agree": 0.608,
+    "pass": true
+   },
+   "shift_frames": 1,
+   "after": {
+    "video": "p03_cam_try.mp4",
+    "voice": "p03_cam.wav",
+    "frames": 80,
+    "lag_ms": 0,
+    "corr": 0.714,
+    "corr_0": 0.714,
+    "agree": 0.582,
+    "pass": true
+   }
+  },
+  {
+   "clip": "p04_cam.mp4",
+   "before": {
+    "video": "p04_cam_raw.mp4",
+    "voice": "p04_cam.wav",
+    "frames": 136,
+    "lag_ms": -40,
+    "corr": 0.646,
+    "corr_0": 0.625,
+    "agree": 0.726,
+    "pass": true
+   },
+   "shift_frames": 0,
+   "after": {
+    "video": "p04_cam_raw.mp4",
+    "voice": "p04_cam.wav",
+    "frames": 136,
+    "lag_ms": -40,
+    "corr": 0.646,
+    "corr_0": 0.625,
+    "agree": 0.726,
+    "pass": true
+   },
+   "note": "shift did not help; kept raw"
+  },
+  {
+   "clip": "end_cam.mp4",
+   "before": {
+    "video": "end_cam_raw.mp4",
+    "voice": "end_cam.wav",
+    "frames": 404,
+    "lag_ms": -40,
+    "corr": 0.581,
+    "corr_0": 0.462,
+    "agree": 0.63,
+    "pass": true
+   },
+   "shift_frames": 0,
+   "after": {
+    "video": "end_cam_raw.mp4",
+    "voice": "end_cam.wav",
+    "frames": 404,
+    "lag_ms": -40,
+    "corr": 0.581,
+    "corr_0": 0.462,
+    "agree": 0.63,
+    "pass": true
+   },
+   "note": "shift did not help; kept raw"
+  }
+ ]
+}

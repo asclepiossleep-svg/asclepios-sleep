@@ -1,0 +1,430 @@
+{
+ "cues": 42,
+ "pass": 42,
+ "max_abs_onset_ms": 80,
+ "min_voiced_share": 0.7,
+ "max_late_tail_s": 0.0,
+ "all_pass": true,
+ "rows": [
+  {
+   "cue": 1,
+   "start": 5.75,
+   "end": 8.23,
+   "text": "大家好，歡迎嚟到阿斯康",
+   "onset_ms": 0,
+   "voiced_share": 0.88,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 2,
+   "start": 8.63,
+   "end": 14.73,
+   "text": "今日同大家分享，點解講抗衰老除咗食啲乜，幾時食都咁值得留意",
+   "onset_ms": -5,
+   "voiced_share": 0.84,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 3,
+   "start": 15.28,
+   "end": 20.3,
+   "text": "試諗吓，你開始留意營養揀咗補充品，每日都記得食",
+   "onset_ms": 11,
+   "voiced_share": 0.83,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 4,
+   "start": 20.85,
+   "end": 25.14,
+   "text": "但忙起上嚟，食飯時間成日變午餐又推遲咗",
+   "onset_ms": 1,
+   "voiced_share": 0.86,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 5,
+   "start": 25.69,
+   "end": 29.9,
+   "text": "夜晚再睇多一陣手機不知不覺，又夜咗瞓",
+   "onset_ms": -3,
+   "voiced_share": 0.78,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 6,
+   "start": 30.45,
+   "end": 32.55,
+   "text": "咁樣，補充咗就夠未？",
+   "onset_ms": -7,
+   "voiced_share": 0.89,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 7,
+   "start": 32.95,
+   "end": 37.7,
+   "text": "要答呢個問題我哋先睇吓細胞呢座日夜運作嘅城市",
+   "onset_ms": -5,
+   "voiced_share": 0.89,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 8,
+   "start": 38.25,
+   "end": 43.29,
+   "text": "線粒體，好似發電站幫細胞提供運作需要嘅能量",
+   "onset_ms": 4,
+   "voiced_share": 0.84,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 9,
+   "start": 44.49,
+   "end": 48.87,
+   "text": "你每日行路、活動背後都有細胞嘅能量供應",
+   "onset_ms": -6,
+   "voiced_share": 0.84,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 10,
+   "start": 49.42,
+   "end": 51.79,
+   "text": "呢座城市亦有回收站",
+   "onset_ms": -6,
+   "voiced_share": 0.84,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 11,
+   "start": 51.96,
+   "end": 56.48,
+   "text": "溶酶體，會分解同回收部分受損嘅蛋白質同部件",
+   "onset_ms": 80,
+   "voiced_share": 0.84,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 12,
+   "start": 57.68,
+   "end": 59.2,
+   "text": "仲有維修工作",
+   "onset_ms": 1,
+   "voiced_share": 0.8,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 13,
+   "start": 59.36,
+   "end": 64.41,
+   "text": "例如遺傳物質嘅修復就係幫細胞維護遺傳物質嘅完整性",
+   "onset_ms": 80,
+   "voiced_share": 0.87,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 14,
+   "start": 65.61,
+   "end": 70.86,
+   "text": "隨住年齡增長，部分能量清理同維護功能可能減弱",
+   "onset_ms": -4,
+   "voiced_share": 0.85,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 15,
+   "start": 71.03,
+   "end": 76.5,
+   "text": "損傷日積月累，就可能影響細胞以至組織同器官嘅表現",
+   "onset_ms": 80,
+   "voiced_share": 0.82,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 16,
+   "start": 77.7,
+   "end": 80.78,
+   "text": "但細胞嘅工作，原來仲有時間表",
+   "onset_ms": -5,
+   "voiced_share": 0.87,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 17,
+   "start": 81.18,
+   "end": 84.68,
+   "text": "而朝早嘅光線，就係重要嘅時間訊號",
+   "onset_ms": -3,
+   "voiced_share": 0.88,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 18,
+   "start": 85.23,
+   "end": 90.79,
+   "text": "光線會影響腦內嘅主時鐘再協調唔同器官同細胞嘅時鐘",
+   "onset_ms": 1,
+   "voiced_share": 0.86,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 19,
+   "start": 90.97,
+   "end": 95.25,
+   "text": "代謝同部分維護工作都受到日夜節律調節",
+   "onset_ms": 80,
+   "voiced_share": 0.77,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 20,
+   "start": 95.43,
+   "end": 99.56,
+   "text": "節律同細胞功能亦會隨住衰老互相影響",
+   "onset_ms": 80,
+   "voiced_share": 0.86,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 21,
+   "start": 102.06,
+   "end": 105.37,
+   "text": "所以，睡眠同節律值得一齊照顧",
+   "onset_ms": 1,
+   "voiced_share": 0.75,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 22,
+   "start": 105.54,
+   "end": 110.42,
+   "text": "但修復唔係只喺夜晚發生唔同工作，有各自嘅節奏",
+   "onset_ms": 80,
+   "voiced_share": 0.79,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 23,
+   "start": 110.97,
+   "end": 115.29,
+   "text": "進餐時間亦會影響部分外周時鐘同代謝節律",
+   "onset_ms": 0,
+   "voiced_share": 0.87,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 24,
+   "start": 115.29,
+   "end": 119.91,
+   "text": "食乜，同幾時食係兩個值得一齊理解嘅問題",
+   "onset_ms": 80,
+   "voiced_share": 0.72,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 25,
+   "start": 122.41,
+   "end": 127.06,
+   "text": "研究一種成分好似研究點樣改善一個發電站",
+   "onset_ms": 1,
+   "voiced_share": 0.81,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 26,
+   "start": 127.23,
+   "end": 130.93,
+   "text": "但要照顧成座城市，就要再睇埋整體",
+   "onset_ms": 80,
+   "voiced_share": 0.88,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 27,
+   "start": 131.48,
+   "end": 136.6,
+   "text": "營養同代謝提供原料同能量荷爾蒙傳遞調節訊息",
+   "onset_ms": -2,
+   "voiced_share": 0.88,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 28,
+   "start": 136.6,
+   "end": 139.01,
+   "text": "免疫亦參與細胞環境嘅調節",
+   "onset_ms": 80,
+   "voiced_share": 0.78,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 29,
+   "start": 139.19,
+   "end": 142.94,
+   "text": "細胞功能，同全身系統一直互相影響",
+   "onset_ms": 80,
+   "voiced_share": 0.85,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 30,
+   "start": 144.26,
+   "end": 149.62,
+   "text": "呢個就係阿斯康嘅理念：系統性、節律性、實際應用",
+   "onset_ms": 80,
+   "voiced_share": 0.76,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 31,
+   "start": 150.66,
+   "end": 157.16,
+   "text": "先建立飲食、活動同睡眠嘅基礎再按需要同證據，考慮營養支持",
+   "onset_ms": 1,
+   "voiced_share": 0.82,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 32,
+   "start": 157.34,
+   "end": 163.05,
+   "text": "用乜、點用、幾時用，要逐項睇唔係每樽都硬分早午晚",
+   "onset_ms": 80,
+   "voiced_share": 0.78,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 33,
+   "start": 163.6,
+   "end": 168.76,
+   "text": "跟住阿斯康，我哋會帶你由細胞嘅能量清理同修復出發",
+   "onset_ms": -3,
+   "voiced_share": 0.84,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 34,
+   "start": 168.76,
+   "end": 174.14,
+   "text": "一齊探索身體機能同生命節律點樣變成每日做得到嘅選擇",
+   "onset_ms": 80,
+   "voiced_share": 0.83,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 35,
+   "start": 174.31,
+   "end": 177.68,
+   "text": "呢段抗衰老旅程，由認識自己開始",
+   "onset_ms": 80,
+   "voiced_share": 0.85,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 36,
+   "start": 178.23,
+   "end": 180.75,
+   "text": "今日先同大家分享到呢度",
+   "onset_ms": 0,
+   "voiced_share": 0.85,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 37,
+   "start": 180.95,
+   "end": 186.85,
+   "text": "之後我哋會繼續推出更多短片由細胞、身體機能到日常生活",
+   "onset_ms": 80,
+   "voiced_share": 0.82,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 38,
+   "start": 186.85,
+   "end": 191.06,
+   "text": "一步步同大家了解乜嘢先係真正嘅抗衰老",
+   "onset_ms": 80,
+   "voiced_share": 0.81,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 39,
+   "start": 191.24,
+   "end": 193.45,
+   "text": "下次再同大家分享",
+   "onset_ms": 80,
+   "voiced_share": 0.78,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 40,
+   "start": 193.47,
+   "end": 194.24,
+   "text": "再見",
+   "onset_ms": 80,
+   "voiced_share": 0.83,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 41,
+   "start": 195.29,
+   "end": 196.4,
+   "text": "阿斯康",
+   "onset_ms": 80,
+   "voiced_share": 0.7,
+   "late_tail_s": 0.0,
+   "pass": true
+  },
+  {
+   "cue": 42,
+   "start": 197.11,
+   "end": 199.88,
+   "text": "從細胞出發，配合生命嘅節律",
+   "onset_ms": 80,
+   "voiced_share": 0.71,
+   "late_tail_s": 0.0,
+   "pass": true
+  }
+ ]
+}
